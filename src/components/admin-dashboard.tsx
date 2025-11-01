@@ -1,0 +1,406 @@
+'use client';
+
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Shield, Users, BookOpen, TrendingUp, AlertTriangle, Settings } from 'lucide-react';
+import { toast } from 'sonner';
+import type { StoryCategory, StoryType } from '@/types/ghostwriter';
+import { CATEGORY_INFO } from '@/types/ghostwriter';
+import { useAccount } from 'wagmi';
+
+export function AdminDashboard() {
+  const { address } = useAccount();
+  const [selectedCategory, setSelectedCategory] = useState<StoryCategory>('random');
+  const [storyTitle, setStoryTitle] = useState<string>('');
+  const [storyTemplate, setStoryTemplate] = useState<string>('');
+  const [storyType, setStoryType] = useState<StoryType>('normal');
+  
+  // Mock admin check - in production, verify onchain
+  const isAdmin = true; // TODO: Check if address is contract owner
+
+  const handleAirdropCredits = async () => {
+    try {
+      toast.success('Airdrop initiated', {
+        description: 'Credits will be distributed to selected users',
+      });
+    } catch (error) {
+      toast.error('Airdrop failed');
+    }
+  };
+
+  const handleCreateStory = async () => {
+    try {
+      if (!storyTitle || !storyTemplate) {
+        toast.error('Please fill in all fields');
+        return;
+      }
+      
+      toast.success('Story created!', {
+        description: `"${storyTitle}" is now live`,
+      });
+      
+      // Reset form
+      setStoryTitle('');
+      setStoryTemplate('');
+    } catch (error) {
+      toast.error('Failed to create story');
+    }
+  };
+
+  if (!isAdmin) {
+    return (
+      <Card className="border-2 border-red-300 dark:border-red-700">
+        <CardContent className="flex flex-col items-center justify-center py-16">
+          <Shield className="h-16 w-16 text-red-500 mb-4" />
+          <p className="text-xl font-semibold text-red-600">Access Denied</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">
+            Only contract owner can access admin dashboard
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-purple-900/20 dark:to-indigo-900/20 py-8">
+      <div className="container mx-auto px-4 max-w-7xl">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <Shield className="h-10 w-10 text-purple-500" />
+            <h1 className="text-5xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              Admin Dashboard
+            </h1>
+          </div>
+          <p className="text-lg text-gray-700 dark:text-gray-300">
+            Manage Ghost Writer platform
+          </p>
+          <Badge className="mt-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+            Owner: {address?.slice(0, 6)}...{address?.slice(-4)}
+          </Badge>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card className="border-2 border-purple-200 dark:border-purple-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Total Users
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">1,234</div>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">+12% this week</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 border-blue-200 dark:border-blue-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Active Stories
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">45</div>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">3 completed today</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 border-indigo-200 dark:border-indigo-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Total NFTs
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">5,678</div>
+              <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">+89 today</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 border-green-200 dark:border-green-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Liquidity Pool
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">0.5 ETH</div>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">$1,234 USD</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="stories" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-6 h-14 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-purple-200 dark:border-purple-800">
+            <TabsTrigger value="stories" className="text-base font-semibold">
+              <BookOpen className="mr-2 h-4 w-4" />
+              Stories
+            </TabsTrigger>
+            <TabsTrigger value="users" className="text-base font-semibold">
+              <Users className="mr-2 h-4 w-4" />
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="text-base font-semibold">
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="text-base font-semibold">
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Stories Management */}
+          <TabsContent value="stories">
+            <Card className="border-2 border-purple-200 dark:border-purple-800">
+              <CardHeader>
+                <CardTitle>Create New Story Template</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="story-title">Story Title</Label>
+                    <Input
+                      id="story-title"
+                      placeholder="The Wicked Witch That Lived in the Trashcan"
+                      value={storyTitle}
+                      onChange={(e) => setStoryTitle(e.target.value)}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="story-type">Story Type</Label>
+                    <Select value={storyType} onValueChange={(value: StoryType) => setStoryType(value)}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mini">Mini (10 slots)</SelectItem>
+                        <SelectItem value="normal">Normal (20 slots)</SelectItem>
+                        <SelectItem value="epic">Epic (200 slots)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="category">Category</Label>
+                    <Select value={selectedCategory} onValueChange={(value: StoryCategory) => setSelectedCategory(value)}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(CATEGORY_INFO).map(([key, info]) => (
+                          <SelectItem key={key} value={key}>
+                            {info.emoji} {info.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="template">Story Template</Label>
+                  <textarea
+                    id="template"
+                    placeholder="Once upon a time, there was a [ADJECTIVE] witch who lived in a [NOUN]..."
+                    value={storyTemplate}
+                    onChange={(e) => setStoryTemplate(e.target.value)}
+                    className="w-full mt-2 min-h-[200px] p-3 rounded-md border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Use [ADJECTIVE], [NOUN], [VERB], etc. to mark blanks
+                  </p>
+                </div>
+
+                <Button 
+                  onClick={handleCreateStory}
+                  className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                >
+                  Create Story Template
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* User Management */}
+          <TabsContent value="users">
+            <Card className="border-2 border-blue-200 dark:border-blue-800">
+              <CardHeader>
+                <CardTitle>Airdrop Creation Credits</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="addresses">Wallet Addresses</Label>
+                    <textarea
+                      id="addresses"
+                      placeholder="0x123...&#10;0x456...&#10;0x789..."
+                      className="w-full mt-2 min-h-[150px] p-3 rounded-md border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono text-sm"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      One address per line
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="credits">Credits per User</Label>
+                    <Input
+                      id="credits"
+                      type="number"
+                      placeholder="5"
+                      className="mt-2"
+                      min="1"
+                      max="100"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      Bootstrap new users with creation credits
+                    </p>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={handleAirdropCredits}
+                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+                >
+                  Airdrop Credits
+                </Button>
+
+                <div className="border-t-2 border-gray-200 dark:border-gray-700 pt-6 mt-6">
+                  <h3 className="font-semibold text-lg mb-4">Recent Users</h3>
+                  <div className="space-y-2">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <span className="font-mono text-sm">0x{Math.random().toString(16).slice(2, 10)}...</span>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">{Math.floor(Math.random() * 50)} contributions</span>
+                          <Badge variant="secondary">{Math.floor(Math.random() * 10)} credits</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Analytics */}
+          <TabsContent value="analytics">
+            <Card className="border-2 border-indigo-200 dark:border-indigo-800">
+              <CardHeader>
+                <CardTitle>Platform Analytics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="font-semibold mb-3">Story Categories Distribution</h3>
+                    <div className="space-y-2">
+                      {Object.entries(CATEGORY_INFO).map(([key, info]) => (
+                        <div key={key} className="flex items-center justify-between">
+                          <span className="text-sm">{info.emoji} {info.name}</span>
+                          <Badge variant="outline">{Math.floor(Math.random() * 20)}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-3">Achievement Distribution</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">✍️ First Word</span>
+                        <Badge variant="outline">1,234 users</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">📖 Story Starter</span>
+                        <Badge variant="outline">456 users</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">👑 Completion King</span>
+                        <Badge variant="outline">89 users</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">🏆 Prolific Writer</span>
+                        <Badge variant="outline">23 users</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t-2 border-gray-200 dark:border-gray-700 pt-6">
+                  <h3 className="font-semibold mb-3">Recent Activity</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <Badge variant="secondary">2m ago</Badge>
+                      <span>User 0x123... contributed to "The Wicked Witch"</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <Badge variant="secondary">5m ago</Badge>
+                      <span>Story "A Penguin's Guide" completed</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <Badge variant="secondary">8m ago</Badge>
+                      <span>User 0x456... unlocked "First Word" achievement</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Settings */}
+          <TabsContent value="settings">
+            <Card className="border-2 border-yellow-200 dark:border-yellow-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                  Emergency Controls
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="p-4 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
+                    <h3 className="font-semibold mb-2">Emergency Withdrawal</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Withdraw all contract funds to owner address (emergency only)
+                    </p>
+                    <Button variant="destructive" className="w-full">
+                      Emergency Withdraw
+                    </Button>
+                  </div>
+
+                  <div className="p-4 border-2 border-gray-300 dark:border-gray-700 rounded-lg">
+                    <h3 className="font-semibold mb-2">Contract Addresses</h3>
+                    <div className="space-y-2 text-sm font-mono">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 dark:text-gray-400">StoryManager:</span>
+                        <span>0x{Math.random().toString(16).slice(2, 42)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 dark:text-gray-400">GhostWriterNFT:</span>
+                        <span>0x{Math.random().toString(16).slice(2, 42)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 dark:text-gray-400">LiquidityPool:</span>
+                        <span>0x{Math.random().toString(16).slice(2, 42)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
