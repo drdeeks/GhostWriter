@@ -1,9 +1,25 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-import "@nomicfoundation/hardhat-ethers";
-import * as dotenv from "dotenv";
+import type { HardhatUserConfig } from "hardhat/config";
+require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-ethers");
+const dotenv = require("dotenv");
+const fs = require("fs");
+const { Wallet } = require("ethers");
 
 dotenv.config();
+
+function getDeployerAccounts() {
+  if (process.env.PRIVATE_KEY) {
+    return [process.env.PRIVATE_KEY];
+  }
+  if (process.env.KEYSTORE_PATH && process.env.KEYSTORE_PASSWORD) {
+    const keystore = fs.readFileSync(process.env.KEYSTORE_PATH, "utf8");
+    const wallet = Wallet.fromEncryptedJsonSync(keystore, process.env.KEYSTORE_PASSWORD);
+    return [wallet.privateKey];
+  }
+  return [];
+}
+
+const accounts = getDeployerAccounts();
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -19,25 +35,25 @@ const config: HardhatUserConfig = {
     // Base Mainnet
     base: {
       url: process.env.BASE_RPC_URL || "https://mainnet.base.org",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: accounts,
       chainId: 8453,
     },
     // Base Sepolia Testnet
     baseSepolia: {
       url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: accounts,
       chainId: 84532,
     },
     // Mode Mainnet
     mode: {
       url: process.env.MODE_RPC_URL || "https://mainnet.mode.network",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: accounts,
       chainId: 34443,
     },
     // Mode Sepolia Testnet
     modeSepolia: {
       url: process.env.MODE_SEPOLIA_RPC_URL || "https://sepolia.mode.network",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: accounts,
       chainId: 919,
     },
     // Localhost for testing
@@ -103,4 +119,4 @@ const config: HardhatUserConfig = {
   },
 };
 
-export default config;
+module.exports = config;

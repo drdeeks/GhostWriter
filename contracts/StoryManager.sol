@@ -104,6 +104,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
     mapping(string => mapping(uint256 => SlotDetail)) public storySlots;
     mapping(address => UserStats) public userStats;
     mapping(string => bool) public storyExists;
+    mapping(string => mapping(address => bool)) public storyCompletedContributors; // New mapping
 
     // Arrays for tracking
     string[] public allStoryIds;
@@ -142,7 +143,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
 
     constructor(
         address _nftContract,
-        address _liquidityPool
+        address payable _liquidityPool
     ) Ownable(msg.sender) {
         require(_nftContract != address(0), "Invalid NFT contract");
         require(_liquidityPool != address(0), "Invalid pool");
@@ -343,30 +344,51 @@ contract StoryManager is Ownable, ReentrancyGuard {
         story.status = StoryStatus.COMPLETE;
         story.completedAt = block.timestamp;
 
-        // Update completed stories count for all contributors
-        for (uint256 i = 1; i <= story.totalSlots; i++) {
-            address contributor = storySlots[storyId][i].contributor;
-            if (contributor != address(0)) {
-                userStats[contributor].completedStories++;
-                
-                // Check for completion king achievement (contributed final word to 5 stories)
-                if (i == story.totalSlots) {
-                    uint256 finalWordCount = 0;
-                    for (uint256 j = 0; j < allStoryIds.length; j++) {
-                        Story memory s = stories[allStoryIds[j]];
-                        if (s.status == StoryStatus.COMPLETE && 
-                            storySlots[allStoryIds[j]][s.totalSlots].contributor == contributor) {
-                            finalWordCount++;
-                        }
-                    }
-                    if (finalWordCount >= 5 && !userAchievements[contributor]["completion_king"].unlocked) {
-                        _unlockAchievement(contributor, "completion_king", "Completion King", "Contributed the final word to 5 stories");
-                    }
-                }
-            }
-        }
-        
-        // Check for speed demon achievement (completed in < 24 hours)
+                                // Update completed stories count for all contributors
+
+                                for (uint256 i = 1; i <= story.totalSlots; i++) {
+
+                                    address contributor = storySlots[storyId][i].contributor;
+
+                                    if (contributor != address(0) && !storyCompletedContributors[storyId][contributor]) {
+
+                                        userStats[contributor].completedStories++;
+
+                                        storyCompletedContributors[storyId][contributor] = true; // Mark as counted
+
+                                    }
+
+                            
+
+                                    // Check for completion king achievement (contributed final word to 5 stories)
+
+                                    if (i == story.totalSlots) {
+
+                                        uint256 finalWordCount = 0;
+
+                                        for (uint256 j = 0; j < allStoryIds.length; j++) {
+
+                                            Story memory s = stories[allStoryIds[j]];
+
+                                            if (s.status == StoryStatus.COMPLETE &&
+
+                                                storySlots[allStoryIds[j]][s.totalSlots].contributor == contributor) {
+
+                                                finalWordCount++;
+
+                                            }
+
+                                        }
+
+                                        if (finalWordCount >= 5 && !userAchievements[contributor]["completion_king"].unlocked) {
+
+                                            _unlockAchievement(contributor, "completion_king", "Completion King", "Contributed the final word to 5 stories");
+
+                                        }
+
+                                    }
+
+                                }        // Check for speed demon achievement (completed in < 24 hours)
         uint256 timeTaken = block.timestamp - story.createdAt;
         if (timeTaken < 24 hours && !userAchievements[story.creator]["speed_demon"].unlocked) {
             _unlockAchievement(story.creator, "speed_demon", "Speed Demon", "Story completed in <24 hours");
@@ -565,6 +587,17 @@ contract StoryManager is Ownable, ReentrancyGuard {
     function getUserRank(address user) external view returns (uint256) {
         uint256 index = leaderboardIndex[user];
         return index > 0 ? index : 0; // 0 means not on leaderboard
+    }
+
+    /**
+     * @dev Owner can airdrop creation credits to users
+     */
+    function airdropCredits(address[] calldata users, uint256[] calldata amounts) external onlyOwner {
+        require(users.length == amounts.length, "Mismatched arrays");
+        for (uint256 i = 0; i < users.length; i++) {
+            userStats[users[i]].creationCredits += amounts[i];
+            emit CreationCreditEarned(users[i], userStats[users[i]].creationCredits);
+        }
     }
 
     /**
