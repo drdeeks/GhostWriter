@@ -1,0 +1,299 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { StoryCard } from '@/components/story-card';
+import { UserStatsDisplay } from '@/components/user-stats';
+import { ContributionModal } from '@/components/contribution-modal';
+import { StoryCreationModal } from '@/components/story-creation-modal';
+import { NFTCollection } from '@/components/nft-collection';
+import type { Story, StoryType } from '@/types/ghostwriter';
+import { sdk } from '@farcaster/miniapp-sdk';
+import { useAccount } from 'wagmi';
+import { PlusCircle, BookOpen, Sparkles, Loader2, AlertCircle, Trophy, Award } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAddMiniApp } from '@/hooks/useAddMiniApp';
+import { useAllStories, useUserStats, useStory } from '@/hooks/useContract';
+import { areContractsDeployed } from '@/lib/contracts';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+export default function Home() {
+  const { address } = useAccount();
+  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  const [showContributionModal, setShowContributionModal] = useState<boolean>(false);
+  const [showCreationModal, setShowCreationModal] = useState<boolean>(false);
+  const [farcasterUser, setFarcasterUser] = useState<string | null>(null);
+  const { addMiniApp } = useAddMiniApp();
+
+  // Fetch all stories and user stats from contracts
+  const { storyIds, isLoading: storiesLoading, refetch: refetchStories } = useAllStories();
+  const { stats: userStats, refetch: refetchStats } = useUserStats(address);
+
+  // Load Farcaster context
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await addMiniApp();
+        await sdk.actions.ready();
+        const context = await sdk.context;
+        setFarcasterUser(context?.user?.username || null);
+      } catch (error) {
+        console.error('Failed to initialize:', error);
+      }
+    };
+    init();
+  }, [addMiniApp]);
+
+  // Check if contracts are deployed
+  const contractsDeployed = areContractsDeployed();
+
+  // Build stories list (simplified for now - in production, fetch full story details)
+  const stories: Story[] = [];
+  const activeStories = stories.filter((s: Story) => s.status === 'active');
+  const completedStories = stories.filter((s: Story) => s.status === 'complete');
+
+  const handleContribute = (storyId: string) => {
+    const story = stories.find((s: Story) => s.storyId === storyId);
+    if (story) {
+      setSelectedStory(story);
+      setShowContributionModal(true);
+    }
+  };
+
+  const handleSubmitContribution = async (word: string) => {
+    try {
+      toast.success('Processing contribution...');
+      await refetchStats();
+      await refetchStories();
+      setShowContributionModal(false);
+      toast.success('Contribution successful!', {
+        description: `You contributed "${word}" and earned 1 creation credit!`,
+      });
+    } catch (error) {
+      toast.error('Contribution failed', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
+    }
+  };
+
+  const handleCreateStory = async (storyType: StoryType) => {
+    try {
+      toast.success('Creating story...');
+      await refetchStats();
+      await refetchStories();
+      setShowCreationModal(false);
+      toast.success('Story created!');
+    } catch (error) {
+      toast.error('Creation failed', {
+        description: error instanceof Error ? error.message : 'Please try again',
+      });
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 relative overflow-hidden">
+      {/* Ambient glow effects */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      
+      <div className="container mx-auto px-4 py-8 max-w-7xl relative z-10">
+        {/* Header */}
+        <div className="mb-12 text-center relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-orange-500/5 blur-3xl -z-10" />
+          <h1 className="text-5xl md:text-6xl font-black mb-4 bg-gradient-to-r from-cyan-400 via-purple-400 to-orange-400 bg-clip-text text-transparent drop-shadow-lg">
+            👻 Ghost Writer
+          </h1>
+          <p className="text-xl text-gray-300 mb-3 font-medium">
+            AI-Guided Mad Libs • NFT Game • Base Chain
+          </p>
+          {farcasterUser && (
+            <p className="text-sm text-cyan-400 font-semibold">
+              Welcome back, @{farcasterUser}!
+            </p>
+          )}
+          {address && (
+            <p className="text-xs text-gray-500 font-mono mt-2">
+              {address.slice(0, 6)}...{address.slice(-4)}
+            </p>
+          )}
+        </div>
+
+        {/* Contract deployment warning */}
+        {!contractsDeployed && (
+          <Alert className="mb-8 border-2 border-orange-500/50 bg-orange-950/30 backdrop-blur-sm">
+            <AlertCircle className="h-4 w-4 text-orange-400" />
+            <AlertDescription className="text-orange-200">
+              Smart contracts not yet deployed. Please deploy contracts and update .env with addresses.
+              <br />
+              <code className="text-xs mt-2 block text-orange-300">npm run deploy:baseSepolia</code>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* User Stats */}
+        {contractsDeployed && address && (
+          <div className="mb-10">
+            <UserStatsDisplay 
+              stats={{
+                address: address,
+                contributionsCount: userStats ? Number(userStats[0]) : 0,
+                creationCredits: userStats ? Number(userStats[1]) : 0,
+                storiesCreated: userStats ? Number(userStats[2]) : 0,
+                nftsOwned: userStats ? Number(userStats[3]) : 0,
+                activeContributions: [],
+              }} 
+            />
+          </div>
+        )}
+
+        {/* Navigation to Leaderboard */}
+        <div className="mb-6 flex justify-center gap-4">
+          <a href="/leaderboard">
+            <Button variant="outline" className="gap-2 border-2 border-orange-500/50 hover:bg-orange-500/10 bg-gray-900/50 backdrop-blur-sm text-orange-300 hover:text-orange-200 transition-all">
+              <Trophy className="h-5 w-5 text-orange-400" />
+              View Leaderboard
+            </Button>
+          </a>
+          {userStats && Number(userStats[0]) > 0 && (
+            <Button variant="outline" className="gap-2 border-2 border-purple-500/50 hover:bg-purple-500/10 bg-gray-900/50 backdrop-blur-sm text-purple-300 hover:text-purple-200 transition-all">
+              <Award className="h-5 w-5 text-purple-400" />
+              My Achievements ({Number(userStats[0])})
+            </Button>
+          )}
+        </div>
+
+        {/* Main Content */}
+        <Tabs defaultValue="stories" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8 h-14 bg-gray-900/80 backdrop-blur-md border-2 border-gray-800 shadow-xl">
+            <TabsTrigger 
+              value="stories" 
+              className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/50"
+            >
+              <BookOpen className="mr-2 h-5 w-5" />
+              Active ({activeStories.length})
+            </TabsTrigger>
+            <TabsTrigger 
+              value="completed"
+              className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/50"
+            >
+              <Sparkles className="mr-2 h-5 w-5" />
+              Complete ({completedStories.length})
+            </TabsTrigger>
+            <TabsTrigger 
+              value="collection"
+              className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-amber-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/50"
+            >
+              🖼️ My NFTs ({userStats ? Number(userStats[3]) : 0})
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Active Stories Tab */}
+          <TabsContent value="stories" className="space-y-6 animate-in fade-in-50 duration-500">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                  📚 Active Stories
+                </h2>
+                <p className="text-gray-400 mt-1">Contribute to unlock creation</p>
+              </div>
+              <Button 
+                onClick={() => setShowCreationModal(true)} 
+                className="gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 transition-all duration-200 h-12 px-6 text-base font-semibold"
+                disabled={!contractsDeployed}
+              >
+                <PlusCircle className="h-5 w-5" />
+                Create Story
+              </Button>
+            </div>
+
+            {storiesLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <Loader2 className="h-12 w-12 animate-spin text-cyan-400" />
+              </div>
+            ) : activeStories.length === 0 ? (
+              <Card className="border-2 border-dashed border-gray-700 bg-gray-900/50 backdrop-blur-sm">
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <BookOpen className="h-16 w-16 text-gray-600 mb-4" />
+                  <p className="text-xl font-semibold text-gray-300 mb-2">
+                    No active stories yet
+                  </p>
+                  <p className="text-gray-500">
+                    {contractsDeployed ? "Be the first to create one!" : "Deploy contracts to get started"}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {activeStories.map((story: Story) => (
+                  <StoryCard
+                    key={story.storyId}
+                    story={story}
+                    onContribute={handleContribute}
+                    onViewStory={() => {}}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Completed Stories Tab */}
+          <TabsContent value="completed" className="space-y-6 animate-in fade-in-50 duration-500">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                ✨ Completed Stories
+              </h2>
+              <p className="text-gray-400 mt-1">Read hilarious completed narratives</p>
+            </div>
+
+            {completedStories.length === 0 ? (
+              <Card className="border-2 border-dashed border-gray-700 bg-gray-900/50 backdrop-blur-sm">
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <Sparkles className="h-16 w-16 text-gray-600 mb-4" />
+                  <p className="text-xl font-semibold text-gray-300 mb-2">
+                    No completed stories yet
+                  </p>
+                  <p className="text-gray-500">
+                    Be the first to finish one!
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {completedStories.map((story: Story) => (
+                  <StoryCard
+                    key={story.storyId}
+                    story={story}
+                    onContribute={handleContribute}
+                    onViewStory={() => {}}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* NFT Collection Tab */}
+          <TabsContent value="collection" className="animate-in fade-in-50 duration-500">
+            <NFTCollection address={address} />
+          </TabsContent>
+        </Tabs>
+
+        {/* Modals */}
+        <ContributionModal
+          open={showContributionModal}
+          onClose={() => setShowContributionModal(false)}
+          story={selectedStory}
+          onSubmit={handleSubmitContribution}
+        />
+
+        <StoryCreationModal
+          open={showCreationModal}
+          onClose={() => setShowCreationModal(false)}
+          creationCredits={userStats ? Number(userStats[1]) : 0}
+          onSubmit={handleCreateStory}
+        />
+      </div>
+    </div>
+  );
+}
