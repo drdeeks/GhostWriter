@@ -74,6 +74,7 @@ describe("Ghost Writer System", function () {
           "Test Story",
           "Template [ADJECTIVE]",
           0, // MINI
+          0, // FANTASY
           ["adjective", "noun"],
           { value: CREATION_FEE }
         )
@@ -104,6 +105,7 @@ describe("Ghost Writer System", function () {
           "Test Story",
           "Template",
           0,
+          0, // FANTASY
           ["adjective"],
           { value: ethers.parseEther("0.00001") } // Wrong fee
         )

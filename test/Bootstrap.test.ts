@@ -59,6 +59,7 @@ describe("Bootstrap Flow Tests", function () {
           "First Story",
           "Template [ADJECTIVE]",
           0, // MINI
+          0, // FANTASY
           ["adjective"],
           { value: CREATION_FEE }
         )
