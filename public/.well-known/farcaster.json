@@ -1,0 +1,26 @@
+{
+  "miniapp": {
+    "version": "1",
+    "name": "Response Formats",
+    "iconUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_eef894e2-9571-49f4-820b-75c4415f4244-jBSXrQuX5LQc8ZgP4ui9o25wgBYd85",
+    "homeUrl": "https://any-park-417.app.ohara.ai",
+    "imageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_eef894e2-9571-49f4-820b-75c4415f4244-jBSXrQuX5LQc8ZgP4ui9o25wgBYd85",
+    "buttonTitle": "Open with Ohara",
+    "splashImageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/farcaster/splash_images/splash_image1.svg",
+    "splashBackgroundColor": "#ffffff",
+    "tags": [
+      "ohara",
+      "mini-app",
+      "base",
+      "farcaster"
+    ],
+    "primaryCategory": "entertainment",
+    "ogTitle": "Response Formats",
+    "ogImageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_eef894e2-9571-49f4-820b-75c4415f4244-jBSXrQuX5LQc8ZgP4ui9o25wgBYd85"
+  },
+  "baseBuilder": {
+    "allowedAddresses": [
+      ""
+    ]
+  }
+}

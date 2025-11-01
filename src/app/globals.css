@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Dark theme as default - deep, rich dark colors */
+    --background: 220 20% 8%;
+    --foreground: 210 40% 98%;
+    --card: 220 18% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 220 18% 10%;
+    --popover-foreground: 210 40% 98%;
+    
+    /* Cyan/Blue primary - color-blind friendly */
+    --primary: 195 100% 50%;
+    --primary-foreground: 220 20% 8%;
+    
+    /* Orange secondary - high contrast with blue */
+    --secondary: 30 100% 50%;
+    --secondary-foreground: 220 20% 8%;
+    
+    --muted: 220 15% 15%;
+    --muted-foreground: 210 20% 65%;
+    --accent: 270 70% 60%;
+    --accent-foreground: 210 40% 98%;
+    
+    /* Orange-red for destructive (better than pure red for color-blind) */
+    --destructive: 25 95% 53%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 220 15% 20%;
+    --input: 220 15% 18%;
+    --ring: 195 100% 50%;
+    
+    /* Enhanced chart colors - color-blind accessible palette */
+    --chart-1: 195 100% 50%;
+    --chart-2: 30 100% 50%;
+    --chart-3: 270 70% 60%;
+    --chart-4: 145 70% 50%;
+    --chart-5: 340 75% 55%;
+    
+    --radius: 0.5rem;
+  }
+
+  .light {
+    /* Light mode fallback */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 195 100% 45%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 30 100% 50%;
+    --secondary-foreground: 0 0% 3.9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 270 70% 55%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 25 95% 53%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 195 100% 45%;
+    --chart-1: 195 70% 50%;
+    --chart-2: 30 80% 55%;
+    --chart-3: 270 65% 60%;
+    --chart-4: 145 65% 50%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(220 18% 10%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(220 15% 25%);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(195 100% 50%);
+}
