@@ -33,6 +33,10 @@ describe('StoryManager - Expansion Features', function () {
 
     // Set story manager in NFT contract
     await nftContract.setStoryManager(await storyManager.getAddress());
+    await liquidityPool.setStoryManager(await storyManager.getAddress());
+
+    // Airdrop one credit to the owner to allow story creation in tests
+    await storyManager.airdropCredits([owner.address], [1]);
   });
 
   describe('Leaderboard System', function () {

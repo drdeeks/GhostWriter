@@ -1,10 +1,41 @@
 import { ethers } from "hardhat";
+import * as fs from "fs";
+import * as readline from "readline";
+
+async function getDeployer() {
+  if (process.env.PRIVATE_KEY) {
+    console.log("Using private key from .env");
+    return new ethers.Wallet(process.env.PRIVATE_KEY, ethers.provider);
+  }
+  if (process.env.KEYSTORE_PATH) {
+    console.log("Using keystore from .env");
+    const keystore = fs.readFileSync(process.env.KEYSTORE_PATH, "utf8");
+    const password = await promptForPassword();
+    return ethers.Wallet.fromEncryptedJson(keystore, password).then(wallet => wallet.connect(ethers.provider));
+  }
+  console.log("Using default hardhat signer");
+  const [deployer] = await ethers.getSigners();
+  return deployer;
+}
+
+function promptForPassword(): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) => {
+    rl.question("Enter keystore password: ", (password) => {
+      rl.close();
+      resolve(password);
+    });
+  });
+}
 
 async function main() {
   console.log("🚀 Starting Ghost Writer deployment...\n");
 
   // Get deployer
-  const [deployer] = await ethers.getSigners();
+  const deployer = await getDeployer();
   console.log("📝 Deploying contracts with account:", deployer.address);
   console.log(
     "💰 Account balance:",
