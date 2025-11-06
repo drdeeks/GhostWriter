@@ -8,6 +8,7 @@
 .next/
 out/
 build/
+next-env.d.ts
 
 # Hardhat
 artifacts/
@@ -39,6 +40,7 @@ pnpm-debug.log*
 # OS-specific
 .DS_Store
 Thumbs.db
+GEMINI.md
 
 # Keystore files
 keystore.json
