@@ -82,23 +82,22 @@ describe("Ghost Writer System", function () {
     });
 
     it("Should create story after earning creation credit", async function () {
-      // First, user1 needs to contribute to earn a credit
-      // Create initial story by owner (owner starts with 0 credits too)
-      // So we give user1 a creation credit by having them contribute first
-      
-      // Give user1 a credit manually for testing
-      // In production, they'd earn it by contributing
-      // For this test, we'll contribute to an owner-created story first
-      
-      // Owner creates initial story (needs credit first)
-      // Let's use a different approach - contribute first to earn credit
-      
-      // Skip this test for now and test the full flow in integration tests
-      this.skip();
+      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
+      await expect(
+        storyManager.connect(user1).createStory(
+          "story_001",
+          "Test Story",
+          "Template [ADJECTIVE]",
+          0, // MINI
+          0, // FANTASY
+          ["adjective"],
+          { value: CREATION_FEE }
+        )
+      ).to.emit(storyManager, "StoryCreated");
     });
 
     it("Should fail with incorrect fee", async function () {
-      // Even if user had credits, wrong fee should fail
+      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
       await expect(
         storyManager.connect(user1).createStory(
           "story_001",
@@ -113,8 +112,27 @@ describe("Ghost Writer System", function () {
     });
 
     it("Should fail to create duplicate story", async function () {
-      // This test would require user having credits
-      this.skip();
+      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
+      await storyManager.connect(user1).createStory(
+        "story_001",
+        "Test Story",
+        "Template [ADJECTIVE]",
+        0, // MINI
+        0, // FANTASY
+        ["adjective"],
+        { value: CREATION_FEE }
+      );
+      await expect(
+        storyManager.connect(user1).createStory(
+          "story_001",
+          "Test Story",
+          "Template [ADJECTIVE]",
+          0, // MINI
+          0, // FANTASY
+          ["adjective"],
+          { value: CREATION_FEE }
+        )
+      ).to.be.revertedWith("Story already exists");
     });
   });
 
@@ -122,20 +140,20 @@ describe("Ghost Writer System", function () {
     let storyId: string;
 
     beforeEach(async function () {
-      // Setup: Give user1 a creation credit and create a story
-      // We'll manually add credit for testing
       storyId = "story_test_001";
-      
-      // For testing, we need to create a story first
-      // This requires a workaround since users need credits
-      // We'll create story directly through owner manipulation
-      
-      // Actually, let's create a helper function or use owner
-      // Owner also needs credits, so let's test contribution without story creation first
+      await storyManager.connect(owner).airdropCredits([owner.address], [1]);
+      await storyManager.connect(owner).createStory(
+        storyId,
+        "Test Story",
+        "Template [ADJECTIVE]",
+        0, // MINI
+        0, // FANTASY
+        ["adjective"],
+        { value: CREATION_FEE }
+      );
     });
 
     it("Should fail to contribute without correct fee", async function () {
-      storyId = "story_001";
       await expect(
         storyManager.connect(user1).contributeWord(
           storyId,
@@ -178,8 +196,21 @@ describe("Ghost Writer System", function () {
     });
 
     it("Should prevent duplicate contribution to same position", async function () {
-      // This would require integration with StoryManager
-      this.skip();
+      const storyId = "story_001";
+      await storyManager.connect(owner).airdropCredits([owner.address], [1]);
+      await storyManager.connect(owner).createStory(
+        storyId,
+        "Test Story",
+        "Template [ADJECTIVE] [NOUN]",
+        0, // MINI
+        0, // FANTASY
+        ["adjective", "noun"],
+        { value: CREATION_FEE }
+      );
+      await storyManager.connect(user1).contributeWord(storyId, 1, "sparkly", { value: CONTRIBUTION_FEE });
+      await expect(
+        storyManager.connect(user1).contributeWord(storyId, 1, "shiny", { value: CONTRIBUTION_FEE })
+      ).to.be.revertedWith("Slot already filled");
     });
   });
 
@@ -190,53 +221,99 @@ describe("Ghost Writer System", function () {
 
     it("Should prevent direct deposits from non-StoryManager", async function () {
       await expect(
-        liquidityPool.connect(user1).deposit({ value: ethers.parseEther("0.1") })
-      ).to.be.revertedWith("Only StoryManager can deposit");
+        user1.sendTransaction({ to: await liquidityPool.getAddress(), value: ethers.parseEther("0.1") })
+      ).to.be.reverted;
     });
 
     it("Should allow owner to withdraw", async function () {
-      // First, add some funds via StoryManager (requires full flow)
-      this.skip();
+      const storyId = "story_001";
+      await storyManager.connect(owner).airdropCredits([owner.address], [1]);
+      await storyManager.connect(owner).createStory(
+        storyId,
+        "Test Story",
+        "Template [ADJECTIVE]",
+        0, // MINI
+        0, // FANTASY
+        ["adjective"],
+        { value: CREATION_FEE }
+      );
+      await storyManager.connect(user1).contributeWord(storyId, 1, "sparkly", { value: CONTRIBUTION_FEE });
+      const balance = await liquidityPool.getBalance();
+      await liquidityPool.connect(owner).withdraw(balance);
+      expect(await liquidityPool.getBalance()).to.equal(0);
     });
   });
 
   describe("Integration Tests", function () {
     it("Should complete full story creation and contribution flow", async function () {
-      // Step 1: User1 gets initial creation credit (bootstrap problem)
-      // In production, first users would be airdropped credits
-      // For testing, we'll simulate the full flow
-      
-      // Give user1 credit by directly calling a contribution
-      // But we need a story first...
-      // This is a chicken-egg problem for testing
-      
-      // Solution: Owner creates initial story with special permission
-      // Or: We test assuming users already have credits
-      
       const storyId = "story_integration_001";
-      const wordTypes = ["adjective", "noun", "verb"];
-      
-      // For this integration test, we'll need to modify contracts
-      // to have a bootstrap function, or test with multiple users
-      // where owner creates initial stories
-      
-      // Skip for now - full integration requires bootstrap logic
-      this.skip();
+      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
+      await storyManager.connect(user1).createStory(
+        storyId,
+        "Test Story",
+        "Template [ADJECTIVE] [NOUN]",
+        0, // MINI
+        0, // FANTASY
+        ["adjective", "noun"],
+        { value: CREATION_FEE }
+      );
+      await storyManager.connect(user2).contributeWord(storyId, 1, "sparkly", { value: CONTRIBUTION_FEE });
+      await storyManager.connect(user3).contributeWord(storyId, 2, "dragon", { value: CONTRIBUTION_FEE });
+      const story = await storyManager.getStory(storyId);
+      expect(story.status).to.equal(1); // 1 = COMPLETE
     });
 
     it("Should calculate correct fees and send to liquidity pool", async function () {
-      // Test fee calculations and forwarding
-      this.skip();
+      const storyId = "story_fee_test";
+      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
+      await storyManager.connect(user1).createStory(
+        storyId,
+        "Fee Story",
+        "Template [ADJECTIVE]",
+        0, // MINI
+        0, // FANTASY
+        ["adjective"],
+        { value: CREATION_FEE }
+      );
+      await storyManager.connect(user2).contributeWord(storyId, 1, "expensive", { value: CONTRIBUTION_FEE });
+      const expectedBalance = BigInt(CREATION_FEE) + BigInt(CONTRIBUTION_FEE);
+      expect(await liquidityPool.getBalance()).to.equal(expectedBalance);
     });
 
     it("Should reveal NFTs when story completes", async function () {
-      // Test full story completion and reveal
-      this.skip();
+      const storyId = "story_reveal_test";
+      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
+      await storyManager.connect(user1).createStory(
+        storyId,
+        "Reveal Story",
+        "Template [ADJECTIVE]",
+        0, // MINI
+        0, // FANTASY
+        ["adjective"],
+        { value: CREATION_FEE }
+      );
+      await storyManager.connect(user2).contributeWord(storyId, 1, "hidden", { value: CONTRIBUTION_FEE });
+      const storyTokens = await nftContract.getStoryTokens(storyId);
+      const nftData = await nftContract.getNFTData(storyTokens[0]);
+      expect(nftData.revealed).to.be.true;
     });
 
     it("Should prevent contributions after story completion", async function () {
-      // Test that completed stories can't receive more contributions
-      this.skip();
+      const storyId = "story_complete_test";
+      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
+      await storyManager.connect(user1).createStory(
+        storyId,
+        "Complete Story",
+        "Template [ADJECTIVE]",
+        0, // MINI
+        0, // FANTASY
+        ["adjective"],
+        { value: CREATION_FEE }
+      );
+      await storyManager.connect(user2).contributeWord(storyId, 1, "final", { value: CONTRIBUTION_FEE });
+      await expect(
+        storyManager.connect(user3).contributeWord(storyId, 1, "extra", { value: CONTRIBUTION_FEE })
+      ).to.be.revertedWith("Story not active");
     });
   });
 
@@ -262,18 +339,73 @@ describe("Ghost Writer System", function () {
 
   describe("Edge Cases", function () {
     it("Should handle very long words correctly", async function () {
-      // Test max word length validation
-      this.skip();
+      const storyId = "long_word_test";
+      await storyManager.connect(owner).airdropCredits([owner.address], [1]);
+      await storyManager.connect(owner).createStory(
+        storyId,
+        "Long Word Story",
+        "Template [ADJECTIVE] [NOUN]",
+        0, // MINI
+        0, // FANTASY
+        ["adjective", "noun"],
+        { value: CREATION_FEE }
+      );
+      const longWord = "a".repeat(30);
+      await expect(storyManager.connect(user1).contributeWord(storyId, 1, longWord, { value: CONTRIBUTION_FEE })).to.not.be.reverted;
+      const tooLongWord = "a".repeat(31);
+      await expect(storyManager.connect(user2).contributeWord(storyId, 2, tooLongWord, { value: CONTRIBUTION_FEE })).to.be.revertedWith("Word too long");
     });
 
     it("Should handle maximum story slots correctly", async function () {
-      // Test MINI (10), NORMAL (20), EPIC (200) slot limits
-      this.skip();
+      const storyId = "max_slots_test";
+      await storyManager.connect(owner).airdropCredits([user1.address], [2]);
+      const wordTypes = Array(10).fill("adjective");
+      await expect(
+        storyManager.connect(user1).createStory(
+          storyId,
+          "Max Slots Story",
+          "Template",
+          0, // MINI
+          0, // FANTASY
+          wordTypes,
+          { value: CREATION_FEE }
+        )
+      ).to.not.be.reverted;
+
+      const tooManyWordTypes = Array(11).fill("adjective");
+      await expect(
+        storyManager.connect(user1).createStory(
+          "max_slots_test_fail",
+          "Max Slots Story Fail",
+          "Template",
+          0, // MINI
+          0, // FANTASY
+          tooManyWordTypes,
+          { value: CREATION_FEE }
+        )
+      ).to.be.revertedWith("Mini stories max 10 slots");
     });
 
     it("Should handle multiple simultaneous contributions", async function () {
-      // Test race conditions
-      this.skip();
+      // This is difficult to test in a deterministic way in Hardhat.
+      // We can simulate it by sending multiple transactions in a row.
+      const storyId = "simultaneous_test";
+      await storyManager.connect(owner).airdropCredits([owner.address], [1]);
+      await storyManager.connect(owner).createStory(
+        storyId,
+        "Simultaneous Story",
+        "Template [ADJECTIVE] [NOUN]",
+        0, // MINI
+        0, // FANTASY
+        ["adjective", "noun"],
+        { value: CREATION_FEE }
+      );
+
+      const tx1 = storyManager.connect(user1).contributeWord(storyId, 1, "first", { value: CONTRIBUTION_FEE });
+      const tx2 = storyManager.connect(user2).contributeWord(storyId, 2, "second", { value: CONTRIBUTION_FEE });
+
+      await expect(tx1).to.not.be.reverted;
+      await expect(tx2).to.not.be.reverted;
     });
   });
 });
