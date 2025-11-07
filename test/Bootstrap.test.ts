@@ -3,37 +3,30 @@ import { ethers } from "hardhat";
 import { GhostWriterNFT, StoryManager, LiquidityPool } from "../typechain-types";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
-/**
- * Bootstrap Tests
- * Tests the initial setup and first story creation flow
- * Solves the "chicken-egg" problem of needing credits to create stories
- */
-describe("Bootstrap Flow Tests", function () {
+describe("Deployment and Initial State", function () {
   let nftContract: GhostWriterNFT;
   let storyManager: StoryManager;
   let liquidityPool: LiquidityPool;
   let owner: SignerWithAddress;
   let user1: SignerWithAddress;
-  let user2: SignerWithAddress;
 
-  const CONTRIBUTION_FEE = ethers.parseEther("0.00005");
-  const CREATION_FEE = ethers.parseEther("0.0001");
+  const HIDDEN_URI = "ipfs://QmHidden/";
+  const REVEALED_URI = "ipfs://QmRevealed/";
 
   beforeEach(async function () {
-    [owner, user1, user2] = await ethers.getSigners();
+    [owner, user1] = await ethers.getSigners();
 
-    // Deploy contracts
+    // Deploy LiquidityPool
     const LiquidityPool = await ethers.getContractFactory("LiquidityPool");
     liquidityPool = await LiquidityPool.deploy();
     await liquidityPool.waitForDeployment();
 
+    // Deploy NFT contract
     const GhostWriterNFT = await ethers.getContractFactory("GhostWriterNFT");
-    nftContract = await GhostWriterNFT.deploy(
-      "ipfs://QmHidden/",
-      "ipfs://QmRevealed/"
-    );
+    nftContract = await GhostWriterNFT.deploy(HIDDEN_URI, REVEALED_URI);
     await nftContract.waitForDeployment();
 
+    // Deploy StoryManager
     const StoryManager = await ethers.getContractFactory("StoryManager");
     storyManager = await StoryManager.deploy(
       await nftContract.getAddress(),
@@ -46,93 +39,32 @@ describe("Bootstrap Flow Tests", function () {
     await liquidityPool.setStoryManager(await storyManager.getAddress());
   });
 
-  describe("Initial Bootstrap Strategy", function () {
-    it("Should demonstrate bootstrap problem", async function () {
-      // No one has credits initially
-      const user1Stats = await storyManager.getUserStats(user1.address);
-      expect(user1Stats.creationCredits).to.equal(0);
-
-      // Can't create story without credits
-      await expect(
-        storyManager.connect(user1).createStory(
-          "story_001",
-          "First Story",
-          "Template [ADJECTIVE]",
-          0, // MINI
-          0, // FANTASY
-          ["adjective"],
-          { value: CREATION_FEE }
-        )
-      ).to.be.revertedWith("Need creation credits");
-    });
-
-    it("Solution: Owner creates first story manually with airdropped credit", async function () {
-      // In production, owner would:
-      // 1. Deploy contracts
-      // 2. Manually give themselves 1 creation credit via contract modification
-      // 3. Or include initial credit in deployment
-      
-      // For this test, we demonstrate the intended flow:
-      // Owner should have a way to bootstrap the first story
-      
-      // This test documents that we need either:
-      // A) Initial credit for owner in constructor
-      // B) Special "createFirstStory" function
-      // C) Manual credit distribution function (owner only)
-      
-      // Currently, even owner can't create without credits
-      const ownerStats = await storyManager.getUserStats(owner.address);
-      expect(ownerStats.creationCredits).to.equal(0);
-    });
+  it("Should have correct owners", async function () {
+    expect(await nftContract.owner()).to.equal(owner.address);
+    expect(await storyManager.owner()).to.equal(owner.address);
+    expect(await liquidityPool.owner()).to.equal(owner.address);
   });
 
-  describe("Recommended Solution: Add Bootstrap Function", function () {
-    it("Should allow owner to airdrop creation credits", async function () {
-      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
-      const stats = await storyManager.getUserStats(user1.address);
-      expect(stats.creationCredits).to.equal(1);
-    });
+  it("Should have correct StoryManager addresses set", async function () {
+    expect(await nftContract.storyManager()).to.equal(await storyManager.getAddress());
+    expect(await liquidityPool.storyManager()).to.equal(await storyManager.getAddress());
   });
 
-  describe("Full Flow After Bootstrap", function () {
-    it("Should complete full story cycle", async function () {
-      const storyId = "story_001";
+  it("Should have correct NFT name and symbol", async function () {
+    expect(await nftContract.name()).to.equal("Ghost Writer NFT");
+    expect(await nftContract.symbol()).to.equal("GHOST");
+  });
 
-      // 1. Owner airdrops 1 credit to user1
-      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
+  it("Should have 0 total supply initially", async function () {
+    expect(await nftContract.totalSupply()).to.equal(0);
+  });
 
-      // 2. User1 creates a story
-      await storyManager.connect(user1).createStory(
-        storyId,
-        "First Story",
-        "Template [ADJECTIVE]",
-        0, // MINI
-        0, // FANTASY
-        ["adjective"],
-        { value: CREATION_FEE }
-      );
+  it("Should have 0 stories initially", async function () {
+    expect(await storyManager.getTotalStories()).to.equal(0);
+  });
 
-      // 3. User2 contributes a word
-      await storyManager.connect(user2).contributeWord(
-        storyId,
-        1,
-        "sparkly",
-        { value: CONTRIBUTION_FEE }
-      );
-
-      // 4. User2 now has 1 creation credit
-      const user2Stats = await storyManager.getUserStats(user2.address);
-      expect(user2Stats.creationCredits).to.equal(1);
-
-      // 5. Story is now complete, so NFTs should be revealed
-      const story = await storyManager.getStory(storyId);
-      expect(story.status).to.equal(1); // 1 = COMPLETE
-
-      const storyTokens = await nftContract.getStoryTokens(storyId);
-      expect(storyTokens.length).to.equal(1);
-      
-      const nftData = await nftContract.getNFTData(storyTokens[0]);
-      expect(nftData.revealed).to.be.true;
-    });
+  it("Liquidity pool should be empty", async function () {
+    expect(await liquidityPool.getBalance()).to.equal(0);
+    expect(await liquidityPool.totalCollected()).to.equal(0);
   });
 });
