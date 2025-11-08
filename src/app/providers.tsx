@@ -1,21 +1,17 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { OnchainKitProvider } from '@coinbase/onchainkit';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import { WagmiProvider, createConfig, http } from 'wagmi';
-import { coinbaseWallet } from 'wagmi/connectors';
 import { base } from 'wagmi/chains';
 import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID } from './config/onchainkit';
 
+// For Farcaster Mini Apps, we don't use external connectors
+// Wallet connections are handled by the Farcaster SDK
 const wagmiConfig = createConfig({
   chains: [base],
-  connectors: [
-    coinbaseWallet({
-      appName: 'Ghost Writer NFT Game',
-      preference: 'smartWalletOnly',
-    }),
-  ],
+  connectors: [], // No external connectors for Farcaster Mini Apps
   transports: {
     [base.id]: http(),
   },

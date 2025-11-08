@@ -1,26 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
-import { StoryCard } from '@/components/story-card';
-import { UserStatsDisplay } from '@/components/user-stats';
 import { ContributionModal } from '@/components/contribution-modal';
-import { StoryCreationModal } from '@/components/story-creation-modal';
+import { useFarcaster } from '@/components/FarcasterWrapper';
 import { NFTCollection } from '@/components/nft-collection';
+import { StoryCard } from '@/components/story-card';
+import { StoryCreationModal } from '@/components/story-creation-modal';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UserStatsDisplay } from '@/components/user-stats';
+import { useAddMiniApp } from '@/hooks/useAddMiniApp';
+import { useAllStories, useUserStats } from '@/hooks/useContract';
+import { areContractsDeployed } from '@/lib/contracts';
 import type { Story, StoryType } from '@/types/ghostwriter';
 import { sdk } from '@farcaster/miniapp-sdk';
-import { useAccount } from 'wagmi';
-import { PlusCircle, BookOpen, Sparkles, Loader2, AlertCircle, Trophy, Award } from 'lucide-react';
+import { AlertCircle, Award, BookOpen, Loader2, PlusCircle, Sparkles, Trophy } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useAddMiniApp } from '@/hooks/useAddMiniApp';
-import { useAllStories, useUserStats, useStory } from '@/hooks/useContract';
-import { areContractsDeployed } from '@/lib/contracts';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAccount } from 'wagmi';
 
 export default function Home() {
   const { address } = useAccount();
+  const { isMiniApp } = useFarcaster();
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [showContributionModal, setShowContributionModal] = useState<boolean>(false);
   const [showCreationModal, setShowCreationModal] = useState<boolean>(false);
@@ -35,16 +37,22 @@ export default function Home() {
   useEffect(() => {
     const init = async () => {
       try {
-        await addMiniApp();
-        await sdk.actions.ready();
-        const context = await sdk.context;
-        setFarcasterUser(context?.user?.username || null);
+        // Only initialize Farcaster SDK if in mini app context
+        if (isMiniApp) {
+          await addMiniApp();
+          await sdk.actions.ready();
+          const context = await sdk.context;
+          setFarcasterUser(context?.user?.username || null);
+        } else {
+          console.log('Running in development - Farcaster features disabled');
+          setFarcasterUser(null);
+        }
       } catch (error) {
         console.error('Failed to initialize:', error);
       }
     };
     init();
-  }, [addMiniApp]);
+  }, [addMiniApp, isMiniApp]);
 
   // Check if contracts are deployed
   const contractsDeployed = areContractsDeployed();
@@ -97,7 +105,7 @@ export default function Home() {
       {/* Ambient glow effects */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-      
+
       <div className="container mx-auto px-4 py-8 max-w-7xl relative z-10">
         {/* Header */}
         <div className="mb-12 text-center relative">
@@ -135,15 +143,18 @@ export default function Home() {
         {/* User Stats */}
         {contractsDeployed && address && (
           <div className="mb-10">
-            <UserStatsDisplay 
+            <UserStatsDisplay
               stats={{
                 address: address,
                 contributionsCount: userStats ? Number(userStats[0]) : 0,
                 creationCredits: userStats ? Number(userStats[1]) : 0,
                 storiesCreated: userStats ? Number(userStats[2]) : 0,
                 nftsOwned: userStats ? Number(userStats[3]) : 0,
+                completedStories: 0, // TODO: Fetch from contract
+                shareCount: 0, // TODO: Fetch from contract
+                lastContributionTime: 0, // TODO: Fetch from contract
                 activeContributions: [],
-              }} 
+              }}
             />
           </div>
         )}
@@ -151,13 +162,13 @@ export default function Home() {
         {/* Navigation to Leaderboard */}
         <div className="mb-6 flex justify-center gap-4">
           <a href="/leaderboard">
-            <Button variant="outline" className="gap-2 border-2 border-orange-500/50 hover:bg-orange-500/10 bg-gray-900/50 backdrop-blur-sm text-orange-300 hover:text-orange-200 transition-all">
+            <Button className="gap-2 border-2 border-orange-500/50 hover:bg-orange-500/10 bg-gray-900/50 backdrop-blur-sm text-orange-300 hover:text-orange-200 transition-all">
               <Trophy className="h-5 w-5 text-orange-400" />
               View Leaderboard
             </Button>
           </a>
           {userStats && Number(userStats[0]) > 0 && (
-            <Button variant="outline" className="gap-2 border-2 border-purple-500/50 hover:bg-purple-500/10 bg-gray-900/50 backdrop-blur-sm text-purple-300 hover:text-purple-200 transition-all">
+            <Button className="gap-2 border-2 border-purple-500/50 hover:bg-purple-500/10 bg-gray-900/50 backdrop-blur-sm text-purple-300 hover:text-purple-200 transition-all">
               <Award className="h-5 w-5 text-purple-400" />
               My Achievements ({Number(userStats[0])})
             </Button>
@@ -167,21 +178,21 @@ export default function Home() {
         {/* Main Content */}
         <Tabs defaultValue="stories" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8 h-14 bg-gray-900/80 backdrop-blur-md border-2 border-gray-800 shadow-xl">
-            <TabsTrigger 
-              value="stories" 
+            <TabsTrigger
+              value="stories"
               className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/50"
             >
               <BookOpen className="mr-2 h-5 w-5" />
               Active ({activeStories.length})
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="completed"
               className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/50"
             >
               <Sparkles className="mr-2 h-5 w-5" />
               Complete ({completedStories.length})
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="collection"
               className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-amber-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/50"
             >
@@ -198,8 +209,8 @@ export default function Home() {
                 </h2>
                 <p className="text-gray-400 mt-1">Contribute to unlock creation</p>
               </div>
-              <Button 
-                onClick={() => setShowCreationModal(true)} 
+              <Button
+                onClick={() => setShowCreationModal(true)}
                 className="gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 transition-all duration-200 h-12 px-6 text-base font-semibold"
                 disabled={!contractsDeployed}
               >
@@ -231,7 +242,7 @@ export default function Home() {
                     key={story.storyId}
                     story={story}
                     onContribute={handleContribute}
-                    onViewStory={() => {}}
+                    onViewStory={() => { }}
                   />
                 ))}
               </div>
@@ -266,7 +277,7 @@ export default function Home() {
                     key={story.storyId}
                     story={story}
                     onContribute={handleContribute}
-                    onViewStory={() => {}}
+                    onViewStory={() => { }}
                   />
                 ))}
               </div>

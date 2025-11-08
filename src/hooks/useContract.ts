@@ -1,13 +1,14 @@
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { CONTRACTS, STORY_MANAGER_ABI, NFT_ABI, FEES } from '@/lib/contracts';
+import { useFarcaster } from '@/components/FarcasterWrapper';
+import { CONTRACTS, FEES, NFT_ABI, STORY_MANAGER_ABI } from '@/lib/contracts';
 import type { StoryType } from '@/types/ghostwriter';
 import { useState } from 'react';
+import { useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 
 /**
  * Hook for reading and writing to Story Manager contract
  */
 export function useStoryManager() {
-  const { writeContractAsync } = useWriteContract();
+  const { isMiniApp } = useFarcaster();
   const [isPending, setIsPending] = useState<boolean>(false);
 
   const createStory = async (
@@ -20,21 +21,32 @@ export function useStoryManager() {
     setIsPending(true);
     try {
       const storyTypeEnum = storyType === 'mini' ? 0 : storyType === 'epic' ? 2 : 1;
-      
-      const hash = await writeContractAsync({
-        address: CONTRACTS.storyManager,
-        abi: STORY_MANAGER_ABI,
-        functionName: 'createStory',
-        args: [storyId, title, template, storyTypeEnum, wordTypes],
-        value: FEES.creation,
-      });
 
-      return { success: true, hash };
+      if (isMiniApp) {
+        // Use Farcaster SDK for mini app transactions
+        // For Farcaster Mini Apps, transactions are handled through frame actions
+        // This is a placeholder - actual implementation would use frame transaction flow
+        console.log('Farcaster mini app transaction for createStory:', {
+          contractAddress: CONTRACTS.storyManager,
+          functionName: 'createStory',
+          args: [storyId, title, template, storyTypeEnum, wordTypes],
+          value: FEES.creation.toString(),
+        });
+
+        // Placeholder return - actual implementation would initiate frame transaction
+        return {
+          success: false,
+          error: 'Farcaster frame transaction flow not yet implemented'
+        };
+      } else {
+        // For non-mini app contexts, this would need external wallet integration
+        throw new Error('External wallet transactions not implemented for non-mini app context');
+      }
     } catch (error: unknown) {
       console.error('Error creating story:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to create story' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create story'
       };
     } finally {
       setIsPending(false);
@@ -48,20 +60,31 @@ export function useStoryManager() {
   ) => {
     setIsPending(true);
     try {
-      const hash = await writeContractAsync({
-        address: CONTRACTS.storyManager,
-        abi: STORY_MANAGER_ABI,
-        functionName: 'contributeWord',
-        args: [storyId, BigInt(position), word],
-        value: FEES.contribution,
-      });
+      if (isMiniApp) {
+        // Use Farcaster SDK for mini app transactions
+        // For Farcaster Mini Apps, transactions are handled through frame actions
+        // This is a placeholder - actual implementation would use frame transaction flow
+        console.log('Farcaster mini app transaction for contributeWord:', {
+          contractAddress: CONTRACTS.storyManager,
+          functionName: 'contributeWord',
+          args: [storyId, BigInt(position), word],
+          value: FEES.contribution.toString(),
+        });
 
-      return { success: true, hash };
+        // Placeholder return - actual implementation would initiate frame transaction
+        return {
+          success: false,
+          error: 'Farcaster frame transaction flow not yet implemented'
+        };
+      } else {
+        // For non-mini app contexts, this would need external wallet integration
+        throw new Error('External wallet transactions not implemented for non-mini app context');
+      }
     } catch (error: unknown) {
       console.error('Error contributing word:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to contribute word' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to contribute word'
       };
     } finally {
       setIsPending(false);

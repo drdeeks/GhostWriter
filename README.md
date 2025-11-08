@@ -17,7 +17,7 @@ A collaborative storytelling game on Base Chain where users contribute words to 
 - **Creation Credits**: 1 contribution = 1 creation credit = ability to create your own story
 - **Three Story Types**: Mini (10 slots), Normal (20 slots), Epic (200 slots)
 - **Economic Model**: 100% of fees → liquidity pool
-- **Dual Chain Support**: Base + Mode testnets/mainnets
+- **Multi-Chain Support**: Base + Mode + Monad testnets/mainnets
 
 ---
 
@@ -128,10 +128,13 @@ pnpm test:gas
 
 ```bash
 # Deploy to Base Sepolia
-pnpm deploy:baseSepolia
+pnpm run deploy:baseSepolia
 
 # Deploy to Mode Sepolia
-pnpm deploy:modeSepolia
+pnpm run deploy:modeSepolia
+
+# Deploy to Monad Testnet
+pnpm run deploy:monadTestnet
 
 # Save the contract addresses from output!
 ```
@@ -161,10 +164,13 @@ pnpm verify
 
 ```bash
 # Deploy to Base Mainnet
-pnpm deploy:base
+pnpm run deploy:base
 
 # Deploy to Mode Mainnet
-pnpm deploy:mode
+pnpm run deploy:mode
+
+# Deploy to Monad Mainnet
+pnpm run deploy:monad
 ```
 
 ---
@@ -219,7 +225,7 @@ pnpm test
    ```bash
    # Terminal 1
    pnpm node
-   
+
    # Terminal 2
    pnpm deploy:localhost
    ```
@@ -307,11 +313,14 @@ PRIVATE_KEY=your_private_key_here
 # RPC URLs
 BASE_RPC_URL=https://mainnet.base.org
 BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+MONAD_TESTNET_RPC_URL=https://testnet-rpc.monad.xyz
+MONAD_RPC_URL=https://rpc.monad.xyz
 MODE_RPC_URL=https://mainnet.mode.network
 MODE_SEPOLIA_RPC_URL=https://sepolia.mode.network
 
 # Block Explorer API Keys
 BASESCAN_API_KEY=your_api_key
+MONAD_EXPLORER_API_KEY=your_monad_api_key
 MODESCAN_API_KEY=your_api_key
 
 # Frontend (public - safe to commit)
@@ -326,12 +335,14 @@ NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_key
 
 ### Supported Networks
 
-| Network        | Chain ID | RPC URL                        |
-|----------------|----------|--------------------------------|
-| Base Mainnet   | 8453     | https://mainnet.base.org       |
-| Base Sepolia   | 84532    | https://sepolia.base.org       |
-| Mode Mainnet   | 34443    | https://mainnet.mode.network   |
-| Mode Sepolia   | 919      | https://sepolia.mode.network   |
+| Network        | Chain ID | RPC URL                          |
+|----------------|----------|----------------------------------|
+| Base Mainnet   | 8453     | https://mainnet.base.org         |
+| Base Sepolia   | 84532    | https://sepolia.base.org         |
+| Monad Testnet  | 10143    | https://testnet-rpc.monad.xyz    |
+| Monad Mainnet  | 143      | https://rpc.monad.xyz            |
+| Mode Mainnet   | 34443    | https://mainnet.mode.network     |
+| Mode Sepolia   | 919      | https://sepolia.mode.network     |
 
 ---
 
@@ -378,7 +389,7 @@ const result = await createStory(
 ### Bootstrap Problem
 **Issue**: Initial users can't create stories without credits.
 
-**Workaround**: 
+**Workaround**:
 - Owner manually airdrops creation credits
 - Deploy with pre-created stories
 - Community giveaways for early adopters
@@ -403,28 +414,37 @@ const result = await createStory(
 
 ## 🛣️ Roadmap
 
-### Phase 1: MVP ✅ (Current)
+### Phase 1: MVP ✅ (Completed)
 - [x] Smart contracts (NFT, StoryManager, LiquidityPool)
 - [x] Frontend with Base integration
 - [x] Farcaster Mini App support
 - [x] Comprehensive test suite
 - [x] Multi-chain deployment support
+- [x] Achievement badges system (6 types)
+- [x] Leaderboards (Top 1000 contributors)
+- [x] Social sharing (Twitter, Farcaster)
+- [x] Story categories (9 themes)
+- [x] Admin dashboard with full controls
 
-### Phase 2: Launch 🚧 (Next)
+### Phase 2: Launch 🚧 (Current - Ready for Testnet)
+- [x] Farcaster.json updated and compliant
 - [ ] Deploy to Base Sepolia testnet
-- [ ] Integrate Neynar AI for templates
+- [ ] End-to-end NFT creation testing
 - [ ] IPFS metadata implementation
+- [ ] Visual asset generation (NFT images)
 - [ ] Beta testing with community
 - [ ] Deploy to Base mainnet
 
-### Phase 3: Enhancements 📅 (Future)
-- [ ] Achievement badges system
-- [ ] Leaderboards (contributions, creations)
+### Phase 3: AI & Content Enhancement 📅 (Next)
+- [ ] Integrate Neynar AI for story templates
+- [ ] Automated story title generation
 - [ ] Community voting on stories
-- [ ] Story remixing feature
-- [ ] Mobile app (iOS/Android)
+- [ ] Story remixing features
+- [ ] Advanced moderation tools
 
-### Phase 4: Token Launch 🔮 (Long-term)
+### Phase 4: Ecosystem Expansion 🔮 (Future)
+- [ ] Mobile app (iOS/Android)
+- [ ] Multi-chain expansion (Mode, Optimism)
 - [ ] $GHOST governance token
 - [ ] Liquidity mining incentives
 - [ ] DAO for template curation

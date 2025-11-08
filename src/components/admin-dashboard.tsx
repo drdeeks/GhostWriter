@@ -1,17 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, BookOpen, TrendingUp, AlertTriangle, Settings } from 'lucide-react';
-import { toast } from 'sonner';
 import type { StoryCategory, StoryType } from '@/types/ghostwriter';
 import { CATEGORY_INFO } from '@/types/ghostwriter';
+import { AlertTriangle, BookOpen, Settings, Shield, TrendingUp, Users } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { useAccount } from 'wagmi';
 
 export function AdminDashboard() {
@@ -20,7 +20,7 @@ export function AdminDashboard() {
   const [storyTitle, setStoryTitle] = useState<string>('');
   const [storyTemplate, setStoryTemplate] = useState<string>('');
   const [storyType, setStoryType] = useState<StoryType>('normal');
-  
+
   // Mock admin check - in production, verify onchain
   const isAdmin = true; // TODO: Check if address is contract owner
 
@@ -40,11 +40,11 @@ export function AdminDashboard() {
         toast.error('Please fill in all fields');
         return;
       }
-      
+
       toast.success('Story created!', {
         description: `"${storyTitle}" is now live`,
       });
-      
+
       // Reset form
       setStoryTitle('');
       setStoryTemplate('');
@@ -222,7 +222,7 @@ export function AdminDashboard() {
                   </p>
                 </div>
 
-                <Button 
+                <Button
                   onClick={handleCreateStory}
                   className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
                 >
@@ -268,7 +268,7 @@ export function AdminDashboard() {
                   </div>
                 </div>
 
-                <Button 
+                <Button
                   onClick={handleAirdropCredits}
                   className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
                 >
@@ -283,7 +283,7 @@ export function AdminDashboard() {
                         <span className="font-mono text-sm">0x{Math.random().toString(16).slice(2, 10)}...</span>
                         <div className="flex items-center gap-4 text-sm">
                           <span className="text-gray-600 dark:text-gray-400">{Math.floor(Math.random() * 50)} contributions</span>
-                          <Badge variant="secondary">{Math.floor(Math.random() * 10)} credits</Badge>
+                          <Badge>{Math.floor(Math.random() * 10)} credits</Badge>
                         </div>
                       </div>
                     ))}
@@ -307,7 +307,7 @@ export function AdminDashboard() {
                       {Object.entries(CATEGORY_INFO).map(([key, info]) => (
                         <div key={key} className="flex items-center justify-between">
                           <span className="text-sm">{info.emoji} {info.name}</span>
-                          <Badge variant="outline">{Math.floor(Math.random() * 20)}</Badge>
+                          <Badge>{Math.floor(Math.random() * 20)}</Badge>
                         </div>
                       ))}
                     </div>
@@ -318,19 +318,19 @@ export function AdminDashboard() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm">✍️ First Word</span>
-                        <Badge variant="outline">1,234 users</Badge>
+                        <Badge>1,234 users</Badge>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm">📖 Story Starter</span>
-                        <Badge variant="outline">456 users</Badge>
+                        <Badge>456 users</Badge>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm">👑 Completion King</span>
-                        <Badge variant="outline">89 users</Badge>
+                        <Badge>89 users</Badge>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm">🏆 Prolific Writer</span>
-                        <Badge variant="outline">23 users</Badge>
+                        <Badge>23 users</Badge>
                       </div>
                     </div>
                   </div>
@@ -340,15 +340,15 @@ export function AdminDashboard() {
                   <h3 className="font-semibold mb-3">Recent Activity</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                      <Badge variant="secondary">2m ago</Badge>
+                      <Badge>2m ago</Badge>
                       <span>User 0x123... contributed to "The Wicked Witch"</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                      <Badge variant="secondary">5m ago</Badge>
+                      <Badge>5m ago</Badge>
                       <span>Story "A Penguin's Guide" completed</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                      <Badge variant="secondary">8m ago</Badge>
+                      <Badge>8m ago</Badge>
                       <span>User 0x456... unlocked "First Word" achievement</span>
                     </div>
                   </div>
@@ -373,7 +373,7 @@ export function AdminDashboard() {
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                       Withdraw all contract funds to owner address (emergency only)
                     </p>
-                    <Button variant="destructive" className="w-full">
+                    <Button className="w-full bg-red-500 hover:bg-red-600 text-white">
                       Emergency Withdraw
                     </Button>
                   </div>

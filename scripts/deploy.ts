@@ -1,6 +1,6 @@
-import { ethers } from "hardhat";
+// Hardhat injects ethers globally - declare types
+declare const ethers: any;
 import * as fs from "fs";
-import * as readline from "readline";
 
 async function getDeployer() {
   if (process.env.PRIVATE_KEY) {
@@ -19,15 +19,82 @@ async function getDeployer() {
 }
 
 function promptForPassword(): Promise<string> {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
   return new Promise((resolve) => {
-    rl.question("Enter keystore password: ", (password) => {
-      rl.close();
-      resolve(password);
+    // Save original stdin settings
+    const stdin = process.stdin;
+    const stdout = process.stdout;
+
+    stdout.write("Enter keystore password: ");
+
+    let password = "";
+    let isRawMode = false;
+
+    // Function to restore terminal
+    const restoreTerminal = () => {
+      if (isRawMode && stdin.isTTY) {
+        stdin.setRawMode(false);
+        isRawMode = false;
+      }
+    };
+
+    // Function to handle input
+    const handleInput = (chunk: Buffer) => {
+      const char = chunk.toString();
+
+      // Enter key - submit password
+      if (char === "\r" || char === "\n") {
+        stdout.write("\n");
+        cleanup();
+        resolve(password);
+        return;
+      }
+
+      // Backspace - remove last character
+      if (char === "\b" || char === "\x7f") {
+        if (password.length > 0) {
+          password = password.slice(0, -1);
+          // Move cursor back, erase character, move cursor back
+          stdout.write("\b \b");
+        }
+        return;
+      }
+
+      // Ctrl+C - exit
+      if (char === "\x03") {
+        stdout.write("\n");
+        cleanup();
+        process.exit(0);
+      }
+
+      // Regular character - add to password and show asterisk
+      if (char.length === 1 && char >= " " && char <= "~") {
+        password += char;
+        stdout.write("*");
+      }
+    };
+
+    // Function to cleanup event listeners
+    const cleanup = () => {
+      restoreTerminal();
+      stdin.removeListener("data", handleInput);
+      stdin.pause();
+    };
+
+    // Set up raw mode for secure input
+    if (stdin.isTTY) {
+      stdin.setRawMode(true);
+      isRawMode = true;
+    }
+
+    // Handle process termination
+    process.on("SIGINT", () => {
+      cleanup();
+      process.exit(0);
     });
+
+    // Start listening for input
+    stdin.on("data", handleInput);
+    stdin.resume();
   });
 }
 
@@ -55,7 +122,7 @@ async function main() {
   console.log("📦 Deploying GhostWriterNFT...");
   const hiddenURI = process.env.NEXT_PUBLIC_HIDDEN_BASE_URI || "ipfs://QmHidden/";
   const revealedURI = process.env.NEXT_PUBLIC_REVEALED_BASE_URI || "ipfs://QmRevealed/";
-  
+
   const GhostWriterNFT = await ethers.getContractFactory("GhostWriterNFT");
   const nftContract = await GhostWriterNFT.deploy(hiddenURI, revealedURI);
   await nftContract.waitForDeployment();
@@ -72,7 +139,7 @@ async function main() {
 
   // Setup contracts
   console.log("⚙️  Setting up contract permissions...");
-  
+
   // Set StoryManager in NFT contract
   const setManagerTx = await nftContract.setStoryManager(managerAddress);
   await setManagerTx.wait();
