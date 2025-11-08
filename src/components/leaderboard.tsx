@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import type { LeaderboardEntry } from '@/types/ghostwriter';
-import { Trophy, Medal, Award, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Award, ChevronLeft, ChevronRight, Loader2, Medal, Trophy } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 export function Leaderboard() {
   const { address } = useAccount();
@@ -28,7 +28,7 @@ export function Leaderboard() {
         //   functionName: 'getLeaderboard',
         //   args: [(currentPage - 1) * entriesPerPage, entriesPerPage]
         // });
-        
+
         // Mock data for now
         const mockEntries: LeaderboardEntry[] = [];
         for (let i = 0; i < Math.min(50, 1000 - (currentPage - 1) * entriesPerPage); i++) {
@@ -41,9 +41,9 @@ export function Leaderboard() {
             achievements: Math.floor(Math.random() * 6),
           });
         }
-        
+
         setEntries(mockEntries);
-        
+
         // Check user's rank
         if (address) {
           // TODO: Fetch actual user rank from contract
@@ -107,18 +107,16 @@ export function Leaderboard() {
               </span>
               <div className="flex gap-2">
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))}
                   disabled={currentPage === 1 || isLoading}
+                  className="border border-gray-300 px-3 py-2"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages || isLoading}
+                  className="border border-gray-300 px-3 py-2"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -135,11 +133,10 @@ export function Leaderboard() {
                 {entries.map((entry: LeaderboardEntry, index: number) => (
                   <div
                     key={`${entry.address}-${index}`}
-                    className={`flex items-center gap-4 p-4 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors ${
-                      address?.toLowerCase() === entry.address.toLowerCase()
-                        ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
-                        : ''
-                    }`}
+                    className={`flex items-center gap-4 p-4 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors ${address?.toLowerCase() === entry.address.toLowerCase()
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
+                      : ''
+                      }`}
                   >
                     {/* Rank */}
                     <div className="flex items-center justify-center w-16">
@@ -152,7 +149,7 @@ export function Leaderboard() {
                         {entry.address.slice(0, 6)}...{entry.address.slice(-4)}
                       </div>
                       {address?.toLowerCase() === entry.address.toLowerCase() && (
-                        <Badge variant="secondary" className="mt-1 text-xs">
+                        <Badge className="mt-1 text-xs bg-blue-100 text-blue-800">
                           You
                         </Badge>
                       )}

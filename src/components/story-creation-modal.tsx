@@ -1,17 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import type { StoryType } from '@/types/ghostwriter';
 import { useStoryManager } from '@/hooks/useContract';
-import { Loader2, PlusCircle, DollarSign, AlertCircle } from 'lucide-react';
-import { useAccount } from 'wagmi';
+import type { StoryType } from '@/types/ghostwriter';
+import { AlertCircle, DollarSign, Loader2, PlusCircle } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { useAccount } from 'wagmi';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Card, CardContent } from './ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
+import { Label } from './ui/label';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 
 interface StoryCreationModalProps {
   open: boolean;
@@ -83,7 +83,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
     const wordTypes = Array(slots).fill('adjective'); // Placeholder - generate properly in production
 
     const result = await createStory(storyId, title, template, selectedType, wordTypes);
-    
+
     if (result.success) {
       onSubmit(selectedType);
       onClose();
@@ -140,11 +140,10 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
                 {storyTypes.map((story) => (
                   <Card
                     key={story.type}
-                    className={`cursor-pointer transition-all duration-200 ${
-                      selectedType === story.type
-                        ? `ring-4 ring-offset-2 ring-blue-500 ${story.bgColor} ${story.borderColor} border-2`
-                        : `${story.borderColor} border-2 hover:border-blue-400`
-                    } ${story.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`cursor-pointer transition-all duration-200 ${selectedType === story.type
+                      ? `ring-4 ring-offset-2 ring-blue-500 ${story.bgColor} ${story.borderColor} border-2`
+                      : `${story.borderColor} border-2 hover:border-blue-400`
+                      } ${story.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => !story.disabled && setSelectedType(story.type)}
                   >
                     <CardContent className="p-4">
@@ -157,7 +156,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
                               {story.title}
                             </Label>
                             {story.disabled && (
-                              <Badge variant="outline" className="text-xs">
+                              <Badge className="text-xs border border-gray-300">
                                 Coming Soon
                               </Badge>
                             )}
@@ -190,10 +189,9 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
 
         <DialogFooter className="flex gap-2">
           <Button
-            variant="outline"
             onClick={onClose}
             disabled={isPending}
-            className="flex-1"
+            className="flex-1 border border-gray-300 hover:bg-gray-50"
           >
             Cancel
           </Button>

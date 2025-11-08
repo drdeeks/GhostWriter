@@ -1,0 +1,11 @@
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - bufferutil
+  - core-js
+  - keccak
+  - prisma
+  - secp256k1
+  - sharp
+  - unrs-resolver
+  - utf-8-validate

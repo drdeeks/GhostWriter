@@ -1,26 +1,34 @@
 {
+  "accountAssociation": {
+    "header": "eyJmaWQiOjkxNTIsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgwMmVmNzkwRGQ3OTkzQTM1ZkQ4NDdDMDUzRURkQUU5NDBEMDU1NTk2In0",
+    "payload": "eyJkb21haW4iOiJnaG9zdHdyaXRlci5hcHAifQ",
+    "signature": "MHgxMGQwZGU4ZGYwZDUwZTdmMGIxN2YxMTU2NDI1MjRmZTY0MTUyZGU4ZGU1MWU0MThiYjU4ZjVmZmQxYjRjNDBiNGVlZTRhNDcwNmVmNjhlMzQ0ZGQ5MDBkYmQyMmNlMmVlZGY5ZGQ0N2JlNWRmNzMwYzUxNjE4OWVjZDJjY2Y0MDFj"
+  },
   "miniapp": {
     "version": "1",
-    "name": "Response Formats",
-    "iconUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_eef894e2-9571-49f4-820b-75c4415f4244-jBSXrQuX5LQc8ZgP4ui9o25wgBYd85",
-    "homeUrl": "https://any-park-417.app.ohara.ai",
-    "imageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_eef894e2-9571-49f4-820b-75c4415f4244-jBSXrQuX5LQc8ZgP4ui9o25wgBYd85",
-    "buttonTitle": "Open with Ohara",
-    "splashImageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/farcaster/splash_images/splash_image1.svg",
-    "splashBackgroundColor": "#ffffff",
+    "name": "Ghost Writer",
+    "iconUrl": "https://ghostwriter.app/icon.png",
+    "homeUrl": "https://ghostwriter.app",
+    "imageUrl": "https://ghostwriter.app/image.png",
+    "buttonTitle": "Start Writing",
+    "splashImageUrl": "https://ghostwriter.app/splash.png",
+    "splashBackgroundColor": "#000000",
+    "webhookUrl": "https://ghostwriter.app/api/webhook",
+    "subtitle": "AI-Guided Mad Libs NFT Game",
+    "description": "Collaborative storytelling where contributions mint hidden NFTs that reveal when stories complete. Each word earns creation credits on Base Chain.",
+    "primaryCategory": "games",
+    "heroImageUrl": "https://ghostwriter.app/splash.png",
     "tags": [
-      "ohara",
-      "mini-app",
-      "base",
-      "farcaster"
+      "nft",
+      "storytelling",
+      "mad-libs",
+      "collaborative",
+      "on-chain",
+      "base-chain"
     ],
-    "primaryCategory": "entertainment",
-    "ogTitle": "Response Formats",
-    "ogImageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_eef894e2-9571-49f4-820b-75c4415f4244-jBSXrQuX5LQc8ZgP4ui9o25wgBYd85"
-  },
-  "baseBuilder": {
-    "allowedAddresses": [
-      ""
-    ]
+    "tagline": "Write stories, mint NFTs, earn credits.",
+    "ogTitle": "Ghost Writer - Collaborative NFT Storytelling",
+    "ogDescription": "Contribute words to AI-generated stories and mint hidden NFTs that reveal upon completion. Built on Base Chain.",
+    "ogImageUrl": "https://ghostwriter.app/splash.png"
   }
 }

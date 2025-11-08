@@ -1,8 +1,17 @@
-import { useCallback } from 'react'
+import { useFarcaster } from '@/components/FarcasterWrapper'
 import { sdk } from '@farcaster/miniapp-sdk'
+import { useCallback } from 'react'
 
 export const useAddMiniApp = () => {
+  const { isMiniApp } = useFarcaster()
+
   const addMiniApp = useCallback(async () => {
+    // Only attempt to add mini app if we're actually in Farcaster context
+    if (!isMiniApp) {
+      console.log('Not in Farcaster mini app context - skipping addMiniApp')
+      return
+    }
+
     try {
       await sdk.actions.addMiniApp()
     } catch (error) {
@@ -20,7 +29,7 @@ export const useAddMiniApp = () => {
       }
       throw error
     }
-  }, [])
+  }, [isMiniApp])
 
   return { addMiniApp }
 }
