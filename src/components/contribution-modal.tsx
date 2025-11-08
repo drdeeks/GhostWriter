@@ -1,17 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import { useStoryManager } from '@/hooks/useContract';
 import type { Story } from '@/types/ghostwriter';
 import { WORD_TYPE_DEFINITIONS } from '@/types/ghostwriter';
-import { useStoryManager } from '@/hooks/useContract';
-import { Loader2, Sparkles, DollarSign } from 'lucide-react';
-import { useAccount } from 'wagmi';
+import { DollarSign, Loader2, Sparkles } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { useAccount } from 'wagmi';
 
 interface ContributionModalProps {
   open: boolean;
@@ -44,7 +44,7 @@ export function ContributionModal({ open, onClose, story, onSubmit }: Contributi
     }
 
     const result = await contributeWord(story.storyId, nextPosition, word);
-    
+
     if (result.success) {
       onSubmit(word);
       setWord('');
@@ -100,7 +100,7 @@ export function ContributionModal({ open, onClose, story, onSubmit }: Contributi
             </p>
             <div className="flex flex-wrap gap-2">
               {wordInfo.examples.map((example, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
+                <Badge key={index} className="text-xs border border-gray-300">
                   {example}
                 </Badge>
               ))}
@@ -140,10 +140,9 @@ export function ContributionModal({ open, onClose, story, onSubmit }: Contributi
 
         <DialogFooter className="flex gap-2">
           <Button
-            variant="outline"
             onClick={onClose}
             disabled={isPending}
-            className="flex-1"
+            className="flex-1 border border-gray-300 hover:bg-gray-50"
           >
             Cancel
           </Button>

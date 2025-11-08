@@ -21,7 +21,7 @@ function getDeployerAccounts() {
 
 const accounts = getDeployerAccounts();
 
-const config: HardhatUserConfig = {
+const config: HardhatUserConfig & { etherscan?: any; gasReporter?: any } = {
   solidity: {
     version: "0.8.20",
     settings: {
@@ -43,6 +43,21 @@ const config: HardhatUserConfig = {
       url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
       accounts: accounts,
       chainId: 84532,
+    },
+    // Monad Testnet
+    monadTestnet: {
+      url: process.env.MONAD_TESTNET_RPC_URL || "https://testnet-rpc.monad.xyz",
+      accounts: accounts,
+      chainId: 10143,
+      gasPrice: 20000000000, // 20 gwei
+      gas: 8000000, // Gas limit
+      timeout: 60000, // 60 second timeout
+    },
+    // Monad Mainnet
+    monad: {
+      url: process.env.MONAD_RPC_URL || "https://rpc.monad.xyz",
+      accounts: accounts,
+      chainId: 143,
     },
     // Mode Mainnet
     mode: {
@@ -68,6 +83,8 @@ const config: HardhatUserConfig = {
     apiKey: {
       base: process.env.BASESCAN_API_KEY || "",
       baseSepolia: process.env.BASESCAN_API_KEY || "",
+      monad: process.env.MONAD_EXPLORER_API_KEY || "",
+      monadTestnet: process.env.MONAD_EXPLORER_API_KEY || "",
       mode: process.env.MODESCAN_API_KEY || "",
       modeSepolia: process.env.MODESCAN_API_KEY || "",
     },
@@ -86,6 +103,22 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api-sepolia.basescan.org/api",
           browserURL: "https://sepolia.basescan.org",
+        },
+      },
+      {
+        network: "monad",
+        chainId: 143,
+        urls: {
+          apiURL: "https://explorer.monad.xyz/api",
+          browserURL: "https://explorer.monad.xyz",
+        },
+      },
+      {
+        network: "monadTestnet",
+        chainId: 10143,
+        urls: {
+          apiURL: "https://testnet.monadexplorer.com/api",
+          browserURL: "https://testnet.monadexplorer.com",
         },
       },
       {
