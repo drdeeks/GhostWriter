@@ -7,7 +7,7 @@ import { StoryCard } from '@/components/story-card';
 import { StoryCreationModal } from '@/components/story-creation-modal';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserStatsDisplay } from '@/components/user-stats';
 import { useAddMiniApp } from '@/hooks/useAddMiniApp';
@@ -177,7 +177,7 @@ export default function Home() {
 
         {/* Main Content */}
         <Tabs defaultValue="stories" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8 h-14 bg-gray-900/80 backdrop-blur-md border-2 border-gray-800 shadow-xl">
+          <TabsList className="grid w-full grid-cols-4 mb-8 h-14 bg-gray-900/80 backdrop-blur-md border-2 border-gray-800 shadow-xl">
             <TabsTrigger
               value="stories"
               className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/50"
@@ -191,6 +191,12 @@ export default function Home() {
             >
               <Sparkles className="mr-2 h-5 w-5" />
               Complete ({completedStories.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="how-to-play"
+              className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-green-500/50"
+            >
+              ❓ How to Play
             </TabsTrigger>
             <TabsTrigger
               value="collection"
@@ -282,6 +288,201 @@ export default function Home() {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          {/* How to Play Tab */}
+          <TabsContent value="how-to-play" className="animate-in fade-in-50 duration-500">
+            <div className="max-w-4xl mx-auto space-y-8">
+              <div className="text-center mb-8">
+                <h2 className="text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent mb-4">
+                  🎮 How to Play Ghost Writer
+                </h2>
+                <p className="text-xl text-gray-300">
+                  Create hilarious stories together on the blockchain!
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Getting Started */}
+                <Card className="border-2 border-green-500/30 bg-gradient-to-br from-green-950/20 to-emerald-950/20 backdrop-blur-sm">
+                  <CardHeader>
+                    <h3 className="text-2xl font-bold text-green-400 flex items-center gap-2">
+                      🚀 Getting Started
+                    </h3>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <span className="text-green-400 font-bold text-lg">1.</span>
+                        <div>
+                          <p className="font-semibold text-gray-200">Connect Your Wallet</p>
+                          <p className="text-sm text-gray-400">Link your Web3 wallet to start playing</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="text-green-400 font-bold text-lg">2.</span>
+                        <div>
+                          <p className="font-semibold text-gray-200">Earn Creation Credits</p>
+                          <p className="text-sm text-gray-400">Contribute words to stories to earn credits</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="text-green-400 font-bold text-lg">3.</span>
+                        <div>
+                          <p className="font-semibold text-gray-200">Create Your Story</p>
+                          <p className="text-sm text-gray-400">Use credits to start your own mad libs story</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* How It Works */}
+                <Card className="border-2 border-blue-500/30 bg-gradient-to-br from-blue-950/20 to-cyan-950/20 backdrop-blur-sm">
+                  <CardHeader>
+                    <h3 className="text-2xl font-bold text-blue-400 flex items-center gap-2">
+                      ⚙️ How It Works
+                    </h3>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <span className="text-blue-400 font-bold text-lg">•</span>
+                        <div>
+                          <p className="font-semibold text-gray-200">AI-Guided Stories</p>
+                          <p className="text-sm text-gray-400">Templates with blanks for different word types</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="text-blue-400 font-bold text-lg">•</span>
+                        <div>
+                          <p className="font-semibold text-gray-200">Community Contributions</p>
+                          <p className="text-sm text-gray-400">Players fill in words to complete the story</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <span className="text-blue-400 font-bold text-lg">•</span>
+                        <div>
+                          <p className="font-semibold text-gray-200">NFT Rewards</p>
+                          <p className="text-sm text-gray-400">Each contribution mints a unique NFT</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Story Types */}
+                <Card className="border-2 border-purple-500/30 bg-gradient-to-br from-purple-950/20 to-pink-950/20 backdrop-blur-sm">
+                  <CardHeader>
+                    <h3 className="text-2xl font-bold text-purple-400 flex items-center gap-2">
+                      📚 Story Types
+                    </h3>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="border-l-4 border-cyan-500 pl-4">
+                        <p className="font-semibold text-cyan-400">Mini Stories (10 slots)</p>
+                        <p className="text-sm text-gray-400">Quick, fun stories for fast gameplay</p>
+                      </div>
+                      <div className="border-l-4 border-purple-500 pl-4">
+                        <p className="font-semibold text-purple-400">Normal Stories (20 slots)</p>
+                        <p className="text-sm text-gray-400">Balanced stories with moderate length</p>
+                      </div>
+                      <div className="border-l-4 border-orange-500 pl-4">
+                        <p className="font-semibold text-orange-400">Epic Stories (200 slots)</p>
+                        <p className="text-sm text-gray-400">Massive collaborative storytelling</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Achievements */}
+                <Card className="border-2 border-yellow-500/30 bg-gradient-to-br from-yellow-950/20 to-orange-950/20 backdrop-blur-sm">
+                  <CardHeader>
+                    <h3 className="text-2xl font-bold text-yellow-400 flex items-center gap-2">
+                      🏆 Achievements
+                    </h3>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">✍️</span>
+                        <div>
+                          <p className="font-semibold text-gray-200">First Word</p>
+                          <p className="text-sm text-gray-400">Contribute your first word</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">📖</span>
+                        <div>
+                          <p className="font-semibold text-gray-200">Story Starter</p>
+                          <p className="text-sm text-gray-400">Create your first story</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">👑</span>
+                        <div>
+                          <p className="font-semibold text-gray-200">Completion King</p>
+                          <p className="text-sm text-gray-400">Final word on 5+ stories</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">🏆</span>
+                        <div>
+                          <p className="font-semibold text-gray-200">Prolific Writer</p>
+                          <p className="text-sm text-gray-400">Contribute to 50+ stories</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Game Rules */}
+              <Card className="border-2 border-gray-600 bg-gray-900/50 backdrop-blur-sm">
+                <CardHeader>
+                  <h3 className="text-2xl font-bold text-gray-200 flex items-center gap-2">
+                    📋 Game Rules
+                  </h3>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="font-semibold text-gray-200 mb-2">Contribution Rules</h4>
+                      <ul className="space-y-1 text-sm text-gray-400">
+                        <li>• Words must be 3-30 characters</li>
+                        <li>• One contribution per story slot</li>
+                        <li>• Pay 0.00005 ETH per contribution</li>
+                        <li>• Earn 1 creation credit per contribution</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-200 mb-2">Creation Rules</h4>
+                      <ul className="space-y-1 text-sm text-gray-400">
+                        <li>• Need creation credits to start stories</li>
+                        <li>• Pay 0.0001 ETH to create a story</li>
+                        <li>• Templates use [WORD_TYPE] placeholders</li>
+                        <li>• Stories complete when all slots are filled</li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Call to Action */}
+              <div className="text-center">
+                <p className="text-lg text-gray-300 mb-4">
+                  Ready to start creating hilarious stories?
+                </p>
+                <Button
+                  onClick={() => setShowCreationModal(true)}
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-200 h-12 px-8 text-lg font-semibold"
+                  disabled={!contractsDeployed}
+                >
+                  Create Your First Story
+                </Button>
+              </div>
+            </div>
           </TabsContent>
 
           {/* NFT Collection Tab */}

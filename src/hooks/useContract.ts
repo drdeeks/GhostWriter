@@ -222,6 +222,28 @@ export function useUserNFTs(address: `0x${string}` | undefined) {
 }
 
 /**
+ * Hook for reading user achievements
+ */
+export function useUserAchievements(address: `0x${string}` | undefined) {
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: CONTRACTS.storyManager,
+    abi: STORY_MANAGER_ABI,
+    functionName: 'getUserAchievements',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address,
+    },
+  });
+
+  return {
+    achievements: data,
+    isLoading,
+    error,
+    refetch,
+  };
+}
+
+/**
  * Hook for waiting for transaction confirmation
  */
 export function useTransactionStatus(hash: `0x${string}` | undefined) {
