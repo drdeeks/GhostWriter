@@ -142,6 +142,45 @@ export const STORY_MANAGER_ABI = [
     type: "function",
   },
   {
+    inputs: [{ name: "user", type: "address" }],
+    name: "getUserAchievements",
+    outputs: [
+      {
+        components: [
+          { name: "id", type: "string" },
+          { name: "name", type: "string" },
+          { name: "description", type: "string" },
+          { name: "unlocked", type: "bool" },
+          { name: "unlockedAt", type: "uint256" },
+        ],
+        name: "",
+        type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "offset", type: "uint256" },
+      { name: "limit", type: "uint256" },
+    ],
+    name: "getLeaderboard",
+    outputs: [
+      {
+        components: [
+          { name: "user", type: "address" },
+          { name: "contributions", type: "uint256" },
+          { name: "rank", type: "uint256" },
+        ],
+        name: "",
+        type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     anonymous: false,
     inputs: [
       { indexed: true, name: "storyId", type: "string" },
