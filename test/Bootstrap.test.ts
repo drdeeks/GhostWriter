@@ -1,7 +1,8 @@
+import "@nomicfoundation/hardhat-chai-matchers";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { GhostWriterNFT, StoryManager, LiquidityPool } from "../typechain-types";
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+import { GhostWriterNFT, LiquidityPool, StoryManager } from "../typechain-types";
 
 /**
  * Bootstrap Tests
@@ -16,8 +17,8 @@ describe("Bootstrap Flow Tests", function () {
   let user1: SignerWithAddress;
   let user2: SignerWithAddress;
 
-  const CONTRIBUTION_FEE = ethers.parseEther("0.00005");
-  const CREATION_FEE = ethers.parseEther("0.0001");
+  const CONTRIBUTION_FEE = ethers.parseEther("0.00004");
+  const CREATION_FEE = ethers.parseEther("0.0002");
 
   beforeEach(async function () {
     [owner, user1, user2] = await ethers.getSigners();
@@ -71,15 +72,15 @@ describe("Bootstrap Flow Tests", function () {
       // 1. Deploy contracts
       // 2. Manually give themselves 1 creation credit via contract modification
       // 3. Or include initial credit in deployment
-      
+
       // For this test, we demonstrate the intended flow:
       // Owner should have a way to bootstrap the first story
-      
+
       // This test documents that we need either:
       // A) Initial credit for owner in constructor
       // B) Special "createFirstStory" function
       // C) Manual credit distribution function (owner only)
-      
+
       // Currently, even owner can't create without credits
       const ownerStats = await storyManager.getUserStats(owner.address);
       expect(ownerStats.creationCredits).to.equal(0);
@@ -130,7 +131,7 @@ describe("Bootstrap Flow Tests", function () {
 
       const storyTokens = await nftContract.getStoryTokens(storyId);
       expect(storyTokens.length).to.equal(1);
-      
+
       const nftData = await nftContract.getNFTData(storyTokens[0]);
       expect(nftData.revealed).to.be.true;
     });
