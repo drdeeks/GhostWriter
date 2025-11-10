@@ -27,6 +27,8 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
         uint256 contributionTimestamp;
         bool storyComplete;
         bool revealed;
+        bool isCreatorNFT;
+        string fullStoryTemplate; // For creator NFTs: complete madlib template
     }
 
     // Mapping from token ID to NFT data
@@ -36,7 +38,8 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
     mapping(string => uint256[]) public storyTokens;
 
     // Mapping to prevent duplicate contributions (storyId => position => contributor => hasMinted)
-    mapping(string => mapping(uint256 => mapping(address => bool))) public hasContributed;
+    mapping(string => mapping(uint256 => mapping(address => bool)))
+        public hasContributed;
 
     // Base URIs for hidden and revealed states
     string private _hiddenBaseURI;
@@ -51,6 +54,11 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
         address indexed contributor,
         string storyId,
         uint256 position
+    );
+    event CreatorNFTMinted(
+        uint256 indexed tokenId,
+        address indexed creator,
+        string storyId
     );
     event NFTRevealed(uint256 indexed tokenId, string word);
     event StoryCompleted(string indexed storyId, uint256[] tokenIds);
@@ -134,13 +142,61 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
             contributor: contributor,
             contributionTimestamp: block.timestamp,
             storyComplete: false,
-            revealed: false
+            revealed: false,
+            isCreatorNFT: false,
+            fullStoryTemplate: ""
         });
 
         // Add to story tokens
         storyTokens[storyId].push(tokenId);
 
         emit NFTMinted(tokenId, contributor, storyId, position);
+
+        return tokenId;
+    }
+
+    /**
+     * @dev Mint a creator NFT for the story creator
+     * Contains the complete story template in Mad Libs format
+     * Only callable by StoryManager when story is complete
+     */
+    function mintCreatorNFT(
+        address creator,
+        string memory storyId,
+        string memory storyTitle,
+        string memory fullStoryTemplate
+    ) external onlyStoryManager nonReentrant returns (uint256) {
+        require(creator != address(0), "Invalid creator");
+        require(bytes(storyId).length > 0, "Invalid storyId");
+        require(bytes(fullStoryTemplate).length > 0, "Invalid template");
+
+        // Increment token ID
+        _tokenIdCounter++;
+        uint256 tokenId = _tokenIdCounter;
+
+        // Mint NFT to creator
+        _safeMint(creator, tokenId);
+
+        // Store NFT data (creator NFTs are always "revealed" - they show the template)
+        nftData[tokenId] = NFTData({
+            storyId: storyId,
+            storyTitle: storyTitle,
+            wordPosition: 0, // Not applicable for creator NFTs
+            totalWords: 0, // Not applicable for creator NFTs
+            wordType: "", // Not applicable for creator NFTs
+            contributedWord: "", // Not applicable for creator NFTs
+            contributor: creator,
+            contributionTimestamp: block.timestamp,
+            storyComplete: true, // Creator NFTs are always complete
+            revealed: true, // Creator NFTs are always revealed
+            isCreatorNFT: true,
+            fullStoryTemplate: fullStoryTemplate
+        });
+
+        // Add to story tokens
+        storyTokens[storyId].push(tokenId);
+
+        emit CreatorNFTMinted(tokenId, creator, storyId);
 
         return tokenId;
     }
@@ -158,9 +214,9 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
             NFTData storage data = nftData[tokenId];
-            
+
             require(!data.revealed, "Story already revealed");
-            
+
             data.storyComplete = true;
             data.revealed = true;
 
@@ -214,11 +270,12 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
         uint256 tokenId
     ) public view override returns (string memory) {
         require(_ownerOf(tokenId) != address(0), "Token does not exist");
-        
+
         NFTData memory data = nftData[tokenId];
-        
+
         if (data.revealed) {
-            return string(abi.encodePacked(_revealedBaseURI, _toString(tokenId)));
+            return
+                string(abi.encodePacked(_revealedBaseURI, _toString(tokenId)));
         } else {
             return string(abi.encodePacked(_hiddenBaseURI, _toString(tokenId)));
         }

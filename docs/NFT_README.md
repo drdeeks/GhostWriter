@@ -12,16 +12,32 @@ Each NFT contains the following metadata stored on-chain:
 struct NFTData {
     string storyId;              // Unique story identifier
     string storyTitle;           // Human-readable story title
-    uint256 wordPosition;        // Position in story (1-indexed)
-    uint256 totalWords;          // Total words needed for story
-    string wordType;             // Type of word (adjective, noun, verb, etc.)
-    string contributedWord;      // The actual word contributed (revealed only)
+    uint256 wordPosition;        // Position in story (1-indexed) - 0 for creator NFTs
+    uint256 totalWords;          // Total words needed for story - 0 for creator NFTs
+    string wordType;             // Type of word (adjective, noun, verb, etc.) - empty for creator NFTs
+    string contributedWord;      // The actual word contributed (revealed only) - empty for creator NFTs
     address contributor;         // Contributor's wallet address
     uint256 contributionTimestamp; // When contribution was made
     bool storyComplete;          // Whether story is finished
     bool revealed;               // Whether NFT is in revealed state
+    bool isCreatorNFT;           // Whether this is a creator NFT
+    string fullStoryTemplate;    // Complete Mad Libs template (for creator NFTs only)
 }
 ```
+
+### NFT Types
+
+#### Contributor NFTs (Default)
+- **Purpose**: Represent individual word contributions
+- **Minting**: When user contributes a word to a story
+- **States**: Hidden → Revealed when story completes
+- **Display**: Shows story context with user's word **bolded**
+
+#### Creator NFTs (New)
+- **Purpose**: Represent completed story templates
+- **Minting**: Automatically when story creator's story completes
+- **States**: Always "revealed" (shows template)
+- **Display**: Mad Libs-style template with blank lines and word type hints
 
 ### Display States
 
@@ -105,6 +121,33 @@ Ghost Writer NFTs should embody mystery and storytelling with a clean, professio
 │                                     │
 │   Word Type: [TYPE]                 │
 │   Contributed: [DATE]               │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+### Creator NFT Template (New)
+
+#### Layout Structure
+```
+┌─────────────────────────────────────┐
+│           GHOST WRITER              │
+│       Creator Edition               │
+├─────────────────────────────────────┤
+│        [Story Title]                │
+├─────────────────────────────────────┤
+│                                     │
+│   In a ____________________         │
+│        (adjective)                  │
+│                                     │
+│   castle, the _______________       │
+│             (adjective)             │
+│                                     │
+│   knight fought the _________       │
+│             (noun)                  │
+│                                     │
+├─────────────────────────────────────┤
+│   Original Mad Libs Template        │
+│   Created: [DATE]                   │
 │                                     │
 └─────────────────────────────────────┘
 ```

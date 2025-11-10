@@ -64,18 +64,6 @@ const config: HardhatUserConfig & { etherscan?: any; gasReporter?: any; sourcify
       accounts: accounts,
       chainId: 143,
     },
-    // Mode Mainnet
-    mode: {
-      url: process.env.MODE_RPC_URL || "https://mainnet.mode.network",
-      accounts: accounts,
-      chainId: 34443,
-    },
-    // Mode Sepolia Testnet
-    modeSepolia: {
-      url: process.env.MODE_SEPOLIA_RPC_URL || "https://sepolia.mode.network",
-      accounts: accounts,
-      chainId: 919,
-    },
     // Localhost for testing
     localhost: {
       url: "http://127.0.0.1:8545",
@@ -90,8 +78,6 @@ const config: HardhatUserConfig & { etherscan?: any; gasReporter?: any; sourcify
       baseSepolia: process.env.BASESCAN_API_KEY || "",
       monad: process.env.MONAD_EXPLORER_API_KEY || "",
       monadTestnet: process.env.MONAD_EXPLORER_API_KEY || "",
-      mode: process.env.MODESCAN_API_KEY || "",
-      modeSepolia: process.env.MODESCAN_API_KEY || "",
     },
     customChains: [
       {
@@ -124,22 +110,6 @@ const config: HardhatUserConfig & { etherscan?: any; gasReporter?: any; sourcify
         urls: {
           apiURL: "https://testnet.monadexplorer.com/api",
           browserURL: "https://testnet.monadexplorer.com",
-        },
-      },
-      {
-        network: "mode",
-        chainId: 34443,
-        urls: {
-          apiURL: "https://explorer.mode.network/api",
-          browserURL: "https://explorer.mode.network",
-        },
-      },
-      {
-        network: "modeSepolia",
-        chainId: 919,
-        urls: {
-          apiURL: "https://sepolia.explorer.mode.network/api",
-          browserURL: "https://sepolia.explorer.mode.network",
         },
       },
     ],

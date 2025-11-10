@@ -1,10 +1,10 @@
 'use client';
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Lock, Sparkles, Loader2, ImageIcon } from 'lucide-react';
 import { useUserNFTs } from '@/hooks/useContract';
+import { ImageIcon, Lock, Sparkles } from 'lucide-react';
 
 interface NFTCollectionProps {
   address: `0x${string}` | undefined;
@@ -15,10 +15,19 @@ export function NFTCollection({ address }: NFTCollectionProps) {
 
   // For now, show placeholder until we fetch actual NFT data
   // In production, fetch all NFTs for the user
-  const nfts: Array<{ id: string; status: 'hidden' | 'revealed' }> = [];
+  const nfts: Array<{
+    id: string;
+    status: 'hidden' | 'revealed';
+    type: 'contributor' | 'creator';
+    storyTitle?: string;
+    wordType?: string;
+    position?: number;
+    totalWords?: number;
+  }> = [];
 
   const hiddenNFTs = nfts.filter((nft) => nft.status === 'hidden');
   const revealedNFTs = nfts.filter((nft) => nft.status === 'revealed');
+  const creatorNFTs = nfts.filter((nft) => nft.type === 'creator');
 
   if (!address) {
     return (
@@ -50,10 +59,11 @@ export function NFTCollection({ address }: NFTCollectionProps) {
       </div>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-indigo-200 dark:border-indigo-800">
+        <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-indigo-200 dark:border-indigo-800">
           <TabsTrigger value="all">All ({nftCount})</TabsTrigger>
           <TabsTrigger value="hidden">Hidden ({hiddenNFTs.length})</TabsTrigger>
           <TabsTrigger value="revealed">Revealed ({revealedNFTs.length})</TabsTrigger>
+          <TabsTrigger value="creator">Creator ({creatorNFTs.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="mt-6">
@@ -121,6 +131,24 @@ export function NFTCollection({ address }: NFTCollectionProps) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Revealed NFTs */}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="creator" className="mt-6">
+          {creatorNFTs.length === 0 ? (
+            <Card className="border-2 border-dashed border-gray-300 dark:border-gray-700">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="text-4xl mb-3">📝</div>
+                <p className="text-gray-600 dark:text-gray-400">No creator NFTs yet</p>
+                <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                  Create a story to earn your first creator NFT!
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Creator NFTs */}
             </div>
           )}
         </TabsContent>
