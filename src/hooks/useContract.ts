@@ -29,7 +29,7 @@ export function useStoryManager() {
         functionName: 'createStory',
         args: [storyId, title, template, storyTypeEnum, categoryEnum, wordTypes],
         value: FEES.creation,
-      });
+      } as any);
 
       return {
         success: true,
@@ -59,7 +59,7 @@ export function useStoryManager() {
         functionName: 'contributeWord',
         args: [storyId, BigInt(position), word],
         value: FEES.contribution,
-      });
+      } as any);
 
       return {
         success: true,

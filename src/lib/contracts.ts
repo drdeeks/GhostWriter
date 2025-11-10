@@ -241,6 +241,18 @@ export const STORY_MANAGER_ABI = [
 // NFT Contract ABI (essential functions only)
 export const NFT_ABI = [
   {
+    inputs: [
+      { name: "creator", type: "address" },
+      { name: "storyId", type: "string" },
+      { name: "storyTitle", type: "string" },
+      { name: "fullStoryTemplate", type: "string" },
+    ],
+    name: "mintCreatorNFT",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [{ name: "tokenId", type: "uint256" }],
     name: "getNFTData",
     outputs: [
@@ -256,6 +268,8 @@ export const NFT_ABI = [
           { name: "contributionTimestamp", type: "uint256" },
           { name: "storyComplete", type: "boolean" },
           { name: "revealed", type: "boolean" },
+          { name: "isCreatorNFT", type: "boolean" },
+          { name: "fullStoryTemplate", type: "string" },
         ],
         name: "",
         type: "tuple",

@@ -14,13 +14,15 @@ A collaborative storytelling game on Base Chain where users contribute words to 
 ### Key Features
 
 - **Community Storytelling**: Players collaborate to fill story templates with creative words
+- **Dual NFT System**: Contributor NFTs (hidden→revealed) + Creator NFTs (Mad Libs templates)
 - **Hidden NFTs**: Each word contribution mints an NFT showing only position/type until story completes
+- **Creator NFTs**: Story creators receive Mad Libs-style template NFTs when their stories complete
 - **Creation Credits**: 1 contribution = 1 creation credit = ability to create your own story
 - **Three Story Types**: Mini (10 slots), Normal (20 slots), Epic (200 slots)
 - **Leaderboards**: Top 1000 contributors ranked by activity and achievements
 - **Admin Portal**: Owner-only dashboard for platform management and initial story setup
 - **Economic Model**: 100% of fees → liquidity pool
-- **Multi-Chain Support**: Base + Mode + Monad testnets/mainnets
+- **Multi-Chain Support**: Base + Monad testnets/mainnets
 
 ---
 
@@ -28,7 +30,7 @@ A collaborative storytelling game on Base Chain where users contribute words to 
 
 ### Prerequisites
 
-- Node.js 18+ and pnpm
+- Node.js 18+ and npm
 - MetaMask or Coinbase Wallet
 - Base Sepolia testnet ETH (get from [Base faucet](https://www.base.org/faucet))
 - (Optional) Private key for contract deployment
@@ -37,7 +39,7 @@ A collaborative storytelling game on Base Chain where users contribute words to 
 
 ```bash
 # Clone and install dependencies
-pnpm install
+npm install
 
 # Copy environment template
 cp .env.example .env
@@ -52,7 +54,7 @@ cp .env.example .env
 
 ```bash
 # Start development server
-pnpm dev
+npm run dev
 
 # Open http://localhost:3000
 ```
@@ -114,30 +116,27 @@ The system consists of 3 main contracts:
 ### Step 1: Compile Contracts
 
 ```bash
-pnpm compile
+npm run compile
 ```
 
 ### Step 2: Run Tests
 
 ```bash
 # Run all tests
-pnpm test
+npm test
 
 # Run with gas reporting
-pnpm test:gas
+npm run test:gas
 ```
 
 ### Step 3: Deploy to Testnet
 
 ```bash
 # Deploy to Base Sepolia
-pnpm run deploy:baseSepolia
-
-# Deploy to Mode Sepolia
-pnpm run deploy:modeSepolia
+npm run deploy:baseSepolia
 
 # Deploy to Monad Testnet
-pnpm run deploy:monadTestnet
+npm run deploy:monadTestnet
 
 # Save the contract addresses from output!
 ```
@@ -160,20 +159,17 @@ NEXT_PUBLIC_CHAIN_ID=84532
 BASESCAN_API_KEY=your_key_here
 
 # Then verify
-pnpm verify
+npm run verify
 ```
 
 ### Production Deployment
 
 ```bash
 # Deploy to Base Mainnet
-pnpm run deploy:base
-
-# Deploy to Mode Mainnet
-pnpm run deploy:mode
+npm run deploy:base
 
 # Deploy to Monad Mainnet
-pnpm run deploy:monad
+npm run deploy:monad
 ```
 
 ---
@@ -206,7 +202,7 @@ pnpm run deploy:monad
 
 ```bash
 # Run complete test suite
-pnpm test
+npm test
 
 # Test coverage includes:
 # - Contract deployment
@@ -227,10 +223,10 @@ pnpm test
 1. Deploy to local Hardhat network:
    ```bash
    # Terminal 1
-   pnpm node
+   npm run node
 
    # Terminal 2
-   pnpm deploy:localhost
+   npm run deploy:localhost
    ```
 
 2. Update `.env` with localhost addresses
@@ -318,13 +314,10 @@ BASE_RPC_URL=https://mainnet.base.org
 BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
 MONAD_TESTNET_RPC_URL=https://testnet-rpc.monad.xyz
 MONAD_RPC_URL=https://rpc.monad.xyz
-MODE_RPC_URL=https://mainnet.mode.network
-MODE_SEPOLIA_RPC_URL=https://sepolia.mode.network
 
 # Block Explorer API Keys
 BASESCAN_API_KEY=your_api_key
 MONAD_EXPLORER_API_KEY=your_monad_api_key
-MODESCAN_API_KEY=your_api_key
 
 # Frontend (public - safe to commit)
 NEXT_PUBLIC_CHAIN_ID=84532
@@ -344,8 +337,6 @@ NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_key
 | Base Sepolia   | 84532    | https://sepolia.base.org         |
 | Monad Testnet  | 10143    | https://testnet-rpc.monad.xyz    |
 | Monad Mainnet  | 143      | https://rpc.monad.xyz            |
-| Mode Mainnet   | 34443    | https://mainnet.mode.network     |
-| Mode Sepolia   | 919      | https://sepolia.mode.network     |
 
 ---
 
@@ -443,7 +434,7 @@ To bootstrap the platform, the contract owner must create the first "genesis" st
 2. **Access Admin Portal**:
    ```bash
    # Start the application
-   pnpm dev
+   npm run dev
 
    # Navigate to http://localhost:3000/admin
    # Connect with the owner wallet
@@ -611,10 +602,10 @@ ipfs/
 
 2. **Contract Deployment**:
    ```bash
-   pnpm compile
-   pnpm test
-   pnpm deploy:baseSepolia  # or your target network
-   pnpm verify
+   npm run compile
+   npm test
+   npm run deploy:baseSepolia  # or your target network
+   npm run verify
    ```
 
 3. **IPFS Service Setup**:
@@ -648,7 +639,7 @@ ipfs/
 ### Phase 3: Launch Preparation
 
 1. **Testing Checklist**:
-   - ✅ Contract tests passing (`pnpm test`)
+   - ✅ Contract tests passing (`npm test`)
    - ✅ End-to-end contribution flow working
    - ✅ NFT minting and reveal process functional
    - ✅ Wallet connections working (MetaMask, Coinbase)
@@ -720,7 +711,7 @@ ipfs/
 
 ### Phase 4: Ecosystem Expansion 🔮 (Future)
 - [ ] Mobile app (iOS/Android)
-- [ ] Multi-chain expansion (Mode, Optimism)
+- [ ] Multi-chain expansion (Optimism, Arbitrum)
 - [ ] $GHOST governance token
 - [ ] Liquidity mining incentives
 - [ ] DAO for template curation
@@ -769,7 +760,7 @@ For questions or support, reach out:
 ## 🙏 Acknowledgments
 
 - [Base](https://base.org) - L2 blockchain platform
-- [Mode Network](https://mode.network) - Additional L2 support
+- [Monad](https://monad.xyz) - High-performance blockchain
 - [Farcaster](https://farcaster.xyz) - Decentralized social protocol
 - [OnchainKit](https://onchainkit.com) - Base blockchain toolkit
 - [OpenZeppelin](https://openzeppelin.com) - Smart contract libraries
