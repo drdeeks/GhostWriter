@@ -7,28 +7,29 @@
   "miniapp": {
     "version": "1",
     "name": "Ghost Writer",
-    "iconUrl": "https://ghostwriter.app/icon.png",
-    "homeUrl": "https://ghostwriter.app",
-    "imageUrl": "https://ghostwriter.app/image.png",
+    "iconUrl": "https://your-domain.com/icon.png",
+    "homeUrl": "https://your-domain.com",
+    "imageUrl": "https://your-domain.com/image.png",
     "buttonTitle": "Start Writing",
-    "splashImageUrl": "https://ghostwriter.app/splash.png",
+    "splashImageUrl": "https://your-domain.com/splash.png",
     "splashBackgroundColor": "#000000",
-    "webhookUrl": "https://ghostwriter.app/api/webhook",
-    "subtitle": "AI-Guided Mad Libs NFT Game",
+    "webhookUrl": "https://your-domain.com/api/webhook",
+    "subtitle": "Community Storytelling NFT Game",
     "description": "Collaborative storytelling where contributions mint hidden NFTs that reveal when stories complete. Each word earns creation credits on Base Chain.",
     "primaryCategory": "games",
-    "heroImageUrl": "https://ghostwriter.app/splash.png",
+    "heroImageUrl": "https://your-domain.com/splash.png",
     "tags": [
       "nft",
       "storytelling",
-      "mad-libs",
       "collaborative",
+      "community",
       "on-chain",
-      "base-chain"
+      "base-chain",
+      "web3"
     ],
-    "tagline": "Write stories, mint NFTs, earn credits.",
-    "ogTitle": "Ghost Writer - Collaborative NFT Storytelling",
-    "ogDescription": "Contribute words to AI-generated stories and mint hidden NFTs that reveal upon completion. Built on Base Chain.",
-    "ogImageUrl": "https://ghostwriter.app/splash.png"
+    "tagline": "Build community through collaborative storytelling.",
+    "ogTitle": "Ghost Writer - Community Storytelling NFT Game",
+    "ogDescription": "Contribute words to community-created story templates and mint unique NFTs that reveal upon completion. Earn rewards for active participation on Base Chain.",
+    "ogImageUrl": "https://your-domain.com/splash.png"
   }
 }

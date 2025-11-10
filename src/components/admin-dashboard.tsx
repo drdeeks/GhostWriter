@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useIsOwner } from '@/hooks/useContract';
 import type { StoryCategory, StoryType } from '@/types/ghostwriter';
 import { CATEGORY_INFO } from '@/types/ghostwriter';
 import { AlertTriangle, BookOpen, Settings, Shield, TrendingUp, Users } from 'lucide-react';
@@ -21,8 +22,9 @@ export function AdminDashboard() {
   const [storyTemplate, setStoryTemplate] = useState<string>('');
   const [storyType, setStoryType] = useState<StoryType>('normal');
 
-  // Mock admin check - in production, verify onchain
-  const isAdmin = true; // TODO: Check if address is contract owner
+  // Check if user is contract owner
+  const { isOwner, isLoading: ownerLoading } = useIsOwner(address);
+  const isAdmin = isOwner;
 
   const handleAirdropCredits = async () => {
     try {

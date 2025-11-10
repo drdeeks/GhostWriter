@@ -1,21 +1,24 @@
-# 👻 Ghost Writer - AI-Guided Mad Libs NFT Game
+# 👻 Ghost Writer - Community Storytelling NFT Game
 
-A collaborative storytelling game on Base Chain where users contribute words to AI-generated Mad Lib templates. Each contribution mints a hidden NFT that reveals only when the story completes.
+A collaborative storytelling game on Base Chain where users contribute words to community-created story templates. Each contribution mints a unique NFT and earns rewards for active participants.
 
 ## 🎯 Overview
 
 **Ghost Writer** is a unique Web3 game that combines:
-- 🤖 AI-generated story templates (Mad Libs style)
+- 👥 Community-driven collaborative storytelling
 - 🔒 Hidden progressive NFTs (reveal on completion)
-- 🎮 Participation-gated creation (contribute to unlock)
+- 🏆 Rewards for active contributors and community builders
 - 💎 Base Chain deployment (low fees, fast transactions)
 - 📱 Farcaster Mini App integration
 
 ### Key Features
 
+- **Community Storytelling**: Players collaborate to fill story templates with creative words
 - **Hidden NFTs**: Each word contribution mints an NFT showing only position/type until story completes
 - **Creation Credits**: 1 contribution = 1 creation credit = ability to create your own story
 - **Three Story Types**: Mini (10 slots), Normal (20 slots), Epic (200 slots)
+- **Leaderboards**: Top 1000 contributors ranked by activity and achievements
+- **Admin Portal**: Owner-only dashboard for platform management and initial story setup
 - **Economic Model**: 100% of fees → liquidity pool
 - **Multi-Chain Support**: Base + Mode + Monad testnets/mainnets
 
@@ -409,6 +412,279 @@ const result = await createStory(
 - Hidden NFT metadata
 - Revealed NFT metadata with story snippets
 - Generated story images
+
+---
+
+## 👑 Admin Portal & Initial Setup
+
+### Admin Dashboard Access
+
+The admin portal is accessible only to the contract owner at `/admin`. It provides full platform management capabilities:
+
+**Access Requirements:**
+- Must be connected with the wallet that deployed the contracts
+- Automatically verified against contract ownership
+- Access denied for non-owner wallets
+
+**Key Features:**
+- **Story Management**: Create initial story templates manually
+- **User Management**: Airdrop creation credits to bootstrap users
+- **Analytics Dashboard**: Monitor platform statistics and activity
+- **Emergency Controls**: Contract pause and emergency withdrawal functions
+
+### Setting Up the Initial Story
+
+To bootstrap the platform, the contract owner must create the first "genesis" story that allows initial users to earn creation credits:
+
+**Step-by-Step Setup:**
+
+1. **Deploy Contracts** (see deployment section above)
+
+2. **Access Admin Portal**:
+   ```bash
+   # Start the application
+   pnpm dev
+
+   # Navigate to http://localhost:3000/admin
+   # Connect with the owner wallet
+   ```
+
+3. **Create Genesis Story**:
+   - Go to "Stories" tab in admin dashboard
+   - Create an "Epic" story (200 slots) with engaging template
+   - Use a popular theme (fantasy, adventure, crypto, etc.)
+   - Example template: "In the mystical land of [PLACE], a brave [PROFESSION] named [PERSON_NAME] discovered a [ADJECTIVE] [NOUN] that could [VERB] the entire [PLURAL_NOUN]..."
+
+4. **Bootstrap Users**:
+   - Use "Airdrop Credits" in admin dashboard
+   - Distribute 5-10 credits to early community members
+   - This allows them to create additional stories
+
+5. **Monitor & Moderate**:
+   - Track story completion in analytics dashboard
+   - Ensure content quality and community guidelines
+   - Add more stories as the community grows
+
+**Genesis Story Best Practices:**
+- Choose an epic-length story (200 words) for maximum engagement
+- Select a popular category that appeals to your target audience
+- Create an intriguing title that sparks curiosity
+- Ensure the template allows for creative, humorous contributions
+- Monitor completion progress and celebrate milestones
+
+---
+
+## 🎨 NFT System & Visual Assets
+
+### NFT Card Specifications
+
+**Dimensions & Format:**
+- **Resolution**: 1024x1024px minimum (square aspect ratio)
+- **Format**: PNG with transparency support
+- **File Size**: < 1MB per image (optimized)
+- **Color Space**: RGB with proper gamma correction
+
+**Design Philosophy:**
+- **Theme**: Mystery and storytelling with professional aesthetic
+- **Color Palette**: Deep purple/midnight blue (#2D1B69, #1A1A2A) with gold accents (#D4AF37)
+- **Typography**: Serif headers (Playfair Display), sans-serif body (Inter)
+- **Icons**: Ghost silhouette, antique quill, ancient book motifs
+
+### NFT States & Reveal Process
+
+#### 🔒 Hidden State (Pre-Reveal)
+**What Users See:**
+- Story title prominently displayed
+- Position indicator (e.g., "Position: 3/10")
+- Word type required (e.g., "Word Type: Adjective")
+- Mysterious placeholder text: "Your word awaits reveal..."
+- Ghost/quill iconography maintaining suspense
+
+**Purpose:** Creates anticipation and prevents copying of contributions before story completion.
+
+#### ✨ Revealed State (Post-Reveal)
+**What Users See:**
+- Complete story title
+- Story snippet showing word usage (2-3 sentences)
+- **Highlighted contribution**: User's specific word in context
+- Position and word type metadata
+- Contribution timestamp
+- "Story Complete" achievement badge
+
+**Reveal Trigger:** Automatic when the final word is contributed and story reaches 100% completion.
+
+### NFT Generation Process
+
+**Dynamic Image Generation:**
+1. **Event Listening**: Monitors `WordContributed` and `StoryCompleted` events
+2. **Template Selection**: Hidden vs Revealed state templates
+3. **Content Injection**: Inserts story data, position, word type, and (revealed) actual word
+4. **SVG/HTML Rendering**: Converts to high-quality PNG
+5. **IPFS Upload**: Generated images stored on decentralized storage
+6. **Metadata Update**: Contract updates base URI for revealed state
+
+**Technical Implementation:**
+- Node.js service using Canvas API for image generation
+- IPFS pinning services (Pinata, NFT.Storage, or self-hosted)
+- Automated workflow triggered by blockchain events
+- Fallback systems for generation failures
+
+### Individual User Experience
+
+**Hidden NFT Display:**
+```
+┌─────────────────────────────────────┐
+│           GHOST WRITER              │
+├─────────────────────────────────────┤
+│                                     │
+│        "The Haunted Library"        │
+│                                     │
+├─────────────────────────────────────┤
+│                                     │
+│      Position: 3/10                 │
+│      Word Type: Adjective           │
+│                                     │
+│         [Ghost Icon]                │
+│                                     │
+│    "Your word awaits reveal..."     │
+└─────────────────────────────────────┘
+```
+
+**Revealed NFT Display:**
+```
+┌─────────────────────────────────────┐
+│           GHOST WRITER              │
+├─────────────────────────────────────┤
+│        "The Haunted Library"        │
+├─────────────────────────────────────┤
+│   "In a mysterious library, the     │
+│    ancient books whispered secrets  │
+│    and created wonder..."           │
+│                                     │
+├─────────────────────────────────────┤
+│   Your Contribution:                │
+│   Position 3: "mysterious"          │
+│                                     │
+│   Word Type: Adjective              │
+│   Contributed: Jan 1, 2024         │
+└─────────────────────────────────────┘
+```
+
+### IPFS Setup & Configuration
+
+**Required Services:**
+- IPFS pinning service (Pinata, NFT.Storage, or Infura)
+- Image generation API endpoint
+- Environment variables for API keys
+
+**Environment Setup:**
+```env
+# IPFS Configuration
+IPFS_API_ENDPOINT=https://api.pinata.cloud
+IPFS_API_KEY=your_pinata_api_key
+IPFS_SECRET_KEY=your_pinata_secret
+
+# NFT Base URIs (update after IPFS upload)
+NEXT_PUBLIC_HIDDEN_BASE_URI=ipfs://QmYourHiddenBaseURI/
+NEXT_PUBLIC_REVEALED_BASE_URI=ipfs://QmYourRevealedBaseURI/
+```
+
+**Directory Structure:**
+```
+ipfs/
+├── hidden/           # Hidden state images
+├── revealed/         # Revealed state images
+└── metadata/         # JSON metadata files
+```
+
+---
+
+## ⚙️ Complete Setup Instructions
+
+### Phase 1: Infrastructure Setup
+
+1. **Environment Configuration**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your keys and RPC URLs
+   ```
+
+2. **Contract Deployment**:
+   ```bash
+   pnpm compile
+   pnpm test
+   pnpm deploy:baseSepolia  # or your target network
+   pnpm verify
+   ```
+
+3. **IPFS Service Setup**:
+   - Choose pinning service (Pinata recommended)
+   - Generate API keys
+   - Test upload functionality
+   - Update base URIs in deployed contracts
+
+4. **Image Generation Service**:
+   - Deploy Node.js service for dynamic NFT generation
+   - Configure webhook endpoints for blockchain events
+   - Test hidden/revealed image generation
+
+### Phase 2: Content & Bootstrap
+
+1. **Create Genesis Story**:
+   - Access admin portal at `/admin`
+   - Create epic-length story with engaging template
+   - Choose popular category for initial traction
+
+2. **Bootstrap Community**:
+   - Airdrop creation credits via admin dashboard
+   - Invite beta testers and early community members
+   - Monitor initial contributions and story completion
+
+3. **Content Moderation**:
+   - Review completed stories for quality
+   - Remove inappropriate content if needed
+   - Encourage positive community engagement
+
+### Phase 3: Launch Preparation
+
+1. **Testing Checklist**:
+   - ✅ Contract tests passing (`pnpm test`)
+   - ✅ End-to-end contribution flow working
+   - ✅ NFT minting and reveal process functional
+   - ✅ Wallet connections working (MetaMask, Coinbase)
+   - ✅ Mobile responsive design verified
+   - ✅ IPFS images loading correctly
+
+2. **Pre-Launch Tasks**:
+   - Set up community channels (Discord, Farcaster)
+   - Prepare marketing materials
+   - Test gas costs and optimize if needed
+   - Configure monitoring and error tracking
+
+3. **Go-Live Sequence**:
+   - Deploy to mainnet
+   - Update production environment variables
+   - Announce launch on social channels
+   - Monitor initial user activity and support
+
+### Phase 4: Post-Launch Operations
+
+1. **Community Management**:
+   - Monitor story quality and user engagement
+   - Moderate content and handle reports
+   - Add new story templates regularly
+   - Airdrop credits to maintain growth
+
+2. **Technical Maintenance**:
+   - Monitor contract gas usage and optimize
+   - Update IPFS pins as needed
+   - Handle any revealed NFT generation failures
+   - Scale image generation service as user base grows
+
+3. **Feature Expansion**:
+   - Add new story categories based on user feedback
+   - Implement advanced achievements
+   - Consider governance features for community templates
 
 ---
 

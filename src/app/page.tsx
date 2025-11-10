@@ -114,7 +114,7 @@ export default function Home() {
             👻 Ghost Writer
           </h1>
           <p className="text-xl text-gray-300 mb-3 font-medium">
-            AI-Guided Mad Libs • NFT Game • Base Chain
+            Community Storytelling • NFT Rewards • Base Chain
           </p>
           {farcasterUser && (
             <p className="text-sm text-cyan-400 font-semibold">
@@ -298,7 +298,7 @@ export default function Home() {
                   🎮 How to Play Ghost Writer
                 </h2>
                 <p className="text-xl text-gray-300">
-                  Create hilarious stories together on the blockchain!
+                  Build community through collaborative storytelling and earn rewards!
                 </p>
               </div>
 
@@ -349,8 +349,8 @@ export default function Home() {
                       <div className="flex items-start gap-3">
                         <span className="text-blue-400 font-bold text-lg">•</span>
                         <div>
-                          <p className="font-semibold text-gray-200">AI-Guided Stories</p>
-                          <p className="text-sm text-gray-400">Templates with blanks for different word types</p>
+                          <p className="font-semibold text-gray-200">Community Templates</p>
+                          <p className="text-sm text-gray-400">Story templates with blanks for collaborative filling</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3">

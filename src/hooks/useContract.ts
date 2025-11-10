@@ -244,6 +244,102 @@ export function useUserAchievements(address: `0x${string}` | undefined) {
 }
 
 /**
+ * Hook for reading leaderboard data
+ */
+export function useLeaderboard(offset: number = 0, limit: number = 50) {
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: CONTRACTS.storyManager,
+    abi: STORY_MANAGER_ABI,
+    functionName: 'getLeaderboard',
+    args: [BigInt(offset), BigInt(limit)],
+  });
+
+  return {
+    leaderboard: data,
+    isLoading,
+    error,
+    refetch,
+  };
+}
+
+/**
+ * Hook for reading user rank
+ */
+export function useUserRank(address: `0x${string}` | undefined) {
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: CONTRACTS.storyManager,
+    abi: STORY_MANAGER_ABI,
+    functionName: 'getUserRank',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address,
+    },
+  });
+
+  return {
+    rank: data ? Number(data) : 0,
+    isLoading,
+    error,
+    refetch,
+  };
+}
+
+/**
+ * Hook for checking if address is contract owner
+ */
+export function useIsOwner(address: `0x${string}` | undefined) {
+  const { data, isLoading, error } = useReadContract({
+    address: CONTRACTS.storyManager,
+    abi: STORY_MANAGER_ABI,
+    functionName: 'owner',
+    query: {
+      enabled: !!address,
+    },
+  });
+
+  return {
+    isOwner: data?.toLowerCase() === address?.toLowerCase(),
+    owner: data,
+    isLoading,
+    error,
+  };
+}
+
+/**
+ * Hook for getting total stories count
+ */
+export function useTotalStories() {
+  const { data, isLoading, error } = useReadContract({
+    address: CONTRACTS.storyManager,
+    abi: STORY_MANAGER_ABI,
+    functionName: 'getTotalStories',
+  });
+
+  return {
+    totalStories: data ? Number(data) : 0,
+    isLoading,
+    error,
+  };
+}
+
+/**
+ * Hook for getting total NFT supply
+ */
+export function useTotalNFTs() {
+  const { data, isLoading, error } = useReadContract({
+    address: CONTRACTS.nft,
+    abi: NFT_ABI,
+    functionName: 'totalSupply',
+  });
+
+  return {
+    totalNFTs: data ? Number(data) : 0,
+    isLoading,
+    error,
+  };
+}
+
+/**
  * Hook for waiting for transaction confirmation
  */
 export function useTransactionStatus(hash: `0x${string}` | undefined) {
