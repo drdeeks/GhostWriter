@@ -16,8 +16,8 @@ contract StoryManager is Ownable, ReentrancyGuard {
     LiquidityPool public liquidityPool;
 
     // Fee amounts in wei
-    uint256 public constant CONTRIBUTION_FEE = 0.00005 ether; // $0.05 equivalent (adjust based on ETH price)
-    uint256 public constant CREATION_FEE = 0.0001 ether; // $0.10 equivalent (adjust based on ETH price)
+    uint256 public constant CONTRIBUTION_FEE = 0.00004 ether; // $0.10 equivalent (adjust based on ETH price)
+    uint256 public constant CREATION_FEE = 0.0002 ether; // $0.50 equivalent (adjust based on ETH price)
 
     // Story types
     enum StoryType {
@@ -104,18 +104,19 @@ contract StoryManager is Ownable, ReentrancyGuard {
     mapping(string => mapping(uint256 => SlotDetail)) public storySlots;
     mapping(address => UserStats) public userStats;
     mapping(string => bool) public storyExists;
-    mapping(string => mapping(address => bool)) public storyCompletedContributors; // New mapping
+    mapping(string => mapping(address => bool))
+        public storyCompletedContributors; // New mapping
 
     // Arrays for tracking
     string[] public allStoryIds;
     mapping(address => string[]) public userCreatedStories;
     mapping(StoryCategory => string[]) public storiesByCategory;
-    
+
     // Leaderboard tracking (top 1000 only)
     address[] public leaderboard;
     mapping(address => uint256) public leaderboardIndex;
     uint256 public constant MAX_LEADERBOARD_SIZE = 1000;
-    
+
     // Achievements tracking
     mapping(address => mapping(string => Achievement)) public userAchievements;
     string[] public achievementIds;
@@ -137,7 +138,11 @@ contract StoryManager is Ownable, ReentrancyGuard {
     event StoryCompleted(string indexed storyId, uint256 completedAt);
     event CreationCreditEarned(address indexed user, uint256 newTotal);
     event FeesCollected(uint256 amount, address indexed pool);
-    event AchievementUnlocked(address indexed user, string achievementId, string name);
+    event AchievementUnlocked(
+        address indexed user,
+        string achievementId,
+        string name
+    );
     event StoryShared(string indexed storyId, address indexed sharer);
     event LeaderboardUpdated(address indexed user, uint256 newRank);
 
@@ -233,10 +238,15 @@ contract StoryManager is Ownable, ReentrancyGuard {
         // Consume creation credit
         userStats[msg.sender].creationCredits--;
         userStats[msg.sender].storiesCreated++;
-        
+
         // Check for story starter achievement
         if (userStats[msg.sender].storiesCreated == 1) {
-            _unlockAchievement(msg.sender, "story_starter", "Story Starter", "Created your first story");
+            _unlockAchievement(
+                msg.sender,
+                "story_starter",
+                "Story Starter",
+                "Created your first story"
+            );
         }
 
         // Forward fee to liquidity pool
@@ -257,10 +267,13 @@ contract StoryManager is Ownable, ReentrancyGuard {
     ) external payable nonReentrant {
         require(msg.value == CONTRIBUTION_FEE, "Incorrect contribution fee");
         require(storyExists[storyId], "Story does not exist");
-        
+
         Story storage story = stories[storyId];
         require(story.status == StoryStatus.ACTIVE, "Story not active");
-        require(position > 0 && position <= story.totalSlots, "Invalid position");
+        require(
+            position > 0 && position <= story.totalSlots,
+            "Invalid position"
+        );
 
         SlotDetail storage slot = storySlots[storyId][position];
         require(!slot.filled, "Slot already filled");
@@ -299,24 +312,43 @@ contract StoryManager is Ownable, ReentrancyGuard {
         userStats[msg.sender].creationCredits++; // Award creation credit
         userStats[msg.sender].nftsOwned++;
         userStats[msg.sender].lastContributionTime = block.timestamp;
-        
+
         // Update leaderboard
         _updateLeaderboard(msg.sender);
-        
+
         // Check for first word achievement
         if (userStats[msg.sender].contributionsCount == 1) {
-            _unlockAchievement(msg.sender, "first_word", "First Word", "Contributed your first word");
+            _unlockAchievement(
+                msg.sender,
+                "first_word",
+                "First Word",
+                "Contributed your first word"
+            );
         }
-        
+
         // Check for prolific writer achievement (50+ contributions)
         if (userStats[msg.sender].contributionsCount == 50) {
-            _unlockAchievement(msg.sender, "prolific_writer", "Prolific Writer", "Contributed to 50+ stories");
+            _unlockAchievement(
+                msg.sender,
+                "prolific_writer",
+                "Prolific Writer",
+                "Contributed to 50+ stories"
+            );
         }
-        
+
         // Check for night owl achievement (contributed between 12am-6am)
         uint256 hour = (block.timestamp / 3600) % 24;
-        if (hour >= 0 && hour < 6 && !userAchievements[msg.sender]["night_owl"].unlocked) {
-            _unlockAchievement(msg.sender, "night_owl", "Night Owl", "Contributed between 12am-6am");
+        if (
+            hour >= 0 &&
+            hour < 6 &&
+            !userAchievements[msg.sender]["night_owl"].unlocked
+        ) {
+            _unlockAchievement(
+                msg.sender,
+                "night_owl",
+                "Night Owl",
+                "Contributed between 12am-6am"
+            );
         }
 
         // Forward fee to liquidity pool
@@ -344,54 +376,63 @@ contract StoryManager is Ownable, ReentrancyGuard {
         story.status = StoryStatus.COMPLETE;
         story.completedAt = block.timestamp;
 
-                                // Update completed stories count for all contributors
+        // Update completed stories count for all contributors
 
-                                for (uint256 i = 1; i <= story.totalSlots; i++) {
+        for (uint256 i = 1; i <= story.totalSlots; i++) {
+            address contributor = storySlots[storyId][i].contributor;
 
-                                    address contributor = storySlots[storyId][i].contributor;
+            if (
+                contributor != address(0) &&
+                !storyCompletedContributors[storyId][contributor]
+            ) {
+                userStats[contributor].completedStories++;
 
-                                    if (contributor != address(0) && !storyCompletedContributors[storyId][contributor]) {
+                storyCompletedContributors[storyId][contributor] = true; // Mark as counted
+            }
 
-                                        userStats[contributor].completedStories++;
+            // Check for completion king achievement (contributed final word to 5 stories)
 
-                                        storyCompletedContributors[storyId][contributor] = true; // Mark as counted
+            if (i == story.totalSlots) {
+                uint256 finalWordCount = 0;
 
-                                    }
+                for (uint256 j = 0; j < allStoryIds.length; j++) {
+                    Story memory s = stories[allStoryIds[j]];
 
-                            
+                    if (
+                        s.status == StoryStatus.COMPLETE &&
+                        storySlots[allStoryIds[j]][s.totalSlots].contributor ==
+                        contributor
+                    ) {
+                        finalWordCount++;
+                    }
+                }
 
-                                    // Check for completion king achievement (contributed final word to 5 stories)
+                if (
+                    finalWordCount >= 5 &&
+                    !userAchievements[contributor]["completion_king"].unlocked
+                ) {
+                    _unlockAchievement(
+                        contributor,
+                        "completion_king",
+                        "Completion King",
+                        "Contributed the final word to 5 stories"
+                    );
+                }
+            }
+        }
 
-                                    if (i == story.totalSlots) {
-
-                                        uint256 finalWordCount = 0;
-
-                                        for (uint256 j = 0; j < allStoryIds.length; j++) {
-
-                                            Story memory s = stories[allStoryIds[j]];
-
-                                            if (s.status == StoryStatus.COMPLETE &&
-
-                                                storySlots[allStoryIds[j]][s.totalSlots].contributor == contributor) {
-
-                                                finalWordCount++;
-
-                                            }
-
-                                        }
-
-                                        if (finalWordCount >= 5 && !userAchievements[contributor]["completion_king"].unlocked) {
-
-                                            _unlockAchievement(contributor, "completion_king", "Completion King", "Contributed the final word to 5 stories");
-
-                                        }
-
-                                    }
-
-                                }        // Check for speed demon achievement (completed in < 24 hours)
+        // Check for speed demon achievement (completed in < 24 hours)
         uint256 timeTaken = block.timestamp - story.createdAt;
-        if (timeTaken < 24 hours && !userAchievements[story.creator]["speed_demon"].unlocked) {
-            _unlockAchievement(story.creator, "speed_demon", "Speed Demon", "Story completed in <24 hours");
+        if (
+            timeTaken < 24 hours &&
+            !userAchievements[story.creator]["speed_demon"].unlocked
+        ) {
+            _unlockAchievement(
+                story.creator,
+                "speed_demon",
+                "Speed Demon",
+                "Story completed in <24 hours"
+            );
         }
 
         // Reveal all NFTs
@@ -405,33 +446,43 @@ contract StoryManager is Ownable, ReentrancyGuard {
      */
     function _updateLeaderboard(address user) internal {
         uint256 userContributions = userStats[user].contributionsCount;
-        
+
         // If user not in leaderboard and leaderboard has space
-        if (leaderboardIndex[user] == 0 && leaderboard.length < MAX_LEADERBOARD_SIZE) {
+        if (
+            leaderboardIndex[user] == 0 &&
+            leaderboard.length < MAX_LEADERBOARD_SIZE
+        ) {
             leaderboard.push(user);
             leaderboardIndex[user] = leaderboard.length;
             emit LeaderboardUpdated(user, leaderboard.length);
             return;
         }
-        
+
         // If leaderboard is full, check if user should replace lowest
         if (leaderboard.length >= MAX_LEADERBOARD_SIZE) {
             address lowestUser = leaderboard[leaderboard.length - 1];
-            uint256 lowestContributions = userStats[lowestUser].contributionsCount;
-            
-            if (userContributions > lowestContributions && leaderboardIndex[user] == 0) {
+            uint256 lowestContributions = userStats[lowestUser]
+                .contributionsCount;
+
+            if (
+                userContributions > lowestContributions &&
+                leaderboardIndex[user] == 0
+            ) {
                 // Replace lowest with new user
                 delete leaderboardIndex[lowestUser];
                 leaderboard[leaderboard.length - 1] = user;
                 leaderboardIndex[user] = leaderboard.length;
             }
         }
-        
+
         // Bubble up if needed (simplified - in production use more efficient sorting)
         uint256 currentIndex = leaderboardIndex[user];
         if (currentIndex > 0) {
             for (uint256 i = currentIndex - 1; i > 0; i--) {
-                if (userStats[leaderboard[i - 1]].contributionsCount < userContributions) {
+                if (
+                    userStats[leaderboard[i - 1]].contributionsCount <
+                    userContributions
+                ) {
                     // Swap
                     address temp = leaderboard[i - 1];
                     leaderboard[i - 1] = user;
@@ -474,11 +525,14 @@ contract StoryManager is Ownable, ReentrancyGuard {
     function shareStory(string memory storyId) external {
         require(storyExists[storyId], "Story does not exist");
         Story storage story = stories[storyId];
-        require(story.status == StoryStatus.COMPLETE, "Can only share completed stories");
-        
+        require(
+            story.status == StoryStatus.COMPLETE,
+            "Can only share completed stories"
+        );
+
         story.shareCount++;
         userStats[msg.sender].shareCount++;
-        
+
         emit StoryShared(storyId, msg.sender);
     }
 
@@ -538,17 +592,22 @@ contract StoryManager is Ownable, ReentrancyGuard {
     /**
      * @dev Get leaderboard (top 1000)
      */
-    function getLeaderboard(uint256 offset, uint256 limit) external view returns (LeaderboardEntry[] memory) {
+    function getLeaderboard(
+        uint256 offset,
+        uint256 limit
+    ) external view returns (LeaderboardEntry[] memory) {
         require(limit <= 100, "Max 100 entries per request");
-        
+
         uint256 end = offset + limit;
         if (end > leaderboard.length) {
             end = leaderboard.length;
         }
-        
+
         uint256 resultLength = end > offset ? end - offset : 0;
-        LeaderboardEntry[] memory entries = new LeaderboardEntry[](resultLength);
-        
+        LeaderboardEntry[] memory entries = new LeaderboardEntry[](
+            resultLength
+        );
+
         for (uint256 i = 0; i < resultLength; i++) {
             address user = leaderboard[offset + i];
             entries[i] = LeaderboardEntry({
@@ -557,27 +616,33 @@ contract StoryManager is Ownable, ReentrancyGuard {
                 rank: offset + i + 1
             });
         }
-        
+
         return entries;
     }
 
     /**
      * @dev Get user achievements
      */
-    function getUserAchievements(address user) external view returns (Achievement[] memory) {
-        Achievement[] memory achievements = new Achievement[](achievementIds.length);
-        
+    function getUserAchievements(
+        address user
+    ) external view returns (Achievement[] memory) {
+        Achievement[] memory achievements = new Achievement[](
+            achievementIds.length
+        );
+
         for (uint256 i = 0; i < achievementIds.length; i++) {
             achievements[i] = userAchievements[user][achievementIds[i]];
         }
-        
+
         return achievements;
     }
 
     /**
      * @dev Get stories by category
      */
-    function getStoriesByCategory(StoryCategory category) external view returns (string[] memory) {
+    function getStoriesByCategory(
+        StoryCategory category
+    ) external view returns (string[] memory) {
         return storiesByCategory[category];
     }
 
@@ -592,11 +657,17 @@ contract StoryManager is Ownable, ReentrancyGuard {
     /**
      * @dev Owner can airdrop creation credits to users
      */
-    function airdropCredits(address[] calldata users, uint256[] calldata amounts) external onlyOwner {
+    function airdropCredits(
+        address[] calldata users,
+        uint256[] calldata amounts
+    ) external onlyOwner {
         require(users.length == amounts.length, "Mismatched arrays");
         for (uint256 i = 0; i < users.length; i++) {
             userStats[users[i]].creationCredits += amounts[i];
-            emit CreationCreditEarned(users[i], userStats[users[i]].creationCredits);
+            emit CreationCreditEarned(
+                users[i],
+                userStats[users[i]].creationCredits
+            );
         }
     }
 
@@ -606,7 +677,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
     function updateFees(
         uint256 newContributionFee,
         uint256 newCreationFee
-    ) external onlyOwner {
+    ) external view onlyOwner {
         // Note: In production, use a more sophisticated fee oracle
         // This is a simplified version
         require(newContributionFee > 0, "Fee must be positive");

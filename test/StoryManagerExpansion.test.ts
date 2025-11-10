@@ -1,7 +1,8 @@
+import '@nomicfoundation/hardhat-chai-matchers';
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
-import type { GhostWriterNFT, StoryManager, LiquidityPool } from '../typechain-types';
+import type { GhostWriterNFT, LiquidityPool, StoryManager } from '../typechain-types';
 
 describe('StoryManager - Expansion Features', function () {
   let owner: SignerWithAddress;
@@ -12,8 +13,8 @@ describe('StoryManager - Expansion Features', function () {
   let storyManager: StoryManager;
   let liquidityPool: LiquidityPool;
 
-  const CONTRIBUTION_FEE = ethers.parseEther('0.00005');
-  const CREATION_FEE = ethers.parseEther('0.0001');
+  const CONTRIBUTION_FEE = ethers.parseEther('0.00004');
+  const CREATION_FEE = ethers.parseEther('0.0002');
 
   beforeEach(async function () {
     [owner, user1, user2, user3] = await ethers.getSigners();
@@ -44,7 +45,7 @@ describe('StoryManager - Expansion Features', function () {
       // Give user1 a creation credit to bootstrap
       // This requires owner to create a story first or implement airdrop
       // For this test, we'll contribute to an existing story
-      
+
       // Owner creates a story
       await storyManager.createStory(
         'story1',

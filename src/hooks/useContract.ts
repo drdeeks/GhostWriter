@@ -1,47 +1,40 @@
-import { useFarcaster } from '@/components/FarcasterWrapper';
 import { CONTRACTS, FEES, NFT_ABI, STORY_MANAGER_ABI } from '@/lib/contracts';
 import type { StoryType } from '@/types/ghostwriter';
 import { useState } from 'react';
-import { useReadContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 
 /**
  * Hook for reading and writing to Story Manager contract
  */
 export function useStoryManager() {
-  const { isMiniApp } = useFarcaster();
   const [isPending, setIsPending] = useState<boolean>(false);
+  const { writeContractAsync } = useWriteContract();
 
   const createStory = async (
     storyId: string,
     title: string,
     template: string,
     storyType: StoryType,
+    category: string,
     wordTypes: string[]
   ) => {
     setIsPending(true);
     try {
       const storyTypeEnum = storyType === 'mini' ? 0 : storyType === 'epic' ? 2 : 1;
+      const categoryEnum = getCategoryEnum(category);
 
-      if (isMiniApp) {
-        // Use Farcaster SDK for mini app transactions
-        // For Farcaster Mini Apps, transactions are handled through frame actions
-        // This is a placeholder - actual implementation would use frame transaction flow
-        console.log('Farcaster mini app transaction for createStory:', {
-          contractAddress: CONTRACTS.storyManager,
-          functionName: 'createStory',
-          args: [storyId, title, template, storyTypeEnum, wordTypes],
-          value: FEES.creation.toString(),
-        });
+      const hash = await writeContractAsync({
+        address: CONTRACTS.storyManager,
+        abi: STORY_MANAGER_ABI,
+        functionName: 'createStory',
+        args: [storyId, title, template, storyTypeEnum, categoryEnum, wordTypes],
+        value: FEES.creation,
+      });
 
-        // Placeholder return - actual implementation would initiate frame transaction
-        return {
-          success: false,
-          error: 'Farcaster frame transaction flow not yet implemented'
-        };
-      } else {
-        // For non-mini app contexts, this would need external wallet integration
-        throw new Error('External wallet transactions not implemented for non-mini app context');
-      }
+      return {
+        success: true,
+        hash,
+      };
     } catch (error: unknown) {
       console.error('Error creating story:', error);
       return {
@@ -60,26 +53,18 @@ export function useStoryManager() {
   ) => {
     setIsPending(true);
     try {
-      if (isMiniApp) {
-        // Use Farcaster SDK for mini app transactions
-        // For Farcaster Mini Apps, transactions are handled through frame actions
-        // This is a placeholder - actual implementation would use frame transaction flow
-        console.log('Farcaster mini app transaction for contributeWord:', {
-          contractAddress: CONTRACTS.storyManager,
-          functionName: 'contributeWord',
-          args: [storyId, BigInt(position), word],
-          value: FEES.contribution.toString(),
-        });
+      const hash = await writeContractAsync({
+        address: CONTRACTS.storyManager,
+        abi: STORY_MANAGER_ABI,
+        functionName: 'contributeWord',
+        args: [storyId, BigInt(position), word],
+        value: FEES.contribution,
+      });
 
-        // Placeholder return - actual implementation would initiate frame transaction
-        return {
-          success: false,
-          error: 'Farcaster frame transaction flow not yet implemented'
-        };
-      } else {
-        // For non-mini app contexts, this would need external wallet integration
-        throw new Error('External wallet transactions not implemented for non-mini app context');
-      }
+      return {
+        success: true,
+        hash,
+      };
     } catch (error: unknown) {
       console.error('Error contributing word:', error);
       return {
@@ -96,6 +81,16 @@ export function useStoryManager() {
     contributeWord,
     isPending,
   };
+}
+
+// Helper function to convert category string to enum
+function getCategoryEnum(category: string): number {
+  const categories = [
+    'fantasy', 'scifi', 'comedy', 'horror', 'adventure',
+    'mystery', 'romance', 'crypto', 'random'
+  ];
+  const index = categories.indexOf(category.toLowerCase());
+  return index >= 0 ? index : 8; // Default to 'random' if not found
 }
 
 /**
