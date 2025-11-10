@@ -428,6 +428,105 @@ describe('StoryManager - Expansion Features', function () {
     });
   });
 
+  describe('Creator NFT System', function () {
+    it('Should mint creator NFT when story creator\'s story completes', async function () {
+      // Create story
+      await storyManager.createStory(
+        'creator_story',
+        'Creator Test Story',
+        'Test [ADJECTIVE]',
+        0,
+        0,
+        ['adjective'],
+        { value: CREATION_FEE }
+      );
+
+      // Complete the story
+      await storyManager.connect(user1).contributeWord('creator_story', 1, 'amazing', { value: CONTRIBUTION_FEE });
+
+      // Check that creator NFT was minted
+      const storyTokens = await nftContract.getStoryTokens('creator_story');
+      expect(storyTokens.length).to.equal(2); // 1 contributor NFT + 1 creator NFT
+
+      // Check creator NFT data
+      const creatorTokenId = storyTokens[1]; // Second token should be creator NFT
+      const creatorNFTData = await nftContract.getNFTData(creatorTokenId);
+
+      expect(creatorNFTData.isCreatorNFT).to.be.true;
+      expect(creatorNFTData.storyId).to.equal('creator_story');
+      expect(creatorNFTData.storyTitle).to.equal('Creator Test Story');
+      expect(creatorNFTData.wordPosition).to.equal(0); // Creator NFTs have position 0
+      expect(creatorNFTData.totalWords).to.equal(0); // Creator NFTs have totalWords 0
+      expect(creatorNFTData.wordType).to.equal(''); // Creator NFTs have empty wordType
+      expect(creatorNFTData.contributedWord).to.equal(''); // Creator NFTs have empty contributedWord
+      expect(creatorNFTData.contributor).to.equal(owner.address); // Creator is the owner
+      expect(creatorNFTData.storyComplete).to.be.true;
+      expect(creatorNFTData.revealed).to.be.true; // Creator NFTs are always revealed
+      expect(creatorNFTData.fullStoryTemplate).to.equal('Test [ADJECTIVE]');
+    });
+
+    it('Should not mint creator NFT for stories created by non-owners', async function () {
+      // Give user1 a creation credit
+      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
+
+      // User1 creates story
+      await storyManager.connect(user1).createStory(
+        'user_creator_story',
+        'User Creator Story',
+        'Test [NOUN]',
+        0,
+        0,
+        ['noun'],
+        { value: CREATION_FEE }
+      );
+
+      // Complete the story
+      await storyManager.connect(user2).contributeWord('user_creator_story', 1, 'cat', { value: CONTRIBUTION_FEE });
+
+      // Check that only contributor NFT was minted (no creator NFT for non-owners)
+      const storyTokens = await nftContract.getStoryTokens('user_creator_story');
+      expect(storyTokens.length).to.equal(1); // Only 1 contributor NFT
+
+      // Check contributor NFT data
+      const contributorTokenId = storyTokens[0];
+      const contributorNFTData = await nftContract.getNFTData(contributorTokenId);
+
+      expect(contributorNFTData.isCreatorNFT).to.be.false;
+      expect(contributorNFTData.contributor).to.equal(user2.address);
+    });
+
+    it('Should handle creator NFT metadata correctly', async function () {
+      // Create story with complex template
+      await storyManager.createStory(
+        'complex_creator_story',
+        'Complex Creator Story',
+        'Once upon a [ADJECTIVE] [NOUN] in a [PLACE], there lived a [PROFESSION].',
+        0,
+        0,
+        ['adjective', 'noun', 'place', 'profession'],
+        { value: CREATION_FEE }
+      );
+
+      // Complete the story
+      await storyManager.connect(user1).contributeWord('complex_creator_story', 1, 'mysterious', { value: CONTRIBUTION_FEE });
+      await storyManager.connect(user2).contributeWord('complex_creator_story', 2, 'castle', { value: CONTRIBUTION_FEE });
+      await storyManager.connect(user3).contributeWord('complex_creator_story', 3, 'forest', { value: CONTRIBUTION_FEE });
+      await storyManager.connect(user1).contributeWord('complex_creator_story', 4, 'wizard', { value: CONTRIBUTION_FEE });
+
+      // Check creator NFT
+      const storyTokens = await nftContract.getStoryTokens('complex_creator_story');
+      expect(storyTokens.length).to.equal(5); // 4 contributor NFTs + 1 creator NFT
+
+      const creatorTokenId = storyTokens[4]; // Last token should be creator NFT
+      const creatorNFTData = await nftContract.getNFTData(creatorTokenId);
+
+      expect(creatorNFTData.isCreatorNFT).to.be.true;
+      expect(creatorNFTData.fullStoryTemplate).to.equal('Once upon a [ADJECTIVE] [NOUN] in a [PLACE], there lived a [PROFESSION].');
+      expect(creatorNFTData.storyComplete).to.be.true;
+      expect(creatorNFTData.revealed).to.be.true;
+    });
+  });
+
   describe('Integration Tests', function () {
     it('Should handle complete user journey with all features', async function () {
       // User1 starts with 0 contributions, 0 achievements, not on leaderboard

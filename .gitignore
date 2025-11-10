@@ -1,110 +1,291 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# =============================================================================
+# GHOST WRITER - GITIGNORE
+# =============================================================================
+# Comprehensive .gitignore for security and repository cleanliness
+# DO NOT commit sensitive files or bloated build artifacts
 
-# Dependencies
-/node_modules
-/.pnpm-store
+# =============================================================================
+# DEPENDENCIES & PACKAGE MANAGERS
+# =============================================================================
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+.yarn-integrity
+.yarn/cache
+.yarn/install-state.gz
 
-# Build artifacts
+# Lock files (keep one - prefer pnpm-lock.yaml for consistency)
+package-lock.json
+yarn.lock
+# Keep: pnpm-lock.yaml
+
+# =============================================================================
+# BUILD ARTIFACTS & OUTPUT
+# =============================================================================
 .next/
 out/
 build/
-next-env.d.ts
+dist/
+.next-env.d.ts
+.vercel/
 
-# Hardhat
+# Hardhat artifacts
 artifacts/
 cache/
 typechain-types/
 
-# Documentation (keep only essential files)
-docs/*.md
-!docs/NFT_README.md
+# Coverage and reports
+coverage/
+.nyc_output/
+*.lcov
+gas-report.txt
+test-results/
+junit.xml
 
-# Environment variables
+# =============================================================================
+# ENVIRONMENT & CONFIGURATION
+# =============================================================================
+# Environment files (NEVER commit real values!)
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 .env.*.local
+.env.backup
+.env.save
 
-# Logs
+# Configuration with secrets
+config/local.json
+config/production.json
+config/staging.json
+
+# =============================================================================
+# SECURITY & SENSITIVE FILES
+# =============================================================================
+# Private keys and wallets (ABSOLUTELY NEVER COMMIT!)
+*.pem
+*.key
+*.p12
+*.pfx
+*.p8
+*.cer
+*.crt
+*.der
+keystore.json
+wallet.json
+*private*
+*secret*
+
+# API keys and tokens
+*.key
+*.token
+*.apikey
+*_API_KEY
+*_SECRET
+*_TOKEN
+
+# AWS credentials
+.aws/
+credentials
+config
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# =============================================================================
+# LOGS & DEBUGGING
+# =============================================================================
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+debug.log
+error.log
+access.log
 
-# Coverage and reports
-coverage/
-*.lcov
-gas-report.txt
+# Process and runtime
+*.pid
+*.seed
+*.pid.lock
+pids/
 
-# IDEs and editors
+# =============================================================================
+# DATABASE & DATA FILES
+# =============================================================================
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+data/
+*.csv
+*.jsonl
+
+# =============================================================================
+# IDEs & EDITORS
+# =============================================================================
+# VS Code
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/extensions.json
+!.vscode/settings.template.json
+
+# IntelliJ/WebStorm
 .idea/
-.vscode/
+*.iws
+*.iml
+*.ipr
+
+# Other editors
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# OS-specific
+# =============================================================================
+# OS-SPECIFIC
+# =============================================================================
+# macOS
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
 ehthumbs.db
+
+# Windows
 Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# =============================================================================
+# TEMPORARY & BACKUP FILES
+# =============================================================================
 *.tmp
 *.temp
-
-# Keystore and wallet files
-keystore.json
-*.pem
-*.key
-*.p12
-*.pfx
-
-# Backup files
 *.bak
 *.backup
+*.orig
+*.rej
 *.swp
 *.swo
 *~
 
-# Temporary files
-*.log
-*.pid
-*.seed
-*.pid.lock
-pids
+# =============================================================================
+# DOCUMENTATION & ASSETS (selective)
+# =============================================================================
+# Keep only essential docs
+docs/*.md
+!docs/NFT_README.md
+!docs/API_REFERENCE.md
+Neynar_Expansion.md
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
+# Generated documentation
+docs/api/
+docs/build/
 
-# Lock files (keep pnpm-lock.yaml)
-package-lock.json
-yarn.lock
+# Large assets (consider IPFS or external storage)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.flv
+*.wmv
+large-assets/
+videos/
 
-# Coverage and testing
-lib-cov
-.nyc_output
-coverage/
-*.lcov
+# =============================================================================
+# TESTING & CI/CD
+# =============================================================================
+# Test artifacts
+test-results/
+junit.xml
+testem.log
+karma.conf.js
 
+# CI/CD
+.github/workflows/secrets/
+.github/actions/secrets/
+
+# =============================================================================
+# MISCELLANEOUS
+# =============================================================================
 # Dependency directories
 jspm_packages/
 .npm
+.eslintcache
+.stylelintcache
 
-# Optional files
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
 .node_repl_history
+
+# Output of 'npm pack'
 *.tgz
+
+# Yarn Integrity file
 .yarn-integrity
 
-# IDE files
-.vscode/settings.json
-.idea/workspace.xml
-.idea/tasks.xml
+# dotenv environment variables file
+.env.test
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+storybook-static
+
+# Temporary folders
+tmp/
+temp/
+
+# =============================================================================
+# PROJECT SPECIFIC
+# =============================================================================
+# Contract deployment artifacts
+deployments/localhost/
+deployments/hardhat/
+
+# IPFS cache
+.ipfs/
+
+# Local development
+.local/

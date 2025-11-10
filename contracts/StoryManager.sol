@@ -435,8 +435,18 @@ contract StoryManager is Ownable, ReentrancyGuard {
             );
         }
 
-        // Reveal all NFTs
+        // Reveal all contributor NFTs
         nftContract.revealStoryNFTs(storyId);
+
+        // Mint creator NFT only for stories created by the contract owner
+        if (story.creator == owner()) {
+            nftContract.mintCreatorNFT(
+                story.creator,
+                storyId,
+                story.title,
+                story.template
+            );
+        }
 
         emit StoryCompleted(storyId, block.timestamp);
     }
