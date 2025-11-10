@@ -21,7 +21,7 @@ function getDeployerAccounts() {
 
 const accounts = getDeployerAccounts();
 
-const config: HardhatUserConfig & { etherscan?: any; gasReporter?: any } = {
+const config: HardhatUserConfig & { etherscan?: any; gasReporter?: any; sourcify?: any } = {
   solidity: {
     version: "0.8.20",
     settings: {
@@ -30,6 +30,11 @@ const config: HardhatUserConfig & { etherscan?: any; gasReporter?: any } = {
         runs: 200,
       },
     },
+  },
+  sourcify: {
+    enabled: true,
+    apiUrl: "https://sourcify-api-monad.blockvision.org",
+    browserUrl: "https://testnet.monadexplorer.com",
   },
   networks: {
     // Base Mainnet

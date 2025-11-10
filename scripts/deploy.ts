@@ -1,5 +1,6 @@
-// Hardhat injects ethers globally - declare types
+// Hardhat injects ethers and hre globally - declare types
 declare const ethers: any;
+declare const hre: any;
 import * as fs from "fs";
 
 async function getDeployer() {
@@ -112,7 +113,7 @@ async function main() {
 
   // Deploy LiquidityPool
   console.log("📦 Deploying LiquidityPool...");
-  const LiquidityPool = await ethers.getContractFactory("LiquidityPool");
+  const LiquidityPool = await ethers.getContractFactory("LiquidityPool", deployer);
   const liquidityPool = await LiquidityPool.deploy();
   await liquidityPool.waitForDeployment();
   const poolAddress = await liquidityPool.getAddress();
@@ -123,7 +124,7 @@ async function main() {
   const hiddenURI = process.env.NEXT_PUBLIC_HIDDEN_BASE_URI || "ipfs://QmHidden/";
   const revealedURI = process.env.NEXT_PUBLIC_REVEALED_BASE_URI || "ipfs://QmRevealed/";
 
-  const GhostWriterNFT = await ethers.getContractFactory("GhostWriterNFT");
+  const GhostWriterNFT = await ethers.getContractFactory("GhostWriterNFT", deployer);
   const nftContract = await GhostWriterNFT.deploy(hiddenURI, revealedURI);
   await nftContract.waitForDeployment();
   const nftAddress = await nftContract.getAddress();
@@ -131,7 +132,7 @@ async function main() {
 
   // Deploy StoryManager
   console.log("📦 Deploying StoryManager...");
-  const StoryManager = await ethers.getContractFactory("StoryManager");
+  const StoryManager = await ethers.getContractFactory("StoryManager", deployer);
   const storyManager = await StoryManager.deploy(nftAddress, poolAddress);
   await storyManager.waitForDeployment();
   const managerAddress = await storyManager.getAddress();
@@ -150,8 +151,48 @@ async function main() {
   await setPoolManagerTx.wait();
   console.log("✅ LiquidityPool configured with StoryManager\n");
 
+  // Verify contracts
+  console.log("🔍 Verifying contracts on Monad testnet...");
+
+  try {
+    console.log("📋 Verifying GhostWriterNFT...");
+    await hre.run("verify:verify", {
+      address: nftAddress,
+      constructorArguments: [hiddenURI, revealedURI],
+      network: hre.network.name,
+    });
+    console.log("✅ GhostWriterNFT verified");
+  } catch (error) {
+    console.log("⚠️  GhostWriterNFT verification failed:", error.message);
+  }
+
+  try {
+    console.log("📋 Verifying StoryManager...");
+    await hre.run("verify:verify", {
+      address: managerAddress,
+      constructorArguments: [nftAddress, poolAddress],
+      network: hre.network.name,
+    });
+    console.log("✅ StoryManager verified");
+  } catch (error) {
+    console.log("⚠️  StoryManager verification failed:", error.message);
+  }
+
+  try {
+    console.log("📋 Verifying LiquidityPool...");
+    await hre.run("verify:verify", {
+      address: poolAddress,
+      constructorArguments: [],
+      network: hre.network.name,
+    });
+    console.log("✅ LiquidityPool verified");
+  } catch (error) {
+    console.log("⚠️  LiquidityPool verification failed:", error.message);
+  }
+
+  console.log("\n🎉 Deployment and verification complete!\n");
+
   // Print summary
-  console.log("🎉 Deployment complete!\n");
   console.log("📋 Contract Addresses:");
   console.log("====================");
   console.log("GhostWriterNFT:  ", nftAddress);
@@ -161,10 +202,6 @@ async function main() {
   console.log(`NFT_CONTRACT_ADDRESS=${nftAddress}`);
   console.log(`STORY_MANAGER_ADDRESS=${managerAddress}`);
   console.log(`LIQUIDITY_POOL_ADDRESS=${poolAddress}`);
-  console.log("\n🔐 Verify contracts on explorer with:");
-  console.log(`npx hardhat verify --network <network> ${nftAddress} "${hiddenURI}" "${revealedURI}"`);
-  console.log(`npx hardhat verify --network <network> ${managerAddress} ${nftAddress} ${poolAddress}`);
-  console.log(`npx hardhat verify --network <network> ${poolAddress}`);
 }
 
 main()

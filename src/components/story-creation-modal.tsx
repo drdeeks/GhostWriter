@@ -79,10 +79,11 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
     const storyId = `story_${Date.now()}`;
     const title = 'Generated Story Title'; // In production, use AI to generate
     const template = 'Story template...'; // In production, use AI to generate
+    const category = 'random'; // Default category
     const slots = selectedType === 'mini' ? 10 : selectedType === 'epic' ? 200 : 20;
     const wordTypes = Array(slots).fill('adjective'); // Placeholder - generate properly in production
 
-    const result = await createStory(storyId, title, template, selectedType, wordTypes);
+    const result = await createStory(storyId, title, template, selectedType, category, wordTypes);
 
     if (result.success) {
       onSubmit(selectedType);

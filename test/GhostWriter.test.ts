@@ -1,7 +1,8 @@
+import "@nomicfoundation/hardhat-chai-matchers";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { GhostWriterNFT, StoryManager, LiquidityPool } from "../typechain-types";
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+import { GhostWriterNFT, LiquidityPool, StoryManager } from "../typechain-types";
 
 describe("Ghost Writer System", function () {
   let nftContract: GhostWriterNFT;
@@ -12,8 +13,8 @@ describe("Ghost Writer System", function () {
   let user2: SignerWithAddress;
   let user3: SignerWithAddress;
 
-  const CONTRIBUTION_FEE = ethers.parseEther("0.00005");
-  const CREATION_FEE = ethers.parseEther("0.0001");
+  const CONTRIBUTION_FEE = ethers.parseEther("0.00004");
+  const CREATION_FEE = ethers.parseEther("0.0002");
   const HIDDEN_URI = "ipfs://QmHidden/";
   const REVEALED_URI = "ipfs://QmRevealed/";
 
