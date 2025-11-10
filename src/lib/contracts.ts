@@ -36,6 +36,7 @@ export const STORY_MANAGER_ABI = [
       { name: "title", type: "string" },
       { name: "template", type: "string" },
       { name: "storyType", type: "uint8" },
+      { name: "category", type: "uint8" },
       { name: "wordTypes", type: "string[]" },
     ],
     name: "createStory",
