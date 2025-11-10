@@ -1,6 +1,6 @@
 'use client';
 
-import { useUserAchievements } from '@/hooks/useContract';
+import { useLeaderboard, useUserRank } from '@/hooks/useContract';
 import type { LeaderboardEntry } from '@/types/ghostwriter';
 import { Award, ChevronLeft, ChevronRight, Loader2, Medal, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -17,58 +17,55 @@ export function Leaderboard() {
   const [userRank, setUserRank] = useState<number | null>(null);
   const entriesPerPage = 50;
 
-  // Fetch user achievements to count them
-  const { achievements: userAchievements } = useUserAchievements(address);
+  // Use contract hooks for real data
+  const { leaderboard: rawLeaderboard, isLoading: leaderboardLoading } = useLeaderboard((currentPage - 1) * entriesPerPage, entriesPerPage);
+  const { rank: userRankData, isLoading: rankLoading } = useUserRank(address);
 
-  // In production, fetch from contract
+  // Process leaderboard data to include additional stats
   useEffect(() => {
-    const fetchLeaderboard = async () => {
+    const processLeaderboardData = async () => {
+      if (!rawLeaderboard || rawLeaderboard.length === 0) {
+        setEntries([]);
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       try {
-        // TODO: Replace with actual contract call when leaderboard is implemented
-        // const leaderboardData = await readContract({
-        //   address: STORY_MANAGER_ADDRESS,
-        //   abi: StoryManagerABI,
-        //   functionName: 'getLeaderboard',
-        //   args: [(currentPage - 1) * entriesPerPage, entriesPerPage]
-        // });
+        const processedEntries: LeaderboardEntry[] = [];
 
-        // Mock data for now - but use real achievement count for current user
-        const mockEntries: LeaderboardEntry[] = [];
-        for (let i = 0; i < Math.min(50, 1000 - (currentPage - 1) * entriesPerPage); i++) {
-          const rank = (currentPage - 1) * entriesPerPage + i + 1;
-          const mockAddress = `0x${Math.random().toString(16).slice(2, 42)}`;
+        // Process each leaderboard entry to get additional stats
+        for (const entry of rawLeaderboard) {
+          const userAddress = entry.user as `0x${string}`;
 
-          // Use real achievement count for current user, mock for others
-          const achievements = address?.toLowerCase() === mockAddress.toLowerCase() && userAchievements
-            ? userAchievements.filter((a: any) => a.unlocked).length
-            : Math.floor(Math.random() * 6);
+          // For now, we'll use placeholder values for completedStories and achievements
+          // In a full implementation, we'd make additional contract calls here
+          // But for performance, we might want to modify the contract to return more data
+          const completedStories = 0; // TODO: Fetch from contract
+          const achievements = 0; // TODO: Fetch from contract
 
-          mockEntries.push({
-            rank,
-            address: mockAddress,
-            contributions: Math.floor(Math.random() * 1000) + 100 - rank,
-            completedStories: Math.floor(Math.random() * 50) + 5,
+          processedEntries.push({
+            rank: Number(entry.rank),
+            address: userAddress,
+            contributions: Number(entry.contributions),
+            completedStories,
             achievements,
           });
         }
 
-        setEntries(mockEntries);
-
-        // Check user's rank
-        if (address) {
-          // TODO: Fetch actual user rank from contract
-          setUserRank(Math.floor(Math.random() * 1000) + 1);
-        }
+        setEntries(processedEntries);
+        setUserRank(userRankData > 0 ? userRankData : null);
       } catch (error) {
-        console.error('Failed to fetch leaderboard:', error);
+        console.error('Failed to process leaderboard data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchLeaderboard();
-  }, [currentPage, address, userAchievements]);
+    processLeaderboardData();
+  }, [rawLeaderboard, userRankData]);
+
+  const loading = leaderboardLoading || rankLoading;
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Trophy className="h-6 w-6 text-yellow-500" />;
@@ -122,14 +119,14 @@ export function Leaderboard() {
               <div className="flex gap-2">
                 <Button
                   onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1 || isLoading}
+                  disabled={currentPage === 1 || loading}
                   className="border border-gray-300 px-3 py-2"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <Button
                   onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages || isLoading}
+                  disabled={currentPage === totalPages || loading}
                   className="border border-gray-300 px-3 py-2"
                 >
                   <ChevronRight className="h-4 w-4" />
