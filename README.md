@@ -731,19 +731,12 @@ Contributions welcome! Please:
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License.
+This project is licensed under the Fair Source License (5 users) - see the [LICENSE](LICENSE) file for details.
 
----
+**Free for up to 5 users.** Need more? [Contact me](https://github.com/drdeeks) for commercial licensing.
 
-## 🔗 Links
-
-- **Website**: [Coming Soon]
-- **Documentation**: [Coming Soon]
-- **Farcaster Channel**: /ghostwriter
-- **Twitter**: @ghostwriter_app
-- **Discord**: [Coming Soon]
 
 ---
 
@@ -752,15 +745,19 @@ This project is licensed under the MIT License.
 Built with ❤️ by the Ghost Writer team.
 
 For questions or support, reach out:
-- Email: support@ghostwriter.app
-- Discord: [Join our server]
+- Email: drdeeks@outlook.com
+- Discord: @drdeeks#0
+- Twitter/X: @drdeeks
+- TG: @drdeeks
+- Farcaster: @drdeeks
+- Base App: https://base.app/profile/0x5F94824f65C2a43F5473c52550215D7150892BEF
 
 ---
 
 ## 🙏 Acknowledgments
 
 - [Base](https://base.org) - L2 blockchain platform
-- [Monad](https://monad.xyz) - High-performance blockchain
+- [Monad](https://monad.xyz) - High-performance L1 blockchain
 - [Farcaster](https://farcaster.xyz) - Decentralized social protocol
 - [OnchainKit](https://onchainkit.com) - Base blockchain toolkit
 - [OpenZeppelin](https://openzeppelin.com) - Smart contract libraries
@@ -768,4 +765,4 @@ For questions or support, reach out:
 
 ---
 
-**Built on Base 🔵 | Powered by Farcaster 💜 | Secured by OpenZeppelin 🛡️**
+**Built with 💜 by DrDeeks | Powered by Monad and Base 🟪  | Secured by OpenZeppelin 🛡️**
