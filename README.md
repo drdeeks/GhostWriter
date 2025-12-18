@@ -745,6 +745,7 @@ This project is licensed under the Fair Source License (5 users) - see the [LICE
 Built with ❤️ by the Ghost Writer team.
 
 For questions or support, reach out:
+- GitHub: https://github.com/drdeeks
 - Email: drdeeks@outlook.com
 - Discord: @drdeeks#0
 - Twitter/X: @drdeeks
