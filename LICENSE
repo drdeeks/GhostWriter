@@ -1,0 +1,43 @@
+# Fair Source License, version 0.9
+
+Copyright © 2024 drdeeks
+
+## License Grant
+
+Licensor hereby grants to each recipient of the Software (“you”) a non-exclusive, non-transferable, royalty-free and fully-paid-up license, under all of the Licensor’s copyright and patent rights, to use, copy, distribute, prepare derivative works of, publicly perform and display the Software, subject to the **Use Limitation** and the conditions set forth below.
+
+## Use Limitation
+
+The license granted above allows use by up to **5 users**. For determining the number of users, count all individuals who access or use the Software. If the number of users exceeds the Use Limitation, you must obtain a commercial license from Licensor.
+
+For purposes of this license:
+
+- **Users** means the total number of individuals (employees, contractors, or other personnel) who access or use the Software
+- Multiple installations or deployments count toward the same user limit
+- Contact Licensor for commercial licensing if you exceed the Use Limitation
+
+## Conditions
+
+You must cause any modified versions of the Software to carry prominent notices stating that you modified the Software, and you must include the following notice in any modified versions:
+
+“This software contains modifications by [Your Name/Organization], based on software originally created by drdeeks.”
+
+## Disclaimer of Warranty
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+## Commercial Licensing
+
+For use beyond the Use Limitation or for commercial licensing inquiries, contact:
+
+**drdeeks**  
+GitHub: https://github.com/drdeeks
+
+## Termination
+
+This license automatically terminates if you fail to comply with any of its terms and conditions. Upon termination, you must cease all use and distribution of the Software.
+
+-----
+
+**Fair Source License Information:**  
+This license is based on the Fair Source License template. The Software is “source available” but not “open source” as defined by the OSI. Commercial use beyond the specified user limit requires a separate commercial license.
