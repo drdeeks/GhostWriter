@@ -24,10 +24,10 @@
     "node": "hardhat node"
   },
   "dependencies": {
-    "@coinbase/onchainkit": "1.1.1",
-    "@farcaster/miniapp-sdk": "0.2.1",
+    "@coinbase/onchainkit": "^1.1.1",
+    "@farcaster/miniapp-sdk": "^0.2.1",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
-    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^6.0.0",
     "@openzeppelin/contracts": "^5.0.2",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.0",
@@ -60,9 +60,9 @@
     "ethers": "^6.13.2",
     "hardhat": "^2.22.0",
     "lucide-react": "^0.453.0",
-    "next": "15.0.0-rc.0",
-    "react": "19.0.0-rc-f994737d14-20240522",
-    "react-dom": "19.0.0-rc-f994737d14-20240522",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss": "^3.4.10",
@@ -80,20 +80,12 @@
     "@types/jest": "^29.5.13",
     "@types/mocha": "^10.0.8",
     "@types/node": "22.5.5",
-    "@types/react": "19.0.0-rc.1",
-    "@types/react-dom": "19.0.0-rc.1",
-    "chai": "^5.1.2",
+    "chai": "^4.3.10",
     "hardhat-gas-reporter": "^2.2.1",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "solidity-coverage": "^0.8.13",
     "ts-node": "^10.9.2",
     "typescript": "5.6.2"
-  },
- "overrides": {
-  "@types/react": "19.1.8",
-  "@types/react-dom": "19.1.6",
-  "valtio>use-sync-external-store": {
-    "react": "$react"
   }
 }
