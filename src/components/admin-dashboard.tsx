@@ -9,18 +9,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsOwner } from '@/hooks/useContract';
 import type { StoryCategory, StoryType } from '@/types/ghostwriter';
+import { useEffect } from 'react';
 import { CATEGORY_INFO } from '@/types/ghostwriter';
 import { AlertTriangle, BookOpen, Settings, Shield, TrendingUp, Users } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAccount } from 'wagmi';
 
-export function AdminDashboard() {
+const AdminDashboardComponent = () => {
   const { address } = useAccount();
   const [selectedCategory, setSelectedCategory] = useState<StoryCategory>('random');
   const [storyTitle, setStoryTitle] = useState<string>('');
   const [storyTemplate, setStoryTemplate] = useState<string>('');
   const [storyType, setStoryType] = useState<StoryType>('normal');
+  // If dev selects dev story, auto-fill template
+  useEffect(() => {
+    if (storyType === 'dev') {
+      setStoryTitle('The Absurd Onchain Odyssey of Jesse and the Bot Farmers');
+      setStoryTemplate(`In a world where Jesse from Base Chain ruled the leaderboards, bot farmers hatched eggs faster than Farcaster memes could spread. Coinbase and NeynarScoring joined forces to buildin and expand networks/net worths, all in the name of bringing everyone on chain. One day, Jesse woke up to find his breakfast eggs had turned into NFTs, and every time he blinked, a new leaderboard appeared. The bot farmers, armed with rubber chickens and disco shoes, challenged Jesse to a dance-off for the fate of the blockchain. As the crowd cheered, the eggs began to hatch, revealing tiny Farcaster avatars chanting 'onchain or bust!' In a twist, Coinbase announced airdrops for anyone who could tell a joke about network effects, and NeynarScoring started awarding points for the most absurd wallet names. By sunset, the entire world was on chain, including the family dog, who promptly started a meme coin. The moral: if you can't beat the bots, join the dance and bring your own eggs. [ADJECTIVE] [NOUN] [VERB] [ADVERB] [PLURAL_NOUN] [PAST_TENSE_VERB] [VERB_ING] [PERSONS_NAME] [PLACE] [NUMBER] [COLOR] [BODY_PART] [FOOD] [ANIMAL] [EXCLAMATION] [EMOTION] ... (continue for 250 slots)`);
+    }
+  }, [storyType]);
 
   // Check if user is contract owner
   const { isOwner, isLoading: ownerLoading } = useIsOwner(address);
@@ -189,9 +197,9 @@ export function AdminDashboard() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="mini">Mini (10 slots)</SelectItem>
-                        <SelectItem value="normal">Normal (20 slots)</SelectItem>
-                        <SelectItem value="epic">Epic (200 slots)</SelectItem>
+                        <SelectItem value="normal">Normal (10 slots)</SelectItem>
+                        <SelectItem value="extended">Extended (20 slots)</SelectItem>
+                        <SelectItem value="dev">Dev's Absurd Epic (250 slots, dev only)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -409,3 +417,5 @@ export function AdminDashboard() {
     </div>
   );
 }
+
+export const AdminDashboard = React.memo(AdminDashboardComponent);

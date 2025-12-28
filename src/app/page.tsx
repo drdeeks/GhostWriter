@@ -1,5 +1,10 @@
 'use client';
 
+import React, { Suspense } from 'react';
+const ContributionModal = React.lazy(() => import('@/components/contribution-modal'));
+const StoryCreationModal = React.lazy(() => import('@/components/story-creation-modal'));
+'use client';
+
 import { ContributionModal } from '@/components/contribution-modal';
 import { useFarcaster } from '@/components/FarcasterWrapper';
 import { NFTCollection } from '@/components/nft-collection';
@@ -12,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserStatsDisplay } from '@/components/user-stats';
 import { useAddMiniApp } from '@/hooks/useAddMiniApp';
 import { useAllStories, useUserStats } from '@/hooks/useContract';
+import { useStories } from '@/hooks/useStories';
 import { areContractsDeployed } from '@/lib/contracts';
 import type { Story, StoryType } from '@/types/ghostwriter';
 import { sdk } from '@farcaster/miniapp-sdk';
@@ -29,8 +35,9 @@ export default function Home() {
   const [farcasterUser, setFarcasterUser] = useState<string | null>(null);
   const { addMiniApp } = useAddMiniApp();
 
-  // Fetch all stories and user stats from contracts
-  const { storyIds, isLoading: storiesLoading, refetch: refetchStories } = useAllStories();
+  // Fetch all story IDs and user stats from contracts
+  const { storyIds, isLoading: storyIdsLoading, refetch: refetchStories } = useAllStories();
+  const { stories, isLoading: storiesLoading, error: storiesError, refetchAll } = useStories(storyIds);
   const { stats: userStats, refetch: refetchStats } = useUserStats(address);
 
   // Load Farcaster context
@@ -57,10 +64,10 @@ export default function Home() {
   // Check if contracts are deployed
   const contractsDeployed = areContractsDeployed();
 
-  // Build stories list (simplified for now - in production, fetch full story details)
-  const stories: Story[] = [];
-  const activeStories = stories.filter((s: Story) => s.status === 'active');
-  const completedStories = stories.filter((s: Story) => s.status === 'complete');
+  // Build stories list from real contract data
+  const validStories = (stories || []).filter(Boolean) as Story[];
+  const activeStories = validStories.filter((s: Story) => s.status === 'active');
+  const completedStories = validStories.filter((s: Story) => s.status === 'complete');
 
   const handleContribute = (storyId: string) => {
     const story = stories.find((s: Story) => s.storyId === storyId);
@@ -114,7 +121,7 @@ export default function Home() {
             👻 Ghost Writer
           </h1>
           <p className="text-xl text-gray-300 mb-3 font-medium">
-            Community Storytelling • NFT Rewards • Base Chain
+            Community Storytelling • NFT Rewards
           </p>
           {farcasterUser && (
             <p className="text-sm text-cyan-400 font-semibold">
@@ -225,7 +232,7 @@ export default function Home() {
               </Button>
             </div>
 
-            {storiesLoading ? (
+            {storyIdsLoading || storiesLoading ? (
               <div className="flex justify-center items-center py-20">
                 <Loader2 className="h-12 w-12 animate-spin text-cyan-400" />
               </div>
@@ -492,19 +499,20 @@ export default function Home() {
         </Tabs>
 
         {/* Modals */}
-        <ContributionModal
-          open={showContributionModal}
-          onClose={() => setShowContributionModal(false)}
-          story={selectedStory}
-          onSubmit={handleSubmitContribution}
-        />
-
-        <StoryCreationModal
-          open={showCreationModal}
-          onClose={() => setShowCreationModal(false)}
-          creationCredits={userStats ? Number(userStats[1]) : 0}
-          onSubmit={handleCreateStory}
-        />
+        <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
+          <ContributionModal
+            open={showContributionModal}
+            onClose={() => setShowContributionModal(false)}
+            story={selectedStory}
+            onSubmit={handleSubmitContribution}
+          />
+          <StoryCreationModal
+            open={showCreationModal}
+            onClose={() => setShowCreationModal(false)}
+            creationCredits={userStats ? Number(userStats[1]) : 0}
+            onSubmit={handleCreateStory}
+          />
+        </Suspense>
       </div>
     </div>
   );
