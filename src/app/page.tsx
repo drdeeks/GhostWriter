@@ -1,50 +1,61 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
+import { useAccount } from 'wagmi';
+import { toast } from 'sonner';
+import { sdk } from '@farcaster/miniapp-sdk';
+
+// ── Hooks ────────────────────────────────────────────────
+import { useFarcaster } from '@/components/FarcasterWrapper';
+import { useAddMiniApp } from '@/hooks/useAddMiniApp';
+import { useAllStories, useUserStats } from '@/hooks/useContract';
+import { useStories } from '@/hooks/useStories';
+
+// ── Components ───────────────────────────────────────────
 const ContributionModal = React.lazy(() => import('@/components/contribution-modal'));
 const StoryCreationModal = React.lazy(() => import('@/components/story-creation-modal'));
-'use client';
 
-import { ContributionModal } from '@/components/contribution-modal';
-import { useFarcaster } from '@/components/FarcasterWrapper';
 import { NFTCollection } from '@/components/nft-collection';
 import { StoryCard } from '@/components/story-card';
-import { StoryCreationModal } from '@/components/story-creation-modal';
+import { UserStatsDisplay } from '@/components/user-stats';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserStatsDisplay } from '@/components/user-stats';
-import { useAddMiniApp } from '@/hooks/useAddMiniApp';
-import { useAllStories, useUserStats } from '@/hooks/useContract';
-import { useStories } from '@/hooks/useStories';
+
+// ── Icons & Utils ────────────────────────────────────────
+import {
+  AlertCircle,
+  Award,
+  BookOpen,
+  Loader2,
+  PlusCircle,
+  Sparkles,
+  Trophy,
+} from 'lucide-react';
+
 import { areContractsDeployed } from '@/lib/contracts';
 import type { Story, StoryType } from '@/types/ghostwriter';
-import { sdk } from '@farcaster/miniapp-sdk';
-import { AlertCircle, Award, BookOpen, Loader2, PlusCircle, Sparkles, Trophy } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { useAccount } from 'wagmi';
 
 export default function Home() {
   const { address } = useAccount();
   const { isMiniApp } = useFarcaster();
-  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
-  const [showContributionModal, setShowContributionModal] = useState<boolean>(false);
-  const [showCreationModal, setShowCreationModal] = useState<boolean>(false);
-  const [farcasterUser, setFarcasterUser] = useState<string | null>(null);
   const { addMiniApp } = useAddMiniApp();
 
-  // Fetch all story IDs and user stats from contracts
+  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  const [showContributionModal, setShowContributionModal] = useState(false);
+  const [showCreationModal, setShowCreationModal] = useState(false);
+  const [farcasterUser, setFarcasterUser] = useState<string | null>(null);
+
+  // Contract data
   const { storyIds, isLoading: storyIdsLoading, refetch: refetchStories } = useAllStories();
-  const { stories, isLoading: storiesLoading, error: storiesError, refetchAll } = useStories(storyIds);
+  const { stories, isLoading: storiesLoading, refetchAll } = useStories(storyIds);
   const { stats: userStats, refetch: refetchStats } = useUserStats(address);
 
-  // Load Farcaster context
+  // Farcaster mini-app context
   useEffect(() => {
     const init = async () => {
       try {
-        // Only initialize Farcaster SDK if in mini app context
         if (isMiniApp) {
           await addMiniApp();
           await sdk.actions.ready();
@@ -55,22 +66,22 @@ export default function Home() {
           setFarcasterUser(null);
         }
       } catch (error) {
-        console.error('Failed to initialize:', error);
+        console.error('Failed to initialize Farcaster:', error);
       }
     };
-    init();
-  }, [addMiniApp, isMiniApp]);
 
-  // Check if contracts are deployed
+    init();
+  }, [isMiniApp, addMiniApp]);
+
   const contractsDeployed = areContractsDeployed();
 
-  // Build stories list from real contract data
+  // Derived story lists
   const validStories = (stories || []).filter(Boolean) as Story[];
-  const activeStories = validStories.filter((s: Story) => s.status === 'active');
-  const completedStories = validStories.filter((s: Story) => s.status === 'complete');
+  const activeStories = validStories.filter((s) => s.status === 'active');
+  const completedStories = validStories.filter((s) => s.status === 'complete');
 
   const handleContribute = (storyId: string) => {
-    const story = stories.find((s: Story) => s.storyId === storyId);
+    const story = stories.find((s) => s.storyId === storyId);
     if (story) {
       setSelectedStory(story);
       setShowContributionModal(true);
@@ -120,14 +131,12 @@ export default function Home() {
           <h1 className="text-5xl md:text-6xl font-black mb-4 bg-gradient-to-r from-cyan-400 via-purple-400 to-orange-400 bg-clip-text text-transparent drop-shadow-lg">
             👻 Ghost Writer
           </h1>
-          <p className="text-xl text-gray-300 mb-3 font-medium">
-            Community Storytelling • NFT Rewards
-          </p>
+          <p className="text-xl text-gray-300 mb-3 font-medium">Community Storytelling • NFT Rewards</p>
+
           {farcasterUser && (
-            <p className="text-sm text-cyan-400 font-semibold">
-              Welcome back, @{farcasterUser}!
-            </p>
+            <p className="text-sm text-cyan-400 font-semibold">Welcome back, @{farcasterUser}!</p>
           )}
+
           {address && (
             <p className="text-xs text-gray-500 font-mono mt-2">
               {address.slice(0, 6)}...{address.slice(-4)}
@@ -135,7 +144,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Contract deployment warning */}
+        {/* Contract warning */}
         {!contractsDeployed && (
           <Alert className="mb-8 border-2 border-orange-500/50 bg-orange-950/30 backdrop-blur-sm">
             <AlertCircle className="h-4 w-4 text-orange-400" />
@@ -166,7 +175,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Navigation to Leaderboard */}
+        {/* Leaderboard / Achievements navigation */}
         <div className="mb-6 flex justify-center gap-4">
           <a href="/leaderboard">
             <Button className="gap-2 border-2 border-orange-500/50 hover:bg-orange-500/10 bg-gray-900/50 backdrop-blur-sm text-orange-300 hover:text-orange-200 transition-all">
@@ -174,6 +183,7 @@ export default function Home() {
               View Leaderboard
             </Button>
           </a>
+
           {userStats && Number(userStats[0]) > 0 && (
             <Button className="gap-2 border-2 border-purple-500/50 hover:bg-purple-500/10 bg-gray-900/50 backdrop-blur-sm text-purple-300 hover:text-purple-200 transition-all">
               <Award className="h-5 w-5 text-purple-400" />
@@ -182,7 +192,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Main Content */}
+        {/* ── Main Tabs ──────────────────────────────────────── */}
         <Tabs defaultValue="stories" className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-8 h-14 bg-gray-900/80 backdrop-blur-md border-2 border-gray-800 shadow-xl">
             <TabsTrigger
@@ -192,6 +202,7 @@ export default function Home() {
               <BookOpen className="mr-2 h-5 w-5" />
               Active ({activeStories.length})
             </TabsTrigger>
+
             <TabsTrigger
               value="completed"
               className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/50"
@@ -199,12 +210,14 @@ export default function Home() {
               <Sparkles className="mr-2 h-5 w-5" />
               Complete ({completedStories.length})
             </TabsTrigger>
+
             <TabsTrigger
               value="how-to-play"
               className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-green-500/50"
             >
               ❓ How to Play
             </TabsTrigger>
+
             <TabsTrigger
               value="collection"
               className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-amber-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/50"
@@ -213,7 +226,7 @@ export default function Home() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Active Stories Tab */}
+          {/* Active Stories */}
           <TabsContent value="stories" className="space-y-6 animate-in fade-in-50 duration-500">
             <div className="flex justify-between items-center mb-8">
               <div>
@@ -240,29 +253,27 @@ export default function Home() {
               <Card className="border-2 border-dashed border-gray-700 bg-gray-900/50 backdrop-blur-sm">
                 <CardContent className="flex flex-col items-center justify-center py-16">
                   <BookOpen className="h-16 w-16 text-gray-600 mb-4" />
-                  <p className="text-xl font-semibold text-gray-300 mb-2">
-                    No active stories yet
-                  </p>
+                  <p className="text-xl font-semibold text-gray-300 mb-2">No active stories yet</p>
                   <p className="text-gray-500">
-                    {contractsDeployed ? "Be the first to create one!" : "Deploy contracts to get started"}
+                    {contractsDeployed ? 'Be the first to create one!' : 'Deploy contracts to get started'}
                   </p>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {activeStories.map((story: Story) => (
+                {activeStories.map((story) => (
                   <StoryCard
                     key={story.storyId}
                     story={story}
                     onContribute={handleContribute}
-                    onViewStory={() => { }}
+                    onViewStory={() => {}}
                   />
                 ))}
               </div>
             )}
           </TabsContent>
 
-          {/* Completed Stories Tab */}
+          {/* Completed Stories */}
           <TabsContent value="completed" className="space-y-6 animate-in fade-in-50 duration-500">
             <div className="mb-8">
               <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
@@ -275,29 +286,25 @@ export default function Home() {
               <Card className="border-2 border-dashed border-gray-700 bg-gray-900/50 backdrop-blur-sm">
                 <CardContent className="flex flex-col items-center justify-center py-16">
                   <Sparkles className="h-16 w-16 text-gray-600 mb-4" />
-                  <p className="text-xl font-semibold text-gray-300 mb-2">
-                    No completed stories yet
-                  </p>
-                  <p className="text-gray-500">
-                    Be the first to finish one!
-                  </p>
+                  <p className="text-xl font-semibold text-gray-300 mb-2">No completed stories yet</p>
+                  <p className="text-gray-500">Be the first to finish one!</p>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {completedStories.map((story: Story) => (
+                {completedStories.map((story) => (
                   <StoryCard
                     key={story.storyId}
                     story={story}
                     onContribute={handleContribute}
-                    onViewStory={() => { }}
+                    onViewStory={() => {}}
                   />
                 ))}
               </div>
             )}
           </TabsContent>
 
-          {/* How to Play Tab */}
+          {/* How to Play */}
           <TabsContent value="how-to-play" className="animate-in fade-in-50 duration-500">
             <div className="max-w-4xl mx-auto space-y-8">
               <div className="text-center mb-8">
@@ -309,6 +316,7 @@ export default function Home() {
                 </p>
               </div>
 
+              {/* Cards grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Getting Started */}
                 <Card className="border-2 border-green-500/30 bg-gradient-to-br from-green-950/20 to-emerald-950/20 backdrop-blur-sm">
@@ -476,11 +484,9 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              {/* Call to Action */}
+              {/* CTA */}
               <div className="text-center">
-                <p className="text-lg text-gray-300 mb-4">
-                  Ready to start creating hilarious stories?
-                </p>
+                <p className="text-lg text-gray-300 mb-4">Ready to start creating hilarious stories?</p>
                 <Button
                   onClick={() => setShowCreationModal(true)}
                   className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-200 h-12 px-8 text-lg font-semibold"
@@ -492,13 +498,13 @@ export default function Home() {
             </div>
           </TabsContent>
 
-          {/* NFT Collection Tab */}
+          {/* NFT Collection */}
           <TabsContent value="collection" className="animate-in fade-in-50 duration-500">
             <NFTCollection address={address} />
           </TabsContent>
         </Tabs>
 
-        {/* Modals */}
+        {/* ── Modals ─────────────────────────────────────────── */}
         <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
           <ContributionModal
             open={showContributionModal}
