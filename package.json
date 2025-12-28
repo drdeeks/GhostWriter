@@ -90,11 +90,10 @@
     "ts-node": "^10.9.2",
     "typescript": "5.6.2"
   },
-  "overrides": {
-    "@types/react": "19.0.0-rc.1",
-    "@types/react-dom": "19.0.0-rc.1",
-    "valtio/use-sync-external-store": {
-      "react": "$react"
-    }
+ "overrides": {
+  "@types/react": "19.1.8",
+  "@types/react-dom": "19.1.6",
+  "valtio>use-sync-external-store": {
+    "react": "$react"
   }
 }
