@@ -3,7 +3,7 @@
 import { useLeaderboard, useUserRank } from '@/hooks/useContract';
 import type { LeaderboardEntry } from '@/types/ghostwriter';
 import { Award, ChevronLeft, ChevronRight, Loader2, Medal, Trophy } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAccount } from 'wagmi';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -21,49 +21,29 @@ export function Leaderboard() {
   const { leaderboard: rawLeaderboard, isLoading: leaderboardLoading } = useLeaderboard((currentPage - 1) * entriesPerPage, entriesPerPage);
   const { rank: userRankData, isLoading: rankLoading } = useUserRank(address);
 
-  // Process leaderboard data to include additional stats
+  // Memoize leaderboard data to avoid unnecessary recalculation
+  const processedEntries = useMemo(() => {
+    if (!rawLeaderboard || rawLeaderboard.length === 0) return [];
+    return rawLeaderboard.map((entry: any) => {
+      const userAddress = entry.user as `0x${string}`;
+      // For now, use placeholder values for completedStories and achievements
+      const completedStories = 0; // TODO: Fetch from contract
+      const achievements = 0; // TODO: Fetch from contract
+      return {
+        rank: Number(entry.rank),
+        address: userAddress,
+        contributions: Number(entry.contributions),
+        completedStories,
+        achievements,
+      };
+    });
+  }, [rawLeaderboard]);
+
   useEffect(() => {
-    const processLeaderboardData = async () => {
-      if (!rawLeaderboard || rawLeaderboard.length === 0) {
-        setEntries([]);
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const processedEntries: LeaderboardEntry[] = [];
-
-        // Process each leaderboard entry to get additional stats
-        for (const entry of rawLeaderboard) {
-          const userAddress = entry.user as `0x${string}`;
-
-          // For now, we'll use placeholder values for completedStories and achievements
-          // In a full implementation, we'd make additional contract calls here
-          // But for performance, we might want to modify the contract to return more data
-          const completedStories = 0; // TODO: Fetch from contract
-          const achievements = 0; // TODO: Fetch from contract
-
-          processedEntries.push({
-            rank: Number(entry.rank),
-            address: userAddress,
-            contributions: Number(entry.contributions),
-            completedStories,
-            achievements,
-          });
-        }
-
-        setEntries(processedEntries);
-        setUserRank(userRankData > 0 ? userRankData : null);
-      } catch (error) {
-        console.error('Failed to process leaderboard data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    processLeaderboardData();
-  }, [rawLeaderboard, userRankData]);
+    setEntries(processedEntries);
+    setUserRank(userRankData > 0 ? userRankData : null);
+    setIsLoading(false);
+  }, [processedEntries, userRankData]);
 
   const loading = leaderboardLoading || rankLoading;
 

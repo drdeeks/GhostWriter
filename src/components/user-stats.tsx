@@ -8,7 +8,7 @@ interface UserStatsDisplayProps {
   stats: UserStats;
 }
 
-export function UserStatsDisplay({ stats }: UserStatsDisplayProps) {
+const UserStatsDisplayComponent = ({ stats }: UserStatsDisplayProps) => {
   const formatLastContributionTime = (timestamp: number) => {
     if (timestamp === 0) return 'Never';
     const date = new Date(timestamp * 1000);
@@ -22,7 +22,7 @@ export function UserStatsDisplay({ stats }: UserStatsDisplayProps) {
     return date.toLocaleDateString();
   };
 
-  const statsData = [
+  const statsData = React.useMemo(() => [
     {
       label: 'Words Contributed',
       value: stats.contributionsCount,
@@ -71,7 +71,7 @@ export function UserStatsDisplay({ stats }: UserStatsDisplayProps) {
       bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
       iconColor: 'text-emerald-600 dark:text-emerald-400',
     },
-  ];
+  ], [stats]);
 
   return (
     <div className="space-y-6">
@@ -123,3 +123,5 @@ export function UserStatsDisplay({ stats }: UserStatsDisplayProps) {
     </div>
   );
 }
+
+export const UserStatsDisplay = React.memo(UserStatsDisplayComponent);

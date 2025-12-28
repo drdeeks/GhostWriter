@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useStoryManager } from '@/hooks/useContract';
+import { useSlot } from '@/hooks/useContract';
 import type { Story } from '@/types/ghostwriter';
 import { WORD_TYPE_DEFINITIONS } from '@/types/ghostwriter';
 import { DollarSign, Loader2, Sparkles } from 'lucide-react';
@@ -27,9 +28,10 @@ export function ContributionModal({ open, onClose, story, onSubmit }: Contributi
 
   if (!story) return null;
 
-  // Get next word type needed (simplified - in production, fetch from contract)
+  // Get next word type needed from contract
   const nextPosition = story.filledSlots + 1;
-  const wordType = 'adjective'; // Placeholder - fetch from contract in production
+  const { slot: nextSlot, isLoading: slotLoading } = useSlot(story.storyId, nextPosition);
+  const wordType = nextSlot?.wordType || 'adjective';
   const wordInfo = WORD_TYPE_DEFINITIONS[wordType];
 
   const handleSubmit = async () => {
