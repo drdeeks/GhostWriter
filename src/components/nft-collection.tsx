@@ -25,9 +25,10 @@ export function NFTCollection({ address }: NFTCollectionProps) {
     totalWords?: number;
   }> = [];
 
-  const hiddenNFTs = nfts.filter((nft) => nft.status === 'hidden');
-  const revealedNFTs = nfts.filter((nft) => nft.status === 'revealed');
-  const creatorNFTs = nfts.filter((nft) => nft.type === 'creator');
+  // Memoize filtered NFT arrays for performance
+  const hiddenNFTs = React.useMemo(() => nfts.filter((nft) => nft.status === 'hidden'), [nfts]);
+  const revealedNFTs = React.useMemo(() => nfts.filter((nft) => nft.status === 'revealed'), [nfts]);
+  const creatorNFTs = React.useMemo(() => nfts.filter((nft) => nft.type === 'creator'), [nfts]);
 
   if (!address) {
     return (
@@ -45,6 +46,16 @@ export function NFTCollection({ address }: NFTCollectionProps) {
     );
   }
 
+  // Memoize tab list and tab content rendering
+  const tabList = React.useMemo(() => (
+    <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-indigo-200 dark:border-indigo-800">
+      <TabsTrigger value="all">All ({nftCount})</TabsTrigger>
+      <TabsTrigger value="hidden">Hidden ({hiddenNFTs.length})</TabsTrigger>
+      <TabsTrigger value="revealed">Revealed ({revealedNFTs.length})</TabsTrigger>
+      <TabsTrigger value="creator">Creator ({creatorNFTs.length})</TabsTrigger>
+    </TabsList>
+  ), [nftCount, hiddenNFTs.length, revealedNFTs.length, creatorNFTs.length]);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -59,12 +70,7 @@ export function NFTCollection({ address }: NFTCollectionProps) {
       </div>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-indigo-200 dark:border-indigo-800">
-          <TabsTrigger value="all">All ({nftCount})</TabsTrigger>
-          <TabsTrigger value="hidden">Hidden ({hiddenNFTs.length})</TabsTrigger>
-          <TabsTrigger value="revealed">Revealed ({revealedNFTs.length})</TabsTrigger>
-          <TabsTrigger value="creator">Creator ({creatorNFTs.length})</TabsTrigger>
-        </TabsList>
+        {tabList}
 
         <TabsContent value="all" className="mt-6">
           {nftCount === 0 ? (

@@ -13,7 +13,9 @@ interface StoryCardProps {
   onViewStory: (storyId: string) => void;
 }
 
-export function StoryCard({ story, onContribute, onViewStory }: StoryCardProps) {
+import React from 'react';
+
+const StoryCardComponent = ({ story, onContribute, onViewStory }: StoryCardProps) => {
   const progress = (story.filledSlots / story.totalSlots) * 100;
   const isComplete = story.status === 'complete';
 
@@ -101,3 +103,5 @@ export function StoryCard({ story, onContribute, onViewStory }: StoryCardProps) 
     </Card>
   );
 }
+
+export const StoryCard = React.memo(StoryCardComponent);

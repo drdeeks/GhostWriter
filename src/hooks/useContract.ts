@@ -20,7 +20,10 @@ export function useStoryManager() {
   ) => {
     setIsPending(true);
     try {
-      const storyTypeEnum = storyType === 'mini' ? 0 : storyType === 'epic' ? 2 : 1;
+      let storyTypeEnum = 0;
+      if (storyType === 'normal') storyTypeEnum = 0;
+      else if (storyType === 'extended') storyTypeEnum = 1;
+      else if (storyType === 'dev') storyTypeEnum = 2;
       const categoryEnum = getCategoryEnum(category);
 
       const hash = await writeContractAsync({

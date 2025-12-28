@@ -45,6 +45,13 @@ export const STORY_MANAGER_ABI = [
     type: "function",
   },
   {
+    inputs: [],
+    name: "getActiveStoriesCount",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [
       { name: "storyId", type: "string" },
       { name: "position", type: "uint256" },

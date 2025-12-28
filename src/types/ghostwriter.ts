@@ -1,4 +1,4 @@
-export type StoryType = 'mini' | 'normal' | 'epic';
+export type StoryType = 'normal' | 'extended' | 'dev';
 export type StoryStatus = 'active' | 'complete';
 export type NFTStatus = 'hidden' | 'revealed';
 

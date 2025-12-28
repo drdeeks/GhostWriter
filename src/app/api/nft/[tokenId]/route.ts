@@ -291,9 +291,9 @@ export async function GET(
       if (!nftData.revealed) {
         // Hidden state
         metadata = {
-          name: `Ghost Writer #${tokenId}`,
-          description: `A mysterious word contribution to "${storyData.title}". Position ${nftData.wordPosition}/${nftData.totalWords} - ${nftData.wordType}. The story awaits completion...`,
-          image: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/nft/${tokenId}/image`,
+          name: `Ghost Writer #${tokenId} - Hidden`,
+          description: `This NFT is hidden until the story is complete. Contribute to reveal!`,
+          image: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/nft/${tokenId}/image?hidden=true`,
           attributes: [
             {
               trait_type: 'Story',

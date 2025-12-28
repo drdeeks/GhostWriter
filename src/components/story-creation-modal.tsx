@@ -1,7 +1,9 @@
 'use client';
 
 import { useStoryManager } from '@/hooks/useContract';
+import { useActiveStoriesCount } from '@/hooks/useActiveStoriesCount';
 import type { StoryType } from '@/types/ghostwriter';
+import { STORY_CATEGORIES } from '@/lib/aiStoryTemplates';
 import { AlertCircle, DollarSign, Loader2, PlusCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -22,13 +24,15 @@ interface StoryCreationModalProps {
 
 export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }: StoryCreationModalProps) {
   const [selectedType, setSelectedType] = useState<StoryType>('normal');
+  const [selectedCategory, setSelectedCategory] = useState<string>(STORY_CATEGORIES[0].name);
   const { createStory, isPending } = useStoryManager();
+  const { activeStories, isLoading: isActiveStoriesLoading } = useActiveStoriesCount();
   const { address } = useAccount();
 
   const storyTypes = [
     {
-      type: 'mini' as StoryType,
-      title: 'Mini Story',
+      type: 'normal' as StoryType,
+      title: 'Normal Story',
       words: '~50 words',
       slots: '10 slots',
       duration: 'Quick & fun!',
@@ -38,8 +42,8 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
       borderColor: 'border-green-200 dark:border-green-800',
     },
     {
-      type: 'normal' as StoryType,
-      title: 'Normal Story',
+      type: 'extended' as StoryType,
+      title: 'Extended Story',
       words: '~100 words',
       slots: '20 slots',
       duration: 'Classic length',
@@ -47,18 +51,6 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
       color: 'from-blue-500 to-indigo-500',
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
       borderColor: 'border-blue-200 dark:border-blue-800',
-    },
-    {
-      type: 'epic' as StoryType,
-      title: 'Epic Story',
-      words: '~1000 words',
-      slots: '200 slots',
-      duration: 'Community project',
-      icon: '🏆',
-      color: 'from-purple-500 to-pink-500',
-      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-      borderColor: 'border-purple-200 dark:border-purple-800',
-      disabled: true,
     },
   ];
 
@@ -75,13 +67,39 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
       return;
     }
 
-    // Generate story ID and placeholder data
+    if (!isActiveStoriesLoading && activeStories >= 15) {
+      toast.error('Story limit reached', {
+        description: 'There are already 15 active stories. Please complete or wait for a story to finish before creating a new one.',
+      });
+      return;
+    }
+
+    // Generate story ID and select AI template
     const storyId = `story_${Date.now()}`;
-    const title = 'Generated Story Title'; // In production, use AI to generate
-    const template = 'Story template...'; // In production, use AI to generate
-    const category = 'random'; // Default category
-    const slots = selectedType === 'mini' ? 10 : selectedType === 'epic' ? 200 : 20;
-    const wordTypes = Array(slots).fill('adjective'); // Placeholder - generate properly in production
+    const categoryObj = STORY_CATEGORIES.find(cat => cat.name === selectedCategory) || STORY_CATEGORIES[0];
+    // Pick a random template from the selected category
+    const template = categoryObj.templates[Math.floor(Math.random() * categoryObj.templates.length)];
+    const title = template.split('...')[0] || 'Generated Story Title';
+    const category = selectedCategory;
+
+    // Parse template for [WORD_TYPE] placeholders
+    const WORD_TYPE_REGEX = /\[([A-Z_]+)\]/g;
+    const validTypes = [
+      'adjective','noun','verb','adverb','plural_noun','past_tense_verb','verb_ing','persons_name','place','number','color','body_part','food','animal','exclamation','emotion'
+    ];
+    let match;
+    const wordTypes: string[] = [];
+    while ((match = WORD_TYPE_REGEX.exec(template)) !== null) {
+      const type = match[1].toLowerCase();
+      if (validTypes.includes(type)) wordTypes.push(type);
+    }
+    // Robust error handling: block creation if no valid word types found
+    if (wordTypes.length === 0) {
+      toast.error('No valid word types found in template', {
+        description: 'Please select a different template or ensure your template includes [WORD_TYPE] placeholders.',
+      });
+      return;
+    }
 
     const result = await createStory(storyId, title, template, selectedType, category, wordTypes);
 
@@ -108,6 +126,18 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Category Selection */}
+          <div>
+            <Label className="text-base font-semibold mb-4 block">Choose Story Category:</Label>
+            <RadioGroup value={selectedCategory} onValueChange={setSelectedCategory} className="flex flex-wrap gap-2">
+              {STORY_CATEGORIES.map((cat) => (
+                <RadioGroupItem key={cat.name} value={cat.name} id={cat.name} />
+              ))}
+              {STORY_CATEGORIES.map((cat) => (
+                <Label key={cat.name} htmlFor={cat.name} className={`px-3 py-1 rounded cursor-pointer border ${selectedCategory === cat.name ? 'bg-blue-200 border-blue-500' : 'bg-gray-100 border-gray-300'}`}>{cat.name}</Label>
+              ))}
+            </RadioGroup>
+          </div>
           {/* Credits Info */}
           <div className={`rounded-lg p-4 border-2 ${creationCredits > 0 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'}`}>
             <div className="flex items-center justify-between">
@@ -198,7 +228,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isPending || creationCredits < 1}
+            disabled={isPending || creationCredits < 1 || (!isActiveStoriesLoading && activeStories >= 15)}
             className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold"
           >
             {isPending ? (
@@ -209,7 +239,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
             ) : (
               <>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Create Story
+                {(!isActiveStoriesLoading && activeStories >= 15) ? 'Limit Reached' : 'Create Story'}
               </>
             )}
           </Button>

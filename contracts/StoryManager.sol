@@ -16,8 +16,8 @@ contract StoryManager is Ownable, ReentrancyGuard {
     LiquidityPool public liquidityPool;
 
     // Fee amounts in wei
-    uint256 public constant CONTRIBUTION_FEE = 0.00004 ether; // $0.10 equivalent (adjust based on ETH price)
-    uint256 public constant CREATION_FEE = 0.0002 ether; // $0.50 equivalent (adjust based on ETH price)
+    uint256 public constant CONTRIBUTION_FEE = 0.00005 ether; // $0.05 equivalent (adjust based on ETH price)
+    uint256 public constant CREATION_FEE = 0.0001 ether; // $0.10 equivalent (adjust based on ETH price)
 
     // Story types
     enum StoryType {
@@ -189,6 +189,9 @@ contract StoryManager is Ownable, ReentrancyGuard {
             "Need creation credits"
         );
 
+        // Enforce a maximum of 15 active stories
+        require(getActiveStoriesCount() < 15, "Max 15 active stories allowed");
+
         uint256 totalSlots = wordTypes.length;
         require(totalSlots > 0, "Need at least one slot");
 
@@ -254,6 +257,19 @@ contract StoryManager is Ownable, ReentrancyGuard {
         emit FeesCollected(msg.value, address(liquidityPool));
 
         emit StoryCreated(storyId, msg.sender, storyType, totalSlots);
+    }
+
+    /**
+     * @dev Returns the number of active stories
+     */
+    function getActiveStoriesCount() public view returns (uint256) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < allStoryIds.length; i++) {
+            if (stories[allStoryIds[i]].status == StoryStatus.ACTIVE) {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**
