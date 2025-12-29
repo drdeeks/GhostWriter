@@ -1,8 +1,3 @@
-{
-  "accountAssociation": {
-    "header": "eyJmaWQiOjExMDQ5MTgsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg3MDg4OTk3OGUyMDYwMjJEN2IxQkUzOWQ0NTdGZkJjNDczQjZlNDc1In0",
-    "payload": "eyJkb21haW4iOiJnaG9zdC13cml0ZXItdGhyZWUudmVyY2VsLmFwcCJ9",
-    "signature": "bhtwp3QokAIeaiiQrGH9bpTR9x9/U5CaFTTcwxQ9KKBNZdHC6aE2wr5Q5VthLtm3e8OhdOnbw1vlZ5njAC7+uRs="
   }
   "miniapp": {
     "version": "1",
@@ -31,5 +26,10 @@
     "ogTitle": "Ghost Writer - Community Storytelling NFT Game",
     "ogDescription": "Contribute words to community-created story templates and mint unique NFTs that reveal upon completion. Earn rewards for active participation on Base Chain.",
     "ogImageUrl": "https://your-domain.com/splash.png"
+ {
+  "accountAssociation": {
+    "header": "eyJmaWQiOjExMDQ5MTgsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg3MDg4OTk3OGUyMDYwMjJEN2IxQkUzOWQ0NTdGZkJjNDczQjZlNDc1In0",
+    "payload": "eyJkb21haW4iOiJnaG9zdC13cml0ZXItdGhyZWUudmVyY2VsLmFwcCJ9",
+    "signature": "bhtwp3QokAIeaiiQrGH9bpTR9x9/U5CaFTTcwxQ9KKBNZdHC6aE2wr5Q5VthLtm3e8OhdOnbw1vlZ5njAC7+uRs="
   }
 }
