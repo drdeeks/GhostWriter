@@ -1,18 +1,18 @@
-}
-"miniapp": {
+{
+  "miniapp": {
     "version": "1",
     "name": "Ghost Writer",
-    "iconUrl": "https://your-domain.com/icon.png",
-    "homeUrl": "https://your-domain.com",
-    "imageUrl": "https://your-domain.com/image.png",
+    "iconUrl": "https://ghost-writer-three.vercel.app/icon.png",
+    "homeUrl": "https://ghost-writer-three.vercel.app",
+    "imageUrl": "https://ghost-writer-three.vercel.app/image.png",
     "buttonTitle": "Start Writing",
-    "splashImageUrl": "https://your-domain.com/splash.png",
+    "splashImageUrl": "https://ghost-writer-three.vercel.app/splash.png",
     "splashBackgroundColor": "#000000",
-    "webhookUrl": "https://your-domain.com/api/webhook",
+    "webhookUrl": "https://ghost-writer-three.vercel.app/api/webhook",
     "subtitle": "Community Storytelling NFT Game",
     "description": "Collaborative storytelling where contributions mint hidden NFTs that reveal when stories complete. Each word earns creation credits on Base Chain.",
     "primaryCategory": "games",
-    "heroImageUrl": "https://your-domain.com/splash.png",
+    "heroImageUrl": "https://ghost-writer-three.vercel.app/splash.png",
     "tags": [
       "nft",
       "storytelling",
@@ -25,8 +25,8 @@
     "tagline": "Build community through collaborative storytelling.",
     "ogTitle": "Ghost Writer - Community Storytelling NFT Game",
     "ogDescription": "Contribute words to community-created story templates and mint unique NFTs that reveal upon completion. Earn rewards for active participation on Base Chain.",
-    "ogImageUrl": "https://your-domain.com/splash.png"
-}
+    "ogImageUrl": "https://ghost-writer-three.vercel.app/splash.png"
+  },
   "accountAssociation": {
     "header": "eyJmaWQiOjExMDQ5MTgsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg3MDg4OTk3OGUyMDYwMjJEN2IxQkUzOWQ0NTdGZkJjNDczQjZlNDc1In0",
     "payload": "eyJkb21haW4iOiJnaG9zdC13cml0ZXItdGhyZWUudmVyY2VsLmFwcCJ9",
