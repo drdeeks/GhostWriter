@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "npx patch-package",
     "test": "hardhat test",
     "test:gas": "REPORT_GAS=true hardhat test",
     "test:frontend": "jest",
@@ -25,7 +24,7 @@
     "node": "hardhat node"
   },
   "dependencies": {
-    "@coinbase/onchainkit": "^1.1.1",
+    "@coinbase/onchainkit": "^1.0.0",
     "@farcaster/miniapp-sdk": "^0.2.1",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
     "@nomicfoundation/hardhat-toolbox": "^6.0.0",
