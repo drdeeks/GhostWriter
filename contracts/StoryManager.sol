@@ -16,8 +16,8 @@ contract StoryManager is Ownable, ReentrancyGuard {
     LiquidityPool public liquidityPool;
 
     // Fee amounts in wei
-    uint256 public constant CONTRIBUTION_FEE = 0.00005 ether; // $0.05 equivalent (adjust based on ETH price)
-    uint256 public constant CREATION_FEE = 0.0001 ether; // $0.10 equivalent (adjust based on ETH price)
+    uint256 public contributionFee;
+    uint256 public creationFee;
 
     // Story types
     enum StoryType {
@@ -81,6 +81,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
         uint256 completedStories;
         uint256 shareCount;
         uint256 lastContributionTime;
+        string[] activeContributions;
     }
 
     // Achievement struct
@@ -106,6 +107,8 @@ contract StoryManager is Ownable, ReentrancyGuard {
     mapping(string => bool) public storyExists;
     mapping(string => mapping(address => bool))
         public storyCompletedContributors; // New mapping
+
+    mapping(address => mapping(string => bool)) public hasContributedToStory;
 
     // Arrays for tracking
     string[] public allStoryIds;
@@ -154,6 +157,8 @@ contract StoryManager is Ownable, ReentrancyGuard {
         require(_liquidityPool != address(0), "Invalid pool");
         nftContract = GhostWriterNFT(_nftContract);
         liquidityPool = LiquidityPool(_liquidityPool);
+        contributionFee = 0.00005 ether;
+        creationFee = 0.0001 ether;
         _initializeAchievements();
     }
 
@@ -181,7 +186,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
         StoryCategory category,
         string[] memory wordTypes
     ) external payable nonReentrant {
-        require(msg.value == CREATION_FEE, "Incorrect creation fee");
+        require(msg.value == creationFee, "Incorrect creation fee");
         require(bytes(storyId).length > 0, "Invalid storyId");
         require(!storyExists[storyId], "Story already exists");
         require(
@@ -202,6 +207,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
             require(totalSlots <= 20, "Normal stories max 20 slots");
         } else if (storyType == StoryType.EPIC) {
             require(totalSlots <= 200, "Epic stories max 200 slots");
+            require(msg.sender == owner(), "Only owner can create epic stories");
         }
 
         // Create story
@@ -281,7 +287,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
         uint256 position,
         string memory word
     ) external payable nonReentrant {
-        require(msg.value == CONTRIBUTION_FEE, "Incorrect contribution fee");
+        require(msg.value == contributionFee, "Incorrect contribution fee");
         require(storyExists[storyId], "Story does not exist");
 
         Story storage story = stories[storyId];
@@ -328,6 +334,12 @@ contract StoryManager is Ownable, ReentrancyGuard {
         userStats[msg.sender].creationCredits++; // Award creation credit
         userStats[msg.sender].nftsOwned++;
         userStats[msg.sender].lastContributionTime = block.timestamp;
+
+        // Add story to user's active contributions if not already present
+        if (!hasContributedToStory[msg.sender][storyId]) {
+            userStats[msg.sender].activeContributions.push(storyId);
+            hasContributedToStory[msg.sender][storyId] = true;
+        }
 
         // Update leaderboard
         _updateLeaderboard(msg.sender);
@@ -454,15 +466,13 @@ contract StoryManager is Ownable, ReentrancyGuard {
         // Reveal all contributor NFTs
         nftContract.revealStoryNFTs(storyId);
 
-        // Mint creator NFT only for stories created by the contract owner
-        if (story.creator == owner()) {
-            nftContract.mintCreatorNFT(
-                story.creator,
-                storyId,
-                story.title,
-                story.template
-            );
-        }
+        // Mint creator NFT
+        nftContract.mintCreatorNFT(
+            story.creator,
+            storyId,
+            story.title,
+            story.template
+        );
 
         emit StoryCompleted(storyId, block.timestamp);
     }
@@ -698,19 +708,16 @@ contract StoryManager is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Owner can update fee amounts (emergency only)
+     * @dev Owner can update fee amounts
      */
-    function updateFees(
+    function setFee(
         uint256 newContributionFee,
         uint256 newCreationFee
-    ) external view onlyOwner {
-        // Note: In production, use a more sophisticated fee oracle
-        // This is a simplified version
+    ) external onlyOwner {
         require(newContributionFee > 0, "Fee must be positive");
         require(newCreationFee > 0, "Fee must be positive");
-        // Would update constant-like storage variables if made non-constant
-        // For this implementation, fees are hardcoded as constants
-        revert("Fee updates not supported in this version");
+        contributionFee = newContributionFee;
+        creationFee = newCreationFee;
     }
 
     /**

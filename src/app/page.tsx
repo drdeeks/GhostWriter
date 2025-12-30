@@ -166,10 +166,10 @@ export default function Home() {
                 creationCredits: userStats ? Number(userStats[1]) : 0,
                 storiesCreated: userStats ? Number(userStats[2]) : 0,
                 nftsOwned: userStats ? Number(userStats[3]) : 0,
-                completedStories: 0, // TODO: Fetch from contract
-                shareCount: 0, // TODO: Fetch from contract
-                lastContributionTime: 0, // TODO: Fetch from contract
-                activeContributions: [],
+                completedStories: userStats ? Number(userStats[4]) : 0,
+                shareCount: userStats ? Number(userStats[5]) : 0,
+                lastContributionTime: userStats ? Number(userStats[6]) : 0,
+                activeContributions: userStats ? userStats[7] : [],
               }}
             />
           </div>
