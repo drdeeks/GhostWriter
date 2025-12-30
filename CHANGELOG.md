@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.0] - 2024-07-26
+## [1.2.0] - 2024-07-26
 
 ### Added
 - **Dynamic Fees:** Implemented a dynamic fee mechanism in `StoryManager.sol` that allows the contract owner to set contribution and creation fees.
@@ -35,3 +35,4 @@ All notable changes to this project will be documented in this file.
 - **Leaderboard Offset Validation:** Added a check to the `getLeaderboard` function in `StoryManager.sol` to ensure that the `offset` is always less than the length of the leaderboard.
 - **User Rank Handling:** Modified the `getUserRank` function in `StoryManager.sol` to return `0` if the user is not on the leaderboard.
 - **Emergency Withdrawal Event:** Added an event to the `emergencyWithdraw` function in `StoryManager.sol` to ensure that all emergency withdrawals are properly logged.
+- **Dependency Conflict:** Resolved a dependency conflict between `@coinbase/onchainkit` and `wagmi` by downgrading `@coinbase/onchainkit` to a compatible version.
