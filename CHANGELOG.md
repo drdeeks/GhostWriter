@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - **Profanity Filter Test Suite:** Added a new test file `test/ProfanityFilter.test.ts` to thoroughly test the profanity filter middleware.
 - **AI Generation Test Suite:** Developed a dedicated test suite `test/AIGeneration.test.ts` to validate the AI-powered story generation functionality.
 - **End-to-End Test Case:** Added a comprehensive end-to-end test case to `test/StoryManagerExpansion.test.ts` that validates the entire story lifecycle.
+- **New Documentation:** Created a new `docs` directory and added a file named `INSTRUCTIONS.md`. This file will contain detailed instructions on how to acquire and set up the necessary AI API keys and how to configure the NFT autogeneration process.
 
 ### Changed
 - **UserStatsDisplay Component:** Updated the `UserStatsDisplay` component to eliminate all `TODO` comments and placeholder data, ensuring it now accurately reflects on-chain user statistics.
@@ -27,3 +28,10 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - **Hardcoded Story Templates:** Removed the `aiStoryTemplates.ts` file, which contained hardcoded story templates, in favor of the new `generate-story` API.
 - **updateFees Function:** Removed the `updateFees` function from `StoryManager.sol`, which was a placeholder and has been replaced by the new `setFee` function.
+
+### Fixed
+- **Leaderboard Update Gas Inefficiency:** Optimized the `_updateLeaderboard` function in `StoryManager.sol` by replacing the gas-intensive bubble sort with a more efficient insertion sort algorithm.
+- **Story Completion Logic:** Added a requirement to the `_completeStory` function in `StoryManager.sol` to ensure that only active stories can be completed.
+- **Leaderboard Offset Validation:** Added a check to the `getLeaderboard` function in `StoryManager.sol` to ensure that the `offset` is always less than the length of the leaderboard.
+- **User Rank Handling:** Modified the `getUserRank` function in `StoryManager.sol` to return `0` if the user is not on the leaderboard.
+- **Emergency Withdrawal Event:** Added an event to the `emergencyWithdraw` function in `StoryManager.sol` to ensure that all emergency withdrawals are properly logged.
