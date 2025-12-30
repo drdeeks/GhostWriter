@@ -148,6 +148,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
     );
     event StoryShared(string indexed storyId, address indexed sharer);
     event LeaderboardUpdated(address indexed user, uint256 newRank);
+    event EmergencyWithdrawal(address indexed owner, uint256 amount);
 
     constructor(
         address _nftContract,
@@ -401,6 +402,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
      */
     function _completeStory(string memory storyId) internal {
         Story storage story = stories[storyId];
+        require(story.status == StoryStatus.ACTIVE, "Story not active");
         story.status = StoryStatus.COMPLETE;
         story.completedAt = block.timestamp;
 
@@ -511,15 +513,12 @@ contract StoryManager is Ownable, ReentrancyGuard {
             }
         }
 
-        // Bubble up if needed (simplified - in production use more efficient sorting)
+        // Insertion sort to place the user in the correct position
         uint256 currentIndex = leaderboardIndex[user];
         if (currentIndex > 0) {
             for (uint256 i = currentIndex - 1; i > 0; i--) {
-                if (
-                    userStats[leaderboard[i - 1]].contributionsCount <
-                    userContributions
-                ) {
-                    // Swap
+                if (userStats[leaderboard[i - 1]].contributionsCount < userContributions) {
+                    // Swap with the user above
                     address temp = leaderboard[i - 1];
                     leaderboard[i - 1] = user;
                     leaderboard[i] = temp;
@@ -527,6 +526,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
                     leaderboardIndex[temp] = i + 1;
                     emit LeaderboardUpdated(user, i);
                 } else {
+                    // Found the correct position
                     break;
                 }
             }
@@ -633,6 +633,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
         uint256 limit
     ) external view returns (LeaderboardEntry[] memory) {
         require(limit <= 100, "Max 100 entries per request");
+        require(offset < leaderboard.length, "Offset out of bounds");
 
         uint256 end = offset + limit;
         if (end > leaderboard.length) {
@@ -686,8 +687,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
      * @dev Get user rank on leaderboard
      */
     function getUserRank(address user) external view returns (uint256) {
-        uint256 index = leaderboardIndex[user];
-        return index > 0 ? index : 0; // 0 means not on leaderboard
+        return leaderboardIndex[user];
     }
 
     /**
@@ -727,6 +727,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
         uint256 balance = address(this).balance;
         require(balance > 0, "No balance");
         payable(owner()).transfer(balance);
+        emit EmergencyWithdrawal(owner(), balance);
     }
 
     /**
