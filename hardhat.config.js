@@ -1,4 +1,3 @@
-import type { HardhatUserConfig } from "hardhat/config";
 require("@nomicfoundation/hardhat-toolbox");
 require("@nomicfoundation/hardhat-ethers");
 const dotenv = require("dotenv");
@@ -21,7 +20,7 @@ function getDeployerAccounts() {
 
 const accounts = getDeployerAccounts();
 
-const config: HardhatUserConfig & { etherscan?: any; gasReporter?: any; sourcify?: any } = {
+module.exports = {
   solidity: {
     version: "0.8.20",
     settings: {
@@ -126,5 +125,3 @@ const config: HardhatUserConfig & { etherscan?: any; gasReporter?: any; sourcify
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
   },
 };
-
-module.exports = config;

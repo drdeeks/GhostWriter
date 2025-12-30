@@ -1,15 +1,31 @@
 'use client';
 
-import { useStoryManager } from '@/hooks/useContract';
+import { useStoryManager, useIsOwner } from '@/hooks/useContract';
 import { useActiveStoriesCount } from '@/hooks/useActiveStoriesCount';
 import type { StoryType } from '@/types/ghostwriter';
-import { STORY_CATEGORIES } from '@/lib/aiStoryTemplates';
 import { AlertCircle, DollarSign, Loader2, PlusCircle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAccount } from 'wagmi';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+
+const STORY_CATEGORIES = [
+  "Adventure",
+  "Fantasy",
+  "Comedy",
+  "Mystery",
+  "Sci-Fi",
+  "Sports",
+  "Animals",
+  "School",
+  "Superheroes",
+  "Friendship",
+  "Holidays",
+  "Food",
+  "Nature",
+  "History",
+];
 import { Card, CardContent } from './ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { Label } from './ui/label';
@@ -28,6 +44,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
   const { createStory, isPending } = useStoryManager();
   const { activeStories, isLoading: isActiveStoriesLoading } = useActiveStoriesCount();
   const { address } = useAccount();
+  const { isOwner } = useIsOwner(address);
 
   const storyTypes = [
     {
@@ -52,6 +69,18 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
       borderColor: 'border-blue-200 dark:border-blue-800',
     },
+    {
+      type: 'epic' as StoryType,
+      title: 'Epic Story',
+      words: '~500 words',
+      slots: '50 slots',
+      duration: 'A grand saga!',
+      icon: '🔥',
+      color: 'from-red-500 to-orange-500',
+      bgColor: 'bg-red-50 dark:bg-red-900/20',
+      borderColor: 'border-red-200 dark:border-red-800',
+      disabled: !isOwner,
+    },
   ];
 
   const handleSubmit = async () => {
@@ -74,34 +103,23 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
       return;
     }
 
-    // Generate story ID and select AI template
     const storyId = `story_${Date.now()}`;
-    const categoryObj = STORY_CATEGORIES.find(cat => cat.name === selectedCategory) || STORY_CATEGORIES[0];
-    // Pick a random template from the selected category
-    const template = categoryObj.templates[Math.floor(Math.random() * categoryObj.templates.length)];
-    const title = template.split('...')[0] || 'Generated Story Title';
-    const category = selectedCategory;
 
-    // Parse template for [WORD_TYPE] placeholders
-    const WORD_TYPE_REGEX = /\[([A-Z_]+)\]/g;
-    const validTypes = [
-      'adjective','noun','verb','adverb','plural_noun','past_tense_verb','verb_ing','persons_name','place','number','color','body_part','food','animal','exclamation','emotion'
-    ];
-    let match;
-    const wordTypes: string[] = [];
-    while ((match = WORD_TYPE_REGEX.exec(template)) !== null) {
-      const type = match[1].toLowerCase();
-      if (validTypes.includes(type)) wordTypes.push(type);
-    }
-    // Robust error handling: block creation if no valid word types found
-    if (wordTypes.length === 0) {
-      toast.error('No valid word types found in template', {
-        description: 'Please select a different template or ensure your template includes [WORD_TYPE] placeholders.',
-      });
+    // Generate story template via API
+    const response = await fetch('/api/generate-story', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: selectedCategory }),
+    });
+
+    if (!response.ok) {
+      toast.error('Failed to generate story template');
       return;
     }
 
-    const result = await createStory(storyId, title, template, selectedType, category, wordTypes);
+    const { title, template, wordTypes } = await response.json();
+
+    const result = await createStory(storyId, title, template, selectedType, selectedCategory, wordTypes);
 
     if (result.success) {
       onSubmit(selectedType);
@@ -131,10 +149,10 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
             <Label className="text-base font-semibold mb-4 block">Choose Story Category:</Label>
             <RadioGroup value={selectedCategory} onValueChange={setSelectedCategory} className="flex flex-wrap gap-2">
               {STORY_CATEGORIES.map((cat) => (
-                <RadioGroupItem key={cat.name} value={cat.name} id={cat.name} />
+                <RadioGroupItem key={cat} value={cat} id={cat} />
               ))}
               {STORY_CATEGORIES.map((cat) => (
-                <Label key={cat.name} htmlFor={cat.name} className={`px-3 py-1 rounded cursor-pointer border ${selectedCategory === cat.name ? 'bg-blue-200 border-blue-500' : 'bg-gray-100 border-gray-300'}`}>{cat.name}</Label>
+                <Label key={cat} htmlFor={cat} className={`px-3 py-1 rounded cursor-pointer border ${selectedCategory === cat ? 'bg-blue-200 border-blue-500' : 'bg-gray-100 border-gray-300'}`}>{cat}</Label>
               ))}
             </RadioGroup>
           </div>
