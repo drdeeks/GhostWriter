@@ -17,8 +17,8 @@ describe("Bootstrap Flow Tests", function () {
   let user1: SignerWithAddress;
   let user2: SignerWithAddress;
 
-  const CONTRIBUTION_FEE = ethers.parseEther("0.00004");
-  const CREATION_FEE = ethers.parseEther("0.0002");
+  const CONTRIBUTION_FEE = ethers.parseEther("0.00005");
+  const CREATION_FEE = ethers.parseEther("0.0001");
 
   beforeEach(async function () {
     [owner, user1, user2] = await ethers.getSigners();
@@ -130,7 +130,7 @@ describe("Bootstrap Flow Tests", function () {
       expect(story.status).to.equal(1); // 1 = COMPLETE
 
       const storyTokens = await nftContract.getStoryTokens(storyId);
-      expect(storyTokens.length).to.equal(1);
+      expect(storyTokens.length).to.equal(2);
 
       const nftData = await nftContract.getNFTData(storyTokens[0]);
       expect(nftData.revealed).to.be.true;

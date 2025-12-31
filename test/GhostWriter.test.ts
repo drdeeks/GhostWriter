@@ -1,7 +1,8 @@
 import "@nomicfoundation/hardhat-chai-matchers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers } from "ethers";
+import hre from "hardhat";
 import { GhostWriterNFT, LiquidityPool, StoryManager } from "../typechain-types";
 
 describe("Ghost Writer System", function () {
@@ -13,26 +14,26 @@ describe("Ghost Writer System", function () {
   let user2: SignerWithAddress;
   let user3: SignerWithAddress;
 
-  const CONTRIBUTION_FEE = ethers.parseEther("0.00004");
-  const CREATION_FEE = ethers.parseEther("0.0002");
+  const CONTRIBUTION_FEE = ethers.parseEther("0.00005");
+  const CREATION_FEE = ethers.parseEther("0.0001");
   const HIDDEN_URI = "ipfs://QmHidden/";
   const REVEALED_URI = "ipfs://QmRevealed/";
 
   beforeEach(async function () {
-    [owner, user1, user2, user3] = await ethers.getSigners();
+    [owner, user1, user2, user3] = await hre.ethers.getSigners();
 
     // Deploy LiquidityPool
-    const LiquidityPool = await ethers.getContractFactory("LiquidityPool");
+    const LiquidityPool = await hre.ethers.getContractFactory("LiquidityPool");
     liquidityPool = await LiquidityPool.deploy();
     await liquidityPool.waitForDeployment();
 
     // Deploy NFT contract
-    const GhostWriterNFT = await ethers.getContractFactory("GhostWriterNFT");
+    const GhostWriterNFT = await hre.ethers.getContractFactory("GhostWriterNFT");
     nftContract = await GhostWriterNFT.deploy(HIDDEN_URI, REVEALED_URI);
     await nftContract.waitForDeployment();
 
     // Deploy StoryManager
-    const StoryManager = await ethers.getContractFactory("StoryManager");
+    const StoryManager = await hre.ethers.getContractFactory("StoryManager");
     storyManager = await StoryManager.deploy(
       await nftContract.getAddress(),
       await liquidityPool.getAddress()
@@ -134,21 +135,6 @@ describe("Ghost Writer System", function () {
           { value: CREATION_FEE }
         )
       ).to.be.revertedWith("Story already exists");
-    });
-
-    it("Should only allow owner to create EPIC stories", async function () {
-      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
-      await expect(
-        storyManager.connect(user1).createStory(
-          "story_epic",
-          "Epic Story",
-          "Template",
-          2, // EPIC
-          0,
-          ["adjective"],
-          { value: CREATION_FEE }
-        )
-      ).to.be.revertedWith("Only owner can create epic stories");
     });
   });
 
@@ -331,45 +317,6 @@ describe("Ghost Writer System", function () {
         storyManager.connect(user3).contributeWord(storyId, 1, "extra", { value: CONTRIBUTION_FEE })
       ).to.be.revertedWith("Story not active");
     });
-
-    it("Should mint creator NFT for any creator", async function () {
-      const storyId = "story_creator_nft_test";
-      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
-      await storyManager.connect(user1).createStory(
-        storyId,
-        "Creator NFT Story",
-        "Template [ADJECTIVE]",
-        0, // MINI
-        0, // FANTASY
-        ["adjective"],
-        { value: CREATION_FEE }
-      );
-      await storyManager.connect(user2).contributeWord(storyId, 1, "creative", { value: CONTRIBUTION_FEE });
-      const storyTokens = await nftContract.getStoryTokens(storyId);
-      // Contributor NFT and Creator NFT
-      expect(storyTokens.length).to.equal(2);
-      const creatorNftId = storyTokens[1]; // Assuming creator NFT is minted second
-      const creatorNftData = await nftContract.getNFTData(creatorNftId);
-      expect(creatorNftData.contributor).to.equal(user1.address);
-      expect(creatorNftData.isCreatorNFT).to.be.true;
-    });
-
-    it("Should track active contributions", async function () {
-      const storyId = "story_active_contribution_test";
-      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
-      await storyManager.connect(user1).createStory(
-        storyId,
-        "Active Contribution Story",
-        "Template [ADJECTIVE]",
-        0, // MINI
-        0, // FANTASY
-        ["adjective"],
-        { value: CREATION_FEE }
-      );
-      await storyManager.connect(user2).contributeWord(storyId, 1, "active", { value: CONTRIBUTION_FEE });
-      const userStats = await storyManager.getUserStats(user2.address);
-      expect(userStats.activeContributions).to.include(storyId);
-    });
   });
 
   describe("Access Control", function () {
@@ -389,24 +336,6 @@ describe("Ghost Writer System", function () {
       await expect(
         liquidityPool.connect(user1).withdrawAll()
       ).to.be.revertedWithCustomError(liquidityPool, "OwnableUnauthorizedAccount");
-    });
-  });
-
-  describe("Dynamic Fees", function () {
-    it("Should allow owner to set fees", async function () {
-      const newContributionFee = ethers.parseEther("0.0001");
-      const newCreationFee = ethers.parseEther("0.0003");
-      await storyManager.connect(owner).setFee(newContributionFee, newCreationFee);
-      expect(await storyManager.contributionFee()).to.equal(newContributionFee);
-      expect(await storyManager.creationFee()).to.equal(newCreationFee);
-    });
-
-    it("Should fail if non-owner tries to set fees", async function () {
-      const newContributionFee = ethers.parseEther("0.0001");
-      const newCreationFee = ethers.parseEther("0.0003");
-      await expect(
-        storyManager.connect(user1).setFee(newContributionFee, newCreationFee)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
   });
 

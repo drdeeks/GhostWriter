@@ -1,4 +1,5 @@
 
+import { expect } from 'chai';
 import { POST } from '@/app/api/generate-story/route';
 import { NextResponse } from 'next/server';
 
@@ -13,10 +14,10 @@ describe('AI Generation API', () => {
     });
     const response = await POST(request);
     const body = await response.json();
-    expect(response.status).toBe(200);
-    expect(body.title).toBeDefined();
-    expect(body.template).toBeDefined();
-    expect(body.wordTypes).toBeDefined();
+    expect(response.status).to.equal(200);
+    expect(body.title).to.not.be.undefined;
+    expect(body.template).to.not.be.undefined;
+    expect(body.wordTypes).to.not.be.undefined;
   });
 
   it('should return 400 for an invalid category', async () => {
@@ -28,7 +29,7 @@ describe('AI Generation API', () => {
       },
     });
     const response = await POST(request);
-    expect(response.status).toBe(404);
+    expect(response.status).to.equal(404);
   });
 
   it('should return 400 for invalid input', async () => {
@@ -40,6 +41,6 @@ describe('AI Generation API', () => {
       },
     });
     const response = await POST(request);
-    expect(response.status).toBe(400);
+    expect(response.status).to.equal(400);
   });
 });
