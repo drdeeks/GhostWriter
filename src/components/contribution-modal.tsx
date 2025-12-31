@@ -45,6 +45,27 @@ export function ContributionModal({ open, onClose, story, onSubmit }: Contributi
       return;
     }
 
+    // Moderate word via API
+    const response = await fetch('/api/moderate-word', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word }),
+    });
+
+    if (!response.ok) {
+      toast.error('Failed to moderate word');
+      return;
+    }
+
+    const { isProfane } = await response.json();
+
+    if (isProfane) {
+      toast.error('Inappropriate word', {
+        description: 'Please choose a different word',
+      });
+      return;
+    }
+
     const result = await contributeWord(story.storyId, nextPosition, word);
 
     if (result.success) {

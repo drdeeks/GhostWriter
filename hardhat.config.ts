@@ -1,13 +1,14 @@
-import type { HardhatUserConfig } from "hardhat/config";
-require("@nomicfoundation/hardhat-toolbox");
-require("@nomicfoundation/hardhat-ethers");
-const dotenv = require("dotenv");
-const fs = require("fs");
-const { Wallet } = require("ethers");
+require('tsconfig-paths/register');
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-ethers";
+import dotenv from "dotenv";
+import fs from "fs";
+import { Wallet } from "ethers";
 
 dotenv.config();
 
-function getDeployerAccounts() {
+function getDeployerAccounts(): string[] {
   if (process.env.PRIVATE_KEY) {
     return [process.env.PRIVATE_KEY];
   }
@@ -21,7 +22,7 @@ function getDeployerAccounts() {
 
 const accounts = getDeployerAccounts();
 
-const config: HardhatUserConfig & { etherscan?: any; gasReporter?: any; sourcify?: any } = {
+const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.20",
     settings: {
@@ -120,6 +121,7 @@ const config: HardhatUserConfig & { etherscan?: any; gasReporter?: any; sourcify
     cache: "./cache",
     artifacts: "./artifacts",
   },
+  tsconfig: "tsconfig.node.json",
   gasReporter: {
     enabled: process.env.REPORT_GAS === "true",
     currency: "USD",
@@ -127,4 +129,4 @@ const config: HardhatUserConfig & { etherscan?: any; gasReporter?: any; sourcify
   },
 };
 
-module.exports = config;
+export default config;
