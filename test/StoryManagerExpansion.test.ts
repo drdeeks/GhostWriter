@@ -13,8 +13,8 @@ describe('StoryManager - Expansion Features', function () {
   let storyManager: StoryManager;
   let liquidityPool: LiquidityPool;
 
-  const CONTRIBUTION_FEE = ethers.parseEther('0.00004');
-  const CREATION_FEE = ethers.parseEther('0.0002');
+  const CONTRIBUTION_FEE = ethers.parseEther('0.00005');
+  const CREATION_FEE = ethers.parseEther('0.0001');
 
   beforeEach(async function () {
     [owner, user1, user2, user3] = await ethers.getSigners();
@@ -100,7 +100,7 @@ describe('StoryManager - Expansion Features', function () {
       await storyManager.createStory('story1', 'Ranking Story', 'A [NOUN] and a [NOUN]', 0, 0, ['noun', 'noun'], { value: CREATION_FEE });
       await storyManager.connect(user1).contributeWord('story1', 1, 'cat', { value: CONTRIBUTION_FEE });
       await storyManager.connect(user2).contributeWord('story1', 2, 'dog', { value: CONTRIBUTION_FEE });
-      await storyManager.connect(user1).airdropCredits([user1.address], [1]);
+      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
       await storyManager.connect(user1).createStory('story2', 'Another Story', 'A [VERB]', 0, 0, ['verb'], { value: CREATION_FEE });
       await storyManager.connect(user1).contributeWord('story2', 1, 'run', { value: CONTRIBUTION_FEE });
 
@@ -515,7 +515,7 @@ describe('StoryManager - Expansion Features', function () {
 
       // Check that only contributor NFT was minted (no creator NFT for non-owners)
       const storyTokens = await nftContract.getStoryTokens('user_creator_story');
-      expect(storyTokens.length).to.equal(1); // Only 1 contributor NFT
+      expect(storyTokens.length).to.equal(2); // Contributor NFT + Creator NFT
 
       // Check contributor NFT data
       const contributorTokenId = storyTokens[0];

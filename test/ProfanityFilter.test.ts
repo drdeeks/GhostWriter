@@ -1,10 +1,10 @@
-
+import { expect } from 'chai';
 import { POST } from '@/app/api/moderate-word/route';
 import { NextResponse } from 'next/server';
 
 describe('Profanity Filter API', () => {
   it('should return isProfane: true for profane words', async () => {
-    const profaneWords = ['badword', 'anotherbadword'];
+    const profaneWords = ['hell', 'damn'];
 
     for (const word of profaneWords) {
       const request = new Request('http://localhost/api/moderate-word', {
@@ -16,7 +16,7 @@ describe('Profanity Filter API', () => {
       });
       const response = await POST(request);
       const body = await response.json();
-      expect(body.isProfane).toBe(true);
+      expect(body.isProfane).to.be.true;
     }
   });
 
@@ -33,7 +33,7 @@ describe('Profanity Filter API', () => {
       });
       const response = await POST(request);
       const body = await response.json();
-      expect(body.isProfane).toBe(false);
+      expect(body.isProfane).to.be.false;
     }
   });
 
@@ -46,6 +46,6 @@ describe('Profanity Filter API', () => {
       },
     });
     const response = await POST(request);
-    expect(response.status).toBe(400);
+    expect(response.status).to.equal(400);
   });
 });
