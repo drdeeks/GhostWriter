@@ -13,8 +13,8 @@ describe('StoryManager - Expansion Features', function () {
   let storyManager: StoryManager;
   let liquidityPool: LiquidityPool;
 
-  const CONTRIBUTION_FEE = ethers.parseEther('0.00004');
-  const CREATION_FEE = ethers.parseEther('0.0002');
+  const CONTRIBUTION_FEE = ethers.parseEther('0.00005');
+  const CREATION_FEE = ethers.parseEther('0.0001');
 
   beforeEach(async function () {
     [owner, user1, user2, user3] = await ethers.getSigners();
@@ -94,6 +94,24 @@ describe('StoryManager - Expansion Features', function () {
 
       expect(rank1).to.be.gt(0);
       expect(rank2).to.be.gt(0);
+    });
+
+    it('Should correctly rank users based on contributions', async function () {
+      await storyManager.createStory('story1', 'Ranking Story', 'A [NOUN] and a [NOUN]', 0, 0, ['noun', 'noun'], { value: CREATION_FEE });
+      await storyManager.connect(user1).contributeWord('story1', 1, 'cat', { value: CONTRIBUTION_FEE });
+      await storyManager.connect(user2).contributeWord('story1', 2, 'dog', { value: CONTRIBUTION_FEE });
+      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
+      await storyManager.connect(user1).createStory('story2', 'Another Story', 'A [VERB]', 0, 0, ['verb'], { value: CREATION_FEE });
+      await storyManager.connect(user1).contributeWord('story2', 1, 'run', { value: CONTRIBUTION_FEE });
+
+      const user1Rank = await storyManager.getUserRank(user1.address);
+      const user2Rank = await storyManager.getUserRank(user2.address);
+      const leaderboard = await storyManager.getLeaderboard(0, 2);
+
+      expect(user1Rank).to.equal(1);
+      expect(user2Rank).to.equal(2);
+      expect(leaderboard[0].user).to.equal(user1.address);
+      expect(leaderboard[1].user).to.equal(user2.address);
     });
 
     it('Should return paginated leaderboard results', async function () {
@@ -212,6 +230,18 @@ describe('StoryManager - Expansion Features', function () {
       // Check achievement count
       const count = await storyManager.achievementCount(user1.address);
       expect(count).to.be.gte(1); // At least "First Word"
+    });
+
+    it('Should unlock "Completion King" achievement', async function () {
+      for (let i = 0; i < 5; i++) {
+        const storyId = `story_completion_${i}`;
+        await storyManager.connect(owner).airdropCredits([owner.address], [1]);
+        await storyManager.createStory(storyId, `Story ${i}`, 'A [NOUN]', 0, 0, ['noun'], { value: CREATION_FEE });
+        await storyManager.connect(user1).contributeWord(storyId, 1, 'word', { value: CONTRIBUTION_FEE });
+      }
+      const achievements = await storyManager.getUserAchievements(user1.address);
+      const completionKing = achievements.find((a: any) => a.id === 'completion_king');
+      expect(completionKing?.unlocked).to.be.true;
     });
   });
 
@@ -485,7 +515,7 @@ describe('StoryManager - Expansion Features', function () {
 
       // Check that only contributor NFT was minted (no creator NFT for non-owners)
       const storyTokens = await nftContract.getStoryTokens('user_creator_story');
-      expect(storyTokens.length).to.equal(1); // Only 1 contributor NFT
+      expect(storyTokens.length).to.equal(2); // Contributor NFT + Creator NFT
 
       // Check contributor NFT data
       const contributorTokenId = storyTokens[0];
@@ -589,6 +619,69 @@ describe('StoryManager - Expansion Features', function () {
       // Verify story is in correct category
       const scifiStories = await storyManager.getStoriesByCategory(1);
       expect(scifiStories).to.include('story2');
+    });
+  });
+
+  describe('End-to-End Story Lifecycle', function () {
+    it('should handle the full lifecycle of a story', async function () {
+      const storyId = 'e2e_story';
+      const initialPoolBalance = await liquidityPool.getBalance();
+
+      // 1. Airdrop credits to user1
+      await storyManager.connect(owner).airdropCredits([user1.address], [1]);
+      expect((await storyManager.getUserStats(user1.address)).creationCredits).to.equal(1);
+
+      // 2. User1 creates a story
+      await storyManager.connect(user1).createStory(
+        storyId,
+        'E2E Test Story',
+        'A [ADJECTIVE] [NOUN]',
+        0, // MINI
+        0, // FANTASY
+        ['adjective', 'noun'],
+        { value: CREATION_FEE }
+      );
+
+      // 3. Verify creation fee was sent to the liquidity pool
+      let poolBalance = await liquidityPool.getBalance();
+      expect(poolBalance).to.equal(initialPoolBalance + CREATION_FEE);
+
+      // 4. User2 contributes a word
+      await storyManager.connect(user2).contributeWord(storyId, 1, 'brave', { value: CONTRIBUTION_FEE });
+
+      // 5. Verify contribution fee was sent and NFT was minted in unrevealed state
+      poolBalance = await liquidityPool.getBalance();
+      expect(poolBalance).to.equal(initialPoolBalance + CREATION_FEE + CONTRIBUTION_FEE);
+
+      let storyTokens = await nftContract.getStoryTokens(storyId);
+      expect(storyTokens.length).to.equal(1);
+      let nftData = await nftContract.getNFTData(storyTokens[0]);
+      expect(nftData.revealed).to.be.false;
+      expect(await nftContract.ownerOf(storyTokens[0])).to.equal(user2.address);
+
+      // 6. User3 contributes the final word
+      await storyManager.connect(user3).contributeWord(storyId, 2, 'knight', { value: CONTRIBUTION_FEE });
+
+      // 7. Verify final contribution fee was sent and story is complete
+      poolBalance = await liquidityPool.getBalance();
+      expect(poolBalance).to.equal(initialPoolBalance + CREATION_FEE + CONTRIBUTION_FEE * 2n);
+      const story = await storyManager.getStory(storyId);
+      expect(story.status).to.equal(1); // COMPLETE
+
+      // 8. Verify NFTs are revealed and creator NFT is minted
+      storyTokens = await nftContract.getStoryTokens(storyId);
+      expect(storyTokens.length).to.equal(3); // 2 contributor NFTs + 1 creator NFT
+
+      // Check contributor NFTs
+      for (let i = 0; i < 2; i++) {
+        nftData = await nftContract.getNFTData(storyTokens[i]);
+        expect(nftData.revealed).to.be.true;
+      }
+
+      // Check creator NFT
+      const creatorNftData = await nftContract.getNFTData(storyTokens[2]);
+      expect(creatorNftData.isCreatorNFT).to.be.true;
+      expect(creatorNftData.contributor).to.equal(user1.address);
     });
   });
 });
