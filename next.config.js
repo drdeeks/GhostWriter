@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
+
 const nextConfig = {
   allowedDevOrigins: ['192.168.0.168'],
 
@@ -13,10 +15,20 @@ const nextConfig = {
     // Explicitly mirror the @ alias from tsconfig.json for Webpack
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': require('path').resolve(__dirname, 'src'),
+      '@': path.resolve(__dirname, 'src'),
     };
 
     return config;
+  },
+
+  // Add Turbopack-specific alias configuration
+  experimental: {
+    turbo: {
+      resolveAlias: {
+        '@': './src',
+        '@/*': './src/*',
+      },
+    },
   },
 };
 
