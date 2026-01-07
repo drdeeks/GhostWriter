@@ -1,7 +1,7 @@
-require('tsconfig-paths/register');
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-ethers";
+import "@nomicfoundation/hardhat-ignition-ethers";
 import dotenv from "dotenv";
 import fs from "fs";
 import { Wallet } from "ethers";
@@ -12,11 +12,13 @@ function getDeployerAccounts(): string[] {
   if (process.env.PRIVATE_KEY) {
     return [process.env.PRIVATE_KEY];
   }
+
   if (process.env.KEYSTORE_PATH && process.env.KEYSTORE_PASSWORD) {
     const keystore = fs.readFileSync(process.env.KEYSTORE_PATH, "utf8");
     const wallet = Wallet.fromEncryptedJsonSync(keystore, process.env.KEYSTORE_PASSWORD);
     return [wallet.privateKey];
   }
+
   return [];
 }
 
@@ -32,63 +34,68 @@ const config: HardhatUserConfig = {
       },
     },
   },
-  sourcify: {
-    enabled: true,
-    apiUrl: "https://sourcify-api-monad.blockvision.org",
-    browserUrl: "https://testnet.monadexplorer.com",
-  },
+
   networks: {
-    // Base Mainnet
-    base: {
-      url: process.env.BASE_RPC_URL || "https://mainnet.base.org",
-      accounts: accounts,
-      chainId: 8453,
+    hardhat: {
+      type: "edr-simulated",
+      accounts: accounts as any, // TS narrowing workaround for EDR branch
     },
-    // Base Sepolia Testnet
+
+    localhost: {
+      type: "http",
+      url: "http://127.0.0.1:8545",
+      accounts,
+    },
+
     baseSepolia: {
-      url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
-      accounts: accounts,
+      type: "http",
+      url: "https://sepolia.base.org",
+      accounts,
       chainId: 84532,
     },
-    // Monad Testnet
-    monadTestnet: {
-      url: process.env.MONAD_TESTNET_RPC_URL || "https://testnet-rpc.monad.xyz",
-      accounts: accounts,
-      chainId: 10143,
-      gasPrice: 20000000000, // 20 gwei
-      gas: 8000000, // Gas limit
-      timeout: 60000, // 60 second timeout
+
+    base: {
+      type: "http",
+      url: "https://mainnet.base.org",
+      accounts,
+      chainId: 8453,
     },
-    // Monad Mainnet
+
+    monadTestnet: {
+      type: "http",
+      url: "https://testnet.monad.xyz/rpc",
+      accounts,
+      chainId: 10143,
+    },
+
     monad: {
-      url: process.env.MONAD_RPC_URL || "https://rpc.monad.xyz",
-      accounts: accounts,
+      type: "http",
+      url: "https://rpc.monad.xyz",
+      accounts,
       chainId: 143,
     },
-    // Localhost for testing
-    localhost: {
-      url: "http://127.0.0.1:8545",
+
+    modeSepolia: {
+      type: "http",
+      url: "https://sepolia.mode.network",
+      accounts,
+      chainId: 919,
     },
-    hardhat: {
-      chainId: 31337,
+
+    mode: {
+      type: "http",
+      url: "https://mainnet.mode.network",
+      accounts,
+      chainId: 34443,
     },
   },
+
   etherscan: {
     apiKey: {
-      base: process.env.BASESCAN_API_KEY || "",
-      baseSepolia: process.env.BASESCAN_API_KEY || "",
-      monad: process.env.MONAD_EXPLORER_API_KEY || "",
-      monadTestnet: process.env.MONAD_EXPLORER_API_KEY || "",
+      baseSepolia: process.env.BASESCAN_API_KEY!,
+      base: process.env.BASESCAN_API_KEY!,
     },
     customChains: [
-      {
-        network: "base",
-        chainId: 8453,
-        urls: {
-          apiURL: "https://api.basescan.org/api",
-          browserURL: "https://basescan.org",
-        },
-      },
       {
         network: "baseSepolia",
         chainId: 84532,
@@ -97,31 +104,21 @@ const config: HardhatUserConfig = {
           browserURL: "https://sepolia.basescan.org",
         },
       },
-      {
-        network: "monad",
-        chainId: 143,
-        urls: {
-          apiURL: "https://explorer.monad.xyz/api",
-          browserURL: "https://explorer.monad.xyz",
-        },
-      },
-      {
-        network: "monadTestnet",
-        chainId: 10143,
-        urls: {
-          apiURL: "https://testnet.monadexplorer.com/api",
-          browserURL: "https://testnet.monadexplorer.com",
-        },
-      },
     ],
   },
+
   paths: {
     sources: "./contracts",
     tests: "./test",
     cache: "./cache",
     artifacts: "./artifacts",
   },
-  tsconfig: "tsconfig.node.json",
+
+  mocha: {
+    timeout: 40000,
+    require: ["ts-node/register/transpile-only", "tsconfig-paths/register"],
+  },
+
   gasReporter: {
     enabled: process.env.REPORT_GAS === "true",
     currency: "USD",
