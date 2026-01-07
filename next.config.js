@@ -1,36 +1,44 @@
 /** @type {import('next').NextConfig} */
-const path = require('path');
-
 const nextConfig = {
+  // Your custom dev origins
   allowedDevOrigins: ['192.168.0.168'],
 
-  webpack: (config, { isServer }) => {
-    // Handle optional dependencies that are not needed in web environment
+  // Production best practices
+  poweredByHeader: false,
+  reactStrictMode: true,
+
+  // Modern image optimization (replaces deprecated domains)
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'ipfs.io' },
+      { protocol: 'https', hostname: 'gateway.ipfs.io' },
+      { protocol: 'https', hostname: 'nft.storage' },
+      // Add any other hosts used for NFTs/metadata
+    ],
+  },
+
+  // Transpile packages that sometimes need it
+  transpilePackages: ['wagmi', 'viem'],
+
+  // Webpack config (kept for alias & fallback support)
+  webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
       '@react-native-async-storage/async-storage': false,
       'pino-pretty': false,
     };
 
-    // Explicitly mirror the @ alias from tsconfig.json for Webpack
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': path.resolve(__dirname, 'src'),
+      '@': require('path').resolve(__dirname, 'src'),
     };
 
     return config;
   },
 
-  // Add Turbopack-specific alias configuration
-  experimental: {
-    turbo: {
-      resolveAlias: {
-        '@': './src',
-        '@/*': './src/*',
-      },
-      // Turbopack config - fixes extension resolution issues
-      resolveExtensions: ['.mdx', '.tsx', '.ts', '.jsx', '.js', '.mjs', '.json'],
-    },
+  // Turbopack config – fixes extension resolution issues
+  turbopack: {
+    resolveExtensions: ['.mdx', '.tsx', '.ts', '.jsx', '.js', '.mjs', '.json'],
   },
 };
 
