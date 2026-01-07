@@ -1,14 +1,16 @@
-
 import { useReadContract } from 'wagmi';
-import { StoryManagerABI } from '@/lib/contracts';
-import { STORY_MANAGER_ADDRESS } from '@/lib/config';
+import { CONTRACTS, STORY_MANAGER_ABI } from '@/lib/contracts';
 
 export function useActiveStoriesCount() {
   const { data: activeStories, isLoading, isError } = useReadContract({
-    address: STORY_MANAGER_ADDRESS,
-    abi: StoryManagerABI,
+    address: CONTRACTS.storyManager,
+    abi: STORY_MANAGER_ABI,
     functionName: 'getActiveStoriesCount',
   });
 
-  return { activeStories: Number(activeStories), isLoading, isError };
+  return { 
+    activeStories: Number(activeStories) || 0, 
+    isLoading, 
+    isError 
+  };
 }
