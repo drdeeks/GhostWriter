@@ -15,9 +15,9 @@ node_modules/
 .yarn/install-state.gz
 
 # Lock files (keep one - prefer pnpm-lock.yaml for consistency)
-package-lock.json
+# package-lock.json
 yarn.lock
-# Keep: pnpm-lock.yaml
+pnpm-lock.yaml
 
 # =============================================================================
 # BUILD ARTIFACTS & OUTPUT
@@ -26,7 +26,7 @@ yarn.lock
 out/
 build/
 dist/
-.next-env.d.ts
+# .next-env.d.ts
 .vercel/
 
 # Hardhat artifacts
