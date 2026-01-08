@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { UserStats } from '@/types/ghostwriter';
 import { Award, CheckCircle, Clock, PenTool, Share2, Sparkles, TrendingUp } from 'lucide-react';

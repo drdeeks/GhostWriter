@@ -19,10 +19,10 @@ const StoryCardComponent = ({ story, onContribute, onViewStory }: StoryCardProps
   const progress = (story.filledSlots / story.totalSlots) * 100;
   const isComplete = story.status === 'complete';
 
-  const storyTypeColors = {
-    mini: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  const storyTypeColors: Record<Story['storyType'], string> = {
     normal: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    epic: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    extended: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+    dev: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   };
 
   return (

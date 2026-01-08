@@ -1,5 +1,5 @@
 import { CONTRACTS, FEES, NFT_ABI, STORY_MANAGER_ABI } from '@/lib/contracts';
-import type { StoryType } from '@/types/ghostwriter';
+import type { StoryType, UserStats as UserStatsType } from '@/types/ghostwriter';
 import { useState } from 'react';
 import { useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 
@@ -150,12 +150,34 @@ export function useUserStats(address: `0x${string}` | undefined) {
     },
   });
 
+  const stats = data ? mapUserStats(data, address) : null;
+
   return {
-    stats: data,
+    stats,
     isLoading,
     error,
     refetch,
   };
+}
+
+function mapUserStats(raw: any, address: `0x${string}` | undefined): UserStatsType {
+  return {
+    address: address ?? '',
+    contributionsCount: asNumber(raw?.contributionsCount ?? raw?.[0]),
+    creationCredits: asNumber(raw?.creationCredits ?? raw?.[1]),
+    storiesCreated: asNumber(raw?.storiesCreated ?? raw?.[2]),
+    nftsOwned: asNumber(raw?.nftsOwned ?? raw?.[3]),
+    completedStories: asNumber(raw?.completedStories ?? raw?.[4]),
+    shareCount: asNumber(raw?.shareCount ?? raw?.[5]),
+    lastContributionTime: asNumber(raw?.lastContributionTime ?? raw?.[6]),
+    activeContributions: [],
+  };
+}
+
+function asNumber(value: number | bigint | undefined): number {
+  if (typeof value === 'bigint') return Number(value);
+  if (typeof value === 'number') return value;
+  return 0;
 }
 
 /**

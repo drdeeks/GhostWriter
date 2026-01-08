@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,9 +27,9 @@ export function NFTCollection({ address }: NFTCollectionProps) {
   }> = [];
 
   // Memoize filtered NFT arrays for performance
-  const hiddenNFTs = React.useMemo(() => nfts.filter((nft) => nft.status === 'hidden'), [nfts]);
-  const revealedNFTs = React.useMemo(() => nfts.filter((nft) => nft.status === 'revealed'), [nfts]);
-  const creatorNFTs = React.useMemo(() => nfts.filter((nft) => nft.type === 'creator'), [nfts]);
+  const hiddenNFTs = useMemo(() => nfts.filter((nft) => nft.status === 'hidden'), [nfts]);
+  const revealedNFTs = useMemo(() => nfts.filter((nft) => nft.status === 'revealed'), [nfts]);
+  const creatorNFTs = useMemo(() => nfts.filter((nft) => nft.type === 'creator'), [nfts]);
 
   if (!address) {
     return (
@@ -47,7 +48,7 @@ export function NFTCollection({ address }: NFTCollectionProps) {
   }
 
   // Memoize tab list and tab content rendering
-  const tabList = React.useMemo(() => (
+  const tabList = useMemo(() => (
     <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-indigo-200 dark:border-indigo-800">
       <TabsTrigger value="all">All ({nftCount})</TabsTrigger>
       <TabsTrigger value="hidden">Hidden ({hiddenNFTs.length})</TabsTrigger>

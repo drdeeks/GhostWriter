@@ -40,7 +40,7 @@ interface StoryCreationModalProps {
 
 export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }: StoryCreationModalProps) {
   const [selectedType, setSelectedType] = useState<StoryType>('normal');
-  const [selectedCategory, setSelectedCategory] = useState<string>(STORY_CATEGORIES[0].name);
+  const [selectedCategory, setSelectedCategory] = useState<string>(STORY_CATEGORIES[0]);
   const { createStory, isPending } = useStoryManager();
   const { activeStories, isLoading: isActiveStoriesLoading } = useActiveStoriesCount();
   const { address } = useAccount();
