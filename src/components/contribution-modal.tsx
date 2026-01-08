@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useStoryManager } from '@/hooks/useContract';
 import { useSlot } from '@/hooks/useContract';
-import type { Story } from '@/types/ghostwriter';
+import type { Story, WordType } from '@/types/ghostwriter';
 import { WORD_TYPE_DEFINITIONS } from '@/types/ghostwriter';
 import { DollarSign, Loader2, Sparkles } from 'lucide-react';
 import { useState } from 'react';
@@ -31,7 +31,7 @@ export function ContributionModal({ open, onClose, story, onSubmit }: Contributi
   // Get next word type needed from contract
   const nextPosition = story.filledSlots + 1;
   const { slot: nextSlot, isLoading: slotLoading } = useSlot(story.storyId, nextPosition);
-  const wordType = nextSlot?.wordType || 'adjective';
+  const wordType = (nextSlot?.wordType || 'adjective') as WordType;
   const wordInfo = WORD_TYPE_DEFINITIONS[wordType];
 
   const handleSubmit = async () => {

@@ -12,8 +12,16 @@ import { useAllStories, useUserStats } from '@/hooks/useContract';
 import { useStories } from '@/hooks/useStories';
 
 // ── Components ───────────────────────────────────────────
-const ContributionModal = React.lazy(() => import('@/components/contribution-modal'));
-const StoryCreationModal = React.lazy(() => import('@/components/story-creation-modal'));
+const ContributionModal = React.lazy(() =>
+  import('@/components/contribution-modal').then((mod) => ({
+    default: mod.ContributionModal,
+  })),
+);
+const StoryCreationModal = React.lazy(() =>
+  import('@/components/story-creation-modal').then((mod) => ({
+    default: mod.StoryCreationModal,
+  })),
+);
 
 import { NFTCollection } from '@/components/nft-collection';
 import { StoryCard } from '@/components/story-card';
@@ -162,14 +170,14 @@ export default function Home() {
             <UserStatsDisplay
               stats={{
                 address: address,
-                contributionsCount: userStats ? Number(userStats[0]) : 0,
-                creationCredits: userStats ? Number(userStats[1]) : 0,
-                storiesCreated: userStats ? Number(userStats[2]) : 0,
-                nftsOwned: userStats ? Number(userStats[3]) : 0,
-                completedStories: userStats ? Number(userStats[4]) : 0,
-                shareCount: userStats ? Number(userStats[5]) : 0,
-                lastContributionTime: userStats ? Number(userStats[6]) : 0,
-                activeContributions: userStats ? userStats[7] : [],
+                contributionsCount: userStats?.contributionsCount ?? 0,
+                creationCredits: userStats?.creationCredits ?? 0,
+                storiesCreated: userStats?.storiesCreated ?? 0,
+                nftsOwned: userStats?.nftsOwned ?? 0,
+                completedStories: userStats?.completedStories ?? 0,
+                shareCount: userStats?.shareCount ?? 0,
+                lastContributionTime: userStats?.lastContributionTime ?? 0,
+                activeContributions: userStats?.activeContributions ?? [],
               }}
             />
           </div>
@@ -184,10 +192,10 @@ export default function Home() {
             </Button>
           </a>
 
-          {userStats && Number(userStats[0]) > 0 && (
+          {userStats && userStats.contributionsCount > 0 && (
             <Button className="gap-2 border-2 border-purple-500/50 hover:bg-purple-500/10 bg-gray-900/50 backdrop-blur-sm text-purple-300 hover:text-purple-200 transition-all">
               <Award className="h-5 w-5 text-purple-400" />
-              My Achievements ({Number(userStats[0])})
+              My Achievements ({userStats.contributionsCount})
             </Button>
           )}
         </div>
@@ -222,7 +230,7 @@ export default function Home() {
               value="collection"
               className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-amber-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/50"
             >
-              🖼️ My NFTs ({userStats ? Number(userStats[3]) : 0})
+              🖼️ My NFTs ({userStats?.nftsOwned ?? 0})
             </TabsTrigger>
           </TabsList>
 
@@ -515,7 +523,7 @@ export default function Home() {
           <StoryCreationModal
             open={showCreationModal}
             onClose={() => setShowCreationModal(false)}
-            creationCredits={userStats ? Number(userStats[1]) : 0}
+            creationCredits={userStats?.creationCredits ?? 0}
             onSubmit={handleCreateStory}
           />
         </Suspense>

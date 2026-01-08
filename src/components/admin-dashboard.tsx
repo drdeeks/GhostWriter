@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -192,7 +193,7 @@ const AdminDashboardComponent = () => {
 
                   <div>
                     <Label htmlFor="story-type">Story Type</Label>
-                    <Select value={storyType} onValueChange={(value: StoryType) => setStoryType(value)}>
+                    <Select value={storyType} onValueChange={(value) => setStoryType(value as StoryType)}>
                       <SelectTrigger className="mt-2">
                         <SelectValue />
                       </SelectTrigger>
@@ -206,7 +207,7 @@ const AdminDashboardComponent = () => {
 
                   <div>
                     <Label htmlFor="category">Category</Label>
-                    <Select value={selectedCategory} onValueChange={(value: StoryCategory) => setSelectedCategory(value)}>
+                    <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as StoryCategory)}>
                       <SelectTrigger className="mt-2">
                         <SelectValue />
                       </SelectTrigger>
