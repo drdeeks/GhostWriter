@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { base } from 'wagmi/chains';
-import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID } from '../config/onchainkit';
+import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID } from '@/app/config/onchainkit';
 
 // For Farcaster Mini Apps, we don't use external connectors
 // Wallet connections are handled by the Farcaster SDK
