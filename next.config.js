@@ -31,6 +31,7 @@ const nextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': require('path').resolve(__dirname, 'src'),
+      'wagmi/experimental': require('path').resolve(__dirname, 'src/lib/wagmi-experimental-shim.ts'),
     };
 
     return config;
