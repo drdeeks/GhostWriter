@@ -247,43 +247,64 @@ export async function GET(
     let metadata: any;
 
     if (nftData.isCreatorNFT) {
-      // Creator NFT - shows Mad Libs template
-      const madLibsTemplate = generateMadLibsTemplate(storyData.template, slots);
+      // Creator NFT - Only includes: user name/FID, story title, category, date created
+      // Fetch Farcaster user info for creator
+      let creatorName = '';
+      let creatorFid = '';
+      
+      try {
+        const farcasterResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/farcaster-user?address=${storyData.creator}`
+        );
+        if (farcasterResponse.ok) {
+          const farcasterData = await farcasterResponse.json();
+          creatorName = farcasterData.username || farcasterData.displayName || '';
+          creatorFid = farcasterData.fid ? `FID: ${farcasterData.fid}` : '';
+        }
+      } catch (error) {
+        console.warn('Failed to fetch Farcaster user info:', error);
+      }
+
+      // Map story type to category name
+      const storyTypeNames = ['Normal', 'Epic'];
+      const category = storyTypeNames[storyData.storyType] || 'Normal';
+      const dateCreated = new Date(storyData.createdAt * 1000).toISOString().split('T')[0];
+
+      // Format creator name display
+      const creatorDisplay = creatorName 
+        ? `@${creatorName}${creatorFid ? ` (${creatorFid})` : ''}`
+        : creatorFid || storyData.creator.slice(0, 6) + '...' + storyData.creator.slice(-4);
 
       metadata = {
-        name: `Ghost Writer - "${storyData.title}" (Creator Edition)`,
-        description: `Original Mad Libs template for "${storyData.title}". This creator NFT contains the complete story structure with blank spaces for all word contributions.`,
+        name: `Ghost Writer Creator - "${storyData.title}"`,
+        description: `Creator NFT for "${storyData.title}" by ${creatorDisplay}. Created on ${dateCreated}.`,
         image: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/nft/${tokenId}/image`,
         attributes: [
           {
-            trait_type: 'Type',
-            value: 'Creator NFT',
+            trait_type: 'Creator',
+            value: creatorDisplay,
           },
           {
-            trait_type: 'Story',
+            trait_type: 'Story Title',
             value: storyData.title,
           },
           {
-            trait_type: 'Story ID',
-            value: storyData.storyId,
+            trait_type: 'Category',
+            value: category,
           },
           {
-            trait_type: 'Created',
-            value: new Date(storyData.createdAt * 1000).toISOString().split('T')[0],
-          },
-          {
-            trait_type: 'Status',
-            value: 'Complete',
+            trait_type: 'Date Created',
+            value: dateCreated,
           },
         ],
         properties: {
-          storyId: storyData.storyId,
-          storyTitle: storyData.title,
-          template: madLibsTemplate,
-          totalSlots: storyData.totalSlots,
           creator: storyData.creator,
-          createdAt: storyData.createdAt,
-          completedAt: storyData.completedAt,
+          creatorName: creatorName || null,
+          creatorFid: creatorFid || null,
+          storyTitle: storyData.title,
+          category: category,
+          dateCreated: dateCreated,
+          storyId: storyData.storyId,
         },
       };
     } else {

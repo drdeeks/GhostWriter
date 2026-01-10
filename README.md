@@ -1,28 +1,31 @@
-# 👻 Ghost Writer - Community Storytelling NFT Game
+# 👻 Ghost Writer - AI-Powered Community Storytelling NFT Game
 
-A collaborative storytelling game on Base Chain where users contribute words to community-created story templates. Each contribution mints a unique NFT and earns rewards for active participants.
+A collaborative storytelling game on Base Chain where users contribute words to AI-generated story templates. Each contribution mints a unique NFT, and story creators receive auto-minted creator NFTs when stories complete.
 
 ## 🎯 Overview
 
 **Ghost Writer** is a unique Web3 game that combines:
-- 👥 Community-driven collaborative storytelling
-- 🔒 Hidden progressive NFTs (reveal on completion)
-- 🏆 Rewards for active contributors and community builders
-- 💎 Base Chain deployment (low fees, fast transactions)
-- 📱 Farcaster Mini App integration
+- 🤖 **AI-Powered Story Generation** - Dynamic story templates using OpenAI GPT-4o-mini
+- 🛡️ **AI Word Moderation** - Intelligent content filtering with OpenAI Moderation API
+- 👥 **Community-Driven Storytelling** - Players collaborate to fill story templates
+- 🔒 **Progressive NFTs** - Hidden contributor NFTs that reveal when stories complete
+- 🎨 **Creator NFTs** - Auto-minted NFTs for story creators with minimal metadata
+- 🏆 **Rewards & Achievements** - Leaderboards and achievement badges for active contributors
+- 💎 **Base Chain** - Low fees, fast transactions
+- 📱 **Farcaster Mini App** - Native Farcaster integration
 
 ### Key Features
 
-- **Community Storytelling**: Players collaborate to fill story templates with creative words
-- **Dual NFT System**: Contributor NFTs (hidden→revealed) + Creator NFTs (Mad Libs templates)
-- **Hidden NFTs**: Each word contribution mints an NFT showing only position/type until story completes
-- **Creator NFTs**: Story creators receive Mad Libs-style template NFTs when their stories complete
+- **AI Story Generation**: Stories are dynamically generated using OpenAI based on selected categories (Adventure, Fantasy, Comedy, Mystery, Sci-Fi, Sports, Animals, School, Superheroes, Friendship, Holidays, Food, Nature, History)
+- **AI Word Moderation**: All word contributions are checked using OpenAI Moderation API for inappropriate content
+- **Dual NFT System**: 
+  - **Contributor NFTs**: Hidden until story completion, then revealed with full story context
+  - **Creator NFTs**: Auto-minted when stories complete, containing only: creator name/FID, story title, category, and date created
 - **Creation Credits**: 1 contribution = 1 creation credit = ability to create your own story
-- **Three Story Types**: Mini (10 slots), Normal (20 slots), Epic (200 slots)
-- **Leaderboards**: Top 1000 contributors ranked by activity and achievements
-- **Admin Portal**: Owner-only dashboard for platform management and initial story setup
+- **Three Story Types**: Normal (~50 words, 10 slots), Extended (~100 words, 20 slots), Epic (~500 words, 50 slots)
+- **Leaderboards**: Top 1000 contributors ranked by activity
+- **Admin Portal**: Owner-only dashboard for platform management
 - **Economic Model**: 100% of fees → liquidity pool
-- **Multi-Chain Support**: Base + Monad testnets/mainnets
 
 ---
 
@@ -33,6 +36,7 @@ A collaborative storytelling game on Base Chain where users contribute words to 
 - Node.js 18+ and npm
 - MetaMask or Coinbase Wallet
 - Base Sepolia testnet ETH (get from [Base faucet](https://www.base.org/faucet))
+- OpenAI API key (optional, for AI features - see [AI Integration Guide](./docs/AI_INTEGRATION.md))
 - (Optional) Private key for contract deployment
 
 ### Installation
@@ -42,12 +46,13 @@ A collaborative storytelling game on Base Chain where users contribute words to 
 npm install
 
 # Copy environment template
-cp .env.example .env
+cp env.example .env
 
-# Edit .env with your configuration
-# - Add your private key (for deployment only)
+# Edit .env with your configuration:
+# - Add OpenAI API key (for AI features)
 # - Add OnchainKit API key
 # - Configure RPC URLs
+# - Add contract addresses after deployment
 ```
 
 ### Running Locally
@@ -58,6 +63,45 @@ npm run dev
 
 # Open http://localhost:3000
 ```
+
+**Note**: AI features work without API keys (fallback to templates), but for full functionality, configure `OPENAI_API_KEY` in your `.env` file.
+
+---
+
+## 🤖 AI Features
+
+### Story Generation
+
+Stories are dynamically generated using OpenAI GPT-4o-mini when users create new stories:
+
+1. User selects a category (Adventure, Fantasy, etc.)
+2. System calls `/api/generate-story` with category
+3. OpenAI generates a Mad Libs-style template with word placeholders
+4. Story is created on-chain with the generated template
+
+**Fallback**: If OpenAI API key is not configured, the system uses predefined templates from `src/lib/aiStoryTemplates.ts`.
+
+See [AI Story Generation Flow](./docs/AI_STORY_GENERATION_FLOW.md) for detailed architecture.
+
+### Word Moderation
+
+All word contributions are checked using OpenAI Moderation API:
+
+1. User submits a word
+2. System calls `/api/moderate-word` to check content
+3. Word is validated for profanity, hate speech, violence, etc.
+4. If approved, word is submitted to blockchain
+
+**Fallback**: If OpenAI API key is not configured, basic validation (length checks) is performed.
+
+### Configuration
+
+Add to your `.env`:
+```env
+OPENAI_API_KEY=sk-your_key_here
+```
+
+See [AI Integration Guide](./docs/AI_INTEGRATION.md) for complete setup instructions.
 
 ---
 
@@ -71,19 +115,19 @@ The system consists of 3 main contracts:
 - Mints hidden NFTs for each word contribution
 - Enforces one mint per user per position per story
 - Reveals NFTs when story completes
-- Stores word data securely until reveal
+- Auto-mints creator NFTs with minimal metadata
 
 **Key Functions:**
 - `mintHiddenNFT()` - Mint NFT with hidden word (only StoryManager)
+- `mintCreatorNFT()` - Auto-mint creator NFT (only StoryManager)
 - `revealStoryNFTs()` - Reveal all NFTs for completed story
 - `getNFTData()` - Get metadata for a token
-- `tokenURI()` - Returns hidden or revealed URI based on status
 
 #### 2. **StoryManager.sol** (Game Logic)
 - Manages story creation and word contributions
 - Tracks user stats and creation credits
 - Forwards fees to liquidity pool
-- Triggers story completion and NFT reveal
+- Triggers story completion and NFT reveal/auto-mint
 
 **Key Functions:**
 - `createStory()` - Create new story (requires $0.10 + 1 credit)
@@ -96,17 +140,12 @@ The system consists of 3 main contracts:
 - Owner-controlled withdrawals
 - Transparent fee tracking
 
-**Key Functions:**
-- `deposit()` - Receive fees (only StoryManager)
-- `withdraw()` - Owner withdraws funds
-- `getBalance()` - Check pool balance
-
 ### Security Features
 
-✅ **OpenZeppelin Contracts**: ReentrancyGuard, Ownable
-✅ **Access Control**: Only StoryManager can mint/reveal
-✅ **Input Validation**: Word length, position, duplicate checks
-✅ **One Mint Per Position**: Enforced at contract level
+✅ **OpenZeppelin Contracts**: ReentrancyGuard, Ownable  
+✅ **Access Control**: Only StoryManager can mint/reveal  
+✅ **Input Validation**: Word length, position, duplicate checks  
+✅ **One Mint Per Position**: Enforced at contract level  
 ✅ **Gas Optimized**: Efficient storage patterns
 
 ---
@@ -134,9 +173,6 @@ npm run test:gas
 ```bash
 # Deploy to Base Sepolia
 npm run deploy:baseSepolia
-
-# Deploy to Monad Testnet
-npm run deploy:monadTestnet
 
 # Save the contract addresses from output!
 ```
@@ -167,10 +203,9 @@ npm run verify
 ```bash
 # Deploy to Base Mainnet
 npm run deploy:base
-
-# Deploy to Monad Mainnet
-npm run deploy:monad
 ```
+
+See [Vercel Deployment Guide](./docs/VERCEL_DEPLOYMENT.md) for frontend deployment.
 
 ---
 
@@ -185,14 +220,59 @@ npm run deploy:monad
 
 **All fees (100%) → Liquidity Pool**
 
-### Bootstrap Problem Solution
+### Creation Credits
 
-**Issue**: Users need credits to create stories, but earn credits by contributing.
+- **Earn**: 1 contribution = 1 creation credit
+- **Spend**: 1 credit required to create a story
+- **Purpose**: Prevents spam and ensures quality stories
 
-**Solutions**:
-1. ✅ Owner airdrops initial credits to early users
-2. ✅ Deploy with pre-created stories for initial contributions
-3. ✅ Partner giveaways/promotions for early adopters
+---
+
+## 🎨 NFT System
+
+### Contributor NFTs
+
+**Hidden State** (Before Story Completion):
+- Shows story title, position, and word type
+- Word is stored but not revealed
+- Creates anticipation
+
+**Revealed State** (After Story Completion):
+- Shows complete story with user's word highlighted
+- Full context and contribution details
+- Achievement badge
+
+### Creator NFTs
+
+**Auto-Minted** when story completes with minimal metadata:
+- Creator name/FID (from Farcaster)
+- Story title
+- Category (Normal/Epic)
+- Date created
+
+**Note**: Creator NFTs do NOT include story content or template - only the essential metadata listed above.
+
+### Image Generation
+
+NFT images are dynamically generated as SVG:
+- **Endpoint**: `/api/nft/[tokenId]/image`
+- **Format**: SVG (1024x1024px)
+- **Customization**: See [Image Backgrounds Guide](./docs/IMAGE_BACKGROUNDS.md)
+
+See [NFT System Documentation](./docs/NFT_README.md) for complete details.
+
+---
+
+## 📚 Documentation
+
+Complete documentation is available in the [`docs/`](./docs/) directory:
+
+- **[AI Integration](./docs/AI_INTEGRATION.md)** - AI features setup and configuration
+- **[AI Story Generation Flow](./docs/AI_STORY_GENERATION_FLOW.md)** - How AI story generation works
+- **[NFT System](./docs/NFT_README.md)** - NFT metadata, images, and IPFS setup
+- **[Image Backgrounds](./docs/IMAGE_BACKGROUNDS.md)** - How to configure and upload backgrounds
+- **[Vercel Deployment](./docs/VERCEL_DEPLOYMENT.md)** - Production deployment guide
+- **[Wagmi Experimental Shim](./docs/WAGMI_EXPERIMENTAL_SHIM.md)** - Compatibility layer documentation
 
 ---
 
@@ -208,15 +288,11 @@ npm test
 # - Contract deployment
 # - Story creation & contribution
 # - NFT minting & reveal
+# - Creator NFT auto-minting
 # - Access control
 # - Fee collection
 # - Edge cases
 ```
-
-### Test Files
-
-- `test/GhostWriter.test.ts` - Main contract tests
-- `test/Bootstrap.test.ts` - Bootstrap scenario tests
 
 ### Manual Testing
 
@@ -244,60 +320,44 @@ ghost-writer/
 │   ├── StoryManager.sol
 │   └── LiquidityPool.sol
 ├── scripts/                 # Deployment scripts
-│   ├── deploy.ts
-│   └── verify.ts
+│   ├── deploy-and-verify.ts
+│   └── postinstall.js
 ├── test/                    # Contract tests
 │   ├── GhostWriter.test.ts
-│   └── Bootstrap.test.ts
+│   └── ...
 ├── src/
 │   ├── app/                 # Next.js app
+│   │   ├── api/            # API routes
+│   │   │   ├── generate-story/    # AI story generation
+│   │   │   ├── moderate-word/     # AI word moderation
+│   │   │   ├── farcaster-user/    # Farcaster user lookup
+│   │   │   └── nft/               # NFT metadata & images
 │   │   ├── page.tsx        # Main application page
-│   │   ├── layout.tsx      # Root layout with providers
-│   │   ├── providers.tsx   # OnchainKit provider
-│   │   └── config/         # Configuration
+│   │   ├── admin/          # Admin dashboard
+│   │   └── leaderboard/    # Leaderboard page
 │   ├── components/          # React components
 │   │   ├── story-card.tsx
 │   │   ├── contribution-modal.tsx
 │   │   ├── story-creation-modal.tsx
-│   │   ├── nft-collection.tsx
-│   │   └── user-stats.tsx
+│   │   └── ...
 │   ├── hooks/               # Custom hooks
 │   │   ├── useContract.ts  # Contract interaction hooks
-│   │   └── useAddMiniApp.ts
+│   │   └── ...
 │   ├── lib/                 # Utilities
 │   │   ├── contracts.ts    # Contract ABIs & addresses
-│   │   └── utils.ts
+│   │   └── aiStoryTemplates.ts  # Fallback templates
 │   └── types/               # TypeScript types
 │       └── ghostwriter.ts
+├── docs/                    # Documentation
+│   ├── AI_INTEGRATION.md
+│   ├── AI_STORY_GENERATION_FLOW.md
+│   ├── NFT_README.md
+│   └── ...
 ├── hardhat.config.ts        # Hardhat configuration
-├── package.json
-└── README.md
+├── next.config.js           # Next.js configuration
+├── vercel.json              # Vercel deployment config
+└── package.json
 ```
-
----
-
-## 🎨 Word Types
-
-Ghost Writer supports 16 word types:
-
-| Type              | Description           | Examples                  | Length  |
-|-------------------|-----------------------|---------------------------|---------|
-| Adjective         | Describes a noun      | sparkly, enormous         | 3-20    |
-| Noun              | Person, place, thing  | teapot, wizard            | 3-25    |
-| Verb              | Action word           | dance, explode            | 3-20    |
-| Plural Noun       | Multiple things       | dragons, cupcakes         | 3-25    |
-| Past Tense Verb   | Action that happened  | jumped, vanished          | 3-20    |
-| Verb (-ing)       | Present participle    | running, singing          | 3-20    |
-| Person's Name     | First name            | Alice, Satoshi            | 3-30    |
-| Place             | Location              | Tokyo, moon               | 3-30    |
-| Number            | Any number            | 42, 1000                  | 1-10    |
-| Color             | Color description     | purple, invisible         | 3-20    |
-| Body Part         | Part of body          | elbow, eyebrow            | 3-20    |
-| Food              | Edible item           | pizza, ramen              | 3-20    |
-| Animal            | Creature              | penguin, dragon           | 3-20    |
-| Exclamation       | Interjection          | Wow, Eureka               | 2-15    |
-| Emotion           | Feeling               | joy, excitement           | 3-20    |
-| Adverb            | Describes a verb      | quickly, mysteriously     | 3-20    |
 
 ---
 
@@ -306,27 +366,27 @@ Ghost Writer supports 16 word types:
 ### Environment Variables
 
 ```env
+# AI Configuration (optional - fallback available)
+OPENAI_API_KEY=sk-your_key_here
+
 # Deployment (DO NOT commit real private key!)
 PRIVATE_KEY=your_private_key_here
 
 # RPC URLs
 BASE_RPC_URL=https://mainnet.base.org
 BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
-MONAD_TESTNET_RPC_URL=https://testnet-rpc.monad.xyz
-MONAD_RPC_URL=https://rpc.monad.xyz
 
 # Block Explorer API Keys
 BASESCAN_API_KEY=your_api_key
-MONAD_EXPLORER_API_KEY=your_monad_api_key
 
 # Frontend (public - safe to commit)
 NEXT_PUBLIC_CHAIN_ID=84532
 NEXT_PUBLIC_NFT_CONTRACT_ADDRESS=0x...
 NEXT_PUBLIC_STORY_MANAGER_ADDRESS=0x...
 NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS=0x...
-NEXT_PUBLIC_HIDDEN_BASE_URI=ipfs://QmHidden/
-NEXT_PUBLIC_REVEALED_BASE_URI=ipfs://QmRevealed/
-NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_key
+NEXT_PUBLIC_ONCHAINKIT_PROJECT_ID=your_project_id
+NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_api_key
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ```
 
 ### Supported Networks
@@ -335,20 +395,19 @@ NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_key
 |----------------|----------|----------------------------------|
 | Base Mainnet   | 8453     | https://mainnet.base.org         |
 | Base Sepolia   | 84532    | https://sepolia.base.org         |
-| Monad Testnet  | 10143    | https://testnet-rpc.monad.xyz    |
-| Monad Mainnet  | 143      | https://rpc.monad.xyz            |
 
 ---
 
-## 📚 Usage Examples
+## 📖 Usage Examples
 
 ### For Players
 
 1. **Connect Wallet**: Use Coinbase Wallet or MetaMask
 2. **Browse Stories**: See active stories in gallery
-3. **Contribute**: Pay $0.05, submit a word, earn 1 credit
-4. **Create Story**: Use 1 credit, pay $0.10, create your story
+3. **Contribute**: Pay $0.05, submit a word (AI-moderated), earn 1 credit
+4. **Create Story**: Use 1 credit, pay $0.10, AI generates your story template
 5. **Collect NFTs**: View your hidden/revealed NFT collection
+6. **Earn Creator NFT**: When your story completes, receive auto-minted creator NFT
 
 ### For Developers
 
@@ -359,323 +418,37 @@ import { useStory, useUserStats } from '@/hooks/useContract';
 const { story } = useStory("story_001");
 const { stats } = useUserStats(address);
 
-// Contribute word
+// Contribute word (AI moderation happens automatically)
 import { useStoryManager } from '@/hooks/useContract';
 
 const { contributeWord } = useStoryManager();
 const result = await contributeWord("story_001", 1, "sparkly");
 
-// Create story
+// Create story (AI generation happens automatically)
 const { createStory } = useStoryManager();
 const result = await createStory(
   "story_002",
-  "Title",
-  "Template",
+  "Title",           // AI-generated
+  "Template",        // AI-generated
   "normal",
-  ["adjective", "noun", "verb"]
+  "Adventure",       // Category
+  ["adjective", "noun", "verb"]  // AI-extracted word types
 );
 ```
 
 ---
 
-## 🚨 Known Issues & Limitations
+## 👑 Admin Portal
 
-### Bootstrap Problem
-**Issue**: Initial users can't create stories without credits.
+The admin portal is accessible only to the contract owner at `/admin`:
 
-**Workaround**:
-- Owner manually airdrops creation credits
-- Deploy with pre-created stories
-- Community giveaways for early adopters
+**Features:**
+- Story management and creation
+- User credit airdrops
+- Analytics dashboard
+- Emergency controls (pause, withdrawals)
 
-### AI Integration
-**Status**: Template generation placeholder.
-
-**TODO**: Integrate Neynar AI API for:
-- Story title generation
-- Mad Lib template creation
-- Word slot assignment
-
-### IPFS Metadata
-**Status**: Base URIs are placeholders.
-
-**TODO**: Implement proper IPFS storage for:
-- Hidden NFT metadata
-- Revealed NFT metadata with story snippets
-- Generated story images
-
----
-
-## 👑 Admin Portal & Initial Setup
-
-### Admin Dashboard Access
-
-The admin portal is accessible only to the contract owner at `/admin`. It provides full platform management capabilities:
-
-**Access Requirements:**
-- Must be connected with the wallet that deployed the contracts
-- Automatically verified against contract ownership
-- Access denied for non-owner wallets
-
-**Key Features:**
-- **Story Management**: Create initial story templates manually
-- **User Management**: Airdrop creation credits to bootstrap users
-- **Analytics Dashboard**: Monitor platform statistics and activity
-- **Emergency Controls**: Contract pause and emergency withdrawal functions
-
-### Setting Up the Initial Story
-
-To bootstrap the platform, the contract owner must create the first "genesis" story that allows initial users to earn creation credits:
-
-**Step-by-Step Setup:**
-
-1. **Deploy Contracts** (see deployment section above)
-
-2. **Access Admin Portal**:
-   ```bash
-   # Start the application
-   npm run dev
-
-   # Navigate to http://localhost:3000/admin
-   # Connect with the owner wallet
-   ```
-
-3. **Create Genesis Story**:
-   - Go to "Stories" tab in admin dashboard
-   - Create an "Epic" story (200 slots) with engaging template
-   - Use a popular theme (fantasy, adventure, crypto, etc.)
-   - Example template: "In the mystical land of [PLACE], a brave [PROFESSION] named [PERSON_NAME] discovered a [ADJECTIVE] [NOUN] that could [VERB] the entire [PLURAL_NOUN]..."
-
-4. **Bootstrap Users**:
-   - Use "Airdrop Credits" in admin dashboard
-   - Distribute 5-10 credits to early community members
-   - This allows them to create additional stories
-
-5. **Monitor & Moderate**:
-   - Track story completion in analytics dashboard
-   - Ensure content quality and community guidelines
-   - Add more stories as the community grows
-
-**Genesis Story Best Practices:**
-- Choose an epic-length story (200 words) for maximum engagement
-- Select a popular category that appeals to your target audience
-- Create an intriguing title that sparks curiosity
-- Ensure the template allows for creative, humorous contributions
-- Monitor completion progress and celebrate milestones
-
----
-
-## 🎨 NFT System & Visual Assets
-
-### NFT Card Specifications
-
-**Dimensions & Format:**
-- **Resolution**: 1024x1024px minimum (square aspect ratio)
-- **Format**: PNG with transparency support
-- **File Size**: < 1MB per image (optimized)
-- **Color Space**: RGB with proper gamma correction
-
-**Design Philosophy:**
-- **Theme**: Mystery and storytelling with professional aesthetic
-- **Color Palette**: Deep purple/midnight blue (#2D1B69, #1A1A2A) with gold accents (#D4AF37)
-- **Typography**: Serif headers (Playfair Display), sans-serif body (Inter)
-- **Icons**: Ghost silhouette, antique quill, ancient book motifs
-
-### NFT States & Reveal Process
-
-#### 🔒 Hidden State (Pre-Reveal)
-**What Users See:**
-- Story title prominently displayed
-- Position indicator (e.g., "Position: 3/10")
-- Word type required (e.g., "Word Type: Adjective")
-- Mysterious placeholder text: "Your word awaits reveal..."
-- Ghost/quill iconography maintaining suspense
-
-**Purpose:** Creates anticipation and prevents copying of contributions before story completion.
-
-#### ✨ Revealed State (Post-Reveal)
-**What Users See:**
-- Complete story title
-- Story snippet showing word usage (2-3 sentences)
-- **Highlighted contribution**: User's specific word in context
-- Position and word type metadata
-- Contribution timestamp
-- "Story Complete" achievement badge
-
-**Reveal Trigger:** Automatic when the final word is contributed and story reaches 100% completion.
-
-### NFT Generation Process
-
-**Dynamic Image Generation:**
-1. **Event Listening**: Monitors `WordContributed` and `StoryCompleted` events
-2. **Template Selection**: Hidden vs Revealed state templates
-3. **Content Injection**: Inserts story data, position, word type, and (revealed) actual word
-4. **SVG/HTML Rendering**: Converts to high-quality PNG
-5. **IPFS Upload**: Generated images stored on decentralized storage
-6. **Metadata Update**: Contract updates base URI for revealed state
-
-**Technical Implementation:**
-- Node.js service using Canvas API for image generation
-- IPFS pinning services (Pinata, NFT.Storage, or self-hosted)
-- Automated workflow triggered by blockchain events
-- Fallback systems for generation failures
-
-### Individual User Experience
-
-**Hidden NFT Display:**
-```
-┌─────────────────────────────────────┐
-│           GHOST WRITER              │
-├─────────────────────────────────────┤
-│                                     │
-│        "The Haunted Library"        │
-│                                     │
-├─────────────────────────────────────┤
-│                                     │
-│      Position: 3/10                 │
-│      Word Type: Adjective           │
-│                                     │
-│         [Ghost Icon]                │
-│                                     │
-│    "Your word awaits reveal..."     │
-└─────────────────────────────────────┘
-```
-
-**Revealed NFT Display:**
-```
-┌─────────────────────────────────────┐
-│           GHOST WRITER              │
-├─────────────────────────────────────┤
-│        "The Haunted Library"        │
-├─────────────────────────────────────┤
-│   "In a mysterious library, the     │
-│    ancient books whispered secrets  │
-│    and created wonder..."           │
-│                                     │
-├─────────────────────────────────────┤
-│   Your Contribution:                │
-│   Position 3: "mysterious"          │
-│                                     │
-│   Word Type: Adjective              │
-│   Contributed: Jan 1, 2024         │
-└─────────────────────────────────────┘
-```
-
-### IPFS Setup & Configuration
-
-**Required Services:**
-- IPFS pinning service (Pinata, NFT.Storage, or Infura)
-- Image generation API endpoint
-- Environment variables for API keys
-
-**Environment Setup:**
-```env
-# IPFS Configuration
-IPFS_API_ENDPOINT=https://api.pinata.cloud
-IPFS_API_KEY=your_pinata_api_key
-IPFS_SECRET_KEY=your_pinata_secret
-
-# NFT Base URIs (update after IPFS upload)
-NEXT_PUBLIC_HIDDEN_BASE_URI=ipfs://QmYourHiddenBaseURI/
-NEXT_PUBLIC_REVEALED_BASE_URI=ipfs://QmYourRevealedBaseURI/
-```
-
-**Directory Structure:**
-```
-ipfs/
-├── hidden/           # Hidden state images
-├── revealed/         # Revealed state images
-└── metadata/         # JSON metadata files
-```
-
----
-
-## ⚙️ Complete Setup Instructions
-
-### Phase 1: Infrastructure Setup
-
-1. **Environment Configuration**:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your keys and RPC URLs
-   ```
-
-2. **Contract Deployment**:
-   ```bash
-   npm run compile
-   npm test
-   npm run deploy:baseSepolia  # or your target network
-   npm run verify
-   ```
-
-3. **IPFS Service Setup**:
-   - Choose pinning service (Pinata recommended)
-   - Generate API keys
-   - Test upload functionality
-   - Update base URIs in deployed contracts
-
-4. **Image Generation Service**:
-   - Deploy Node.js service for dynamic NFT generation
-   - Configure webhook endpoints for blockchain events
-   - Test hidden/revealed image generation
-
-### Phase 2: Content & Bootstrap
-
-1. **Create Genesis Story**:
-   - Access admin portal at `/admin`
-   - Create epic-length story with engaging template
-   - Choose popular category for initial traction
-
-2. **Bootstrap Community**:
-   - Airdrop creation credits via admin dashboard
-   - Invite beta testers and early community members
-   - Monitor initial contributions and story completion
-
-3. **Content Moderation**:
-   - Review completed stories for quality
-   - Remove inappropriate content if needed
-   - Encourage positive community engagement
-
-### Phase 3: Launch Preparation
-
-1. **Testing Checklist**:
-   - ✅ Contract tests passing (`npm test`)
-   - ✅ End-to-end contribution flow working
-   - ✅ NFT minting and reveal process functional
-   - ✅ Wallet connections working (MetaMask, Coinbase)
-   - ✅ Mobile responsive design verified
-   - ✅ IPFS images loading correctly
-
-2. **Pre-Launch Tasks**:
-   - Set up community channels (Discord, Farcaster)
-   - Prepare marketing materials
-   - Test gas costs and optimize if needed
-   - Configure monitoring and error tracking
-
-3. **Go-Live Sequence**:
-   - Deploy to mainnet
-   - Update production environment variables
-   - Announce launch on social channels
-   - Monitor initial user activity and support
-
-### Phase 4: Post-Launch Operations
-
-1. **Community Management**:
-   - Monitor story quality and user engagement
-   - Moderate content and handle reports
-   - Add new story templates regularly
-   - Airdrop credits to maintain growth
-
-2. **Technical Maintenance**:
-   - Monitor contract gas usage and optimize
-   - Update IPFS pins as needed
-   - Handle any revealed NFT generation failures
-   - Scale image generation service as user base grows
-
-3. **Feature Expansion**:
-   - Add new story categories based on user feedback
-   - Implement advanced achievements
-   - Consider governance features for community templates
+**Access**: Connect with the wallet that deployed the contracts.
 
 ---
 
@@ -684,38 +457,26 @@ ipfs/
 ### Phase 1: MVP ✅ (Completed)
 - [x] Smart contracts (NFT, StoryManager, LiquidityPool)
 - [x] Frontend with Base integration
+- [x] AI-powered story generation
+- [x] AI word moderation
+- [x] Creator NFT auto-minting
 - [x] Farcaster Mini App support
 - [x] Comprehensive test suite
-- [x] Multi-chain deployment support
-- [x] Achievement badges system (6 types)
+- [x] Achievement badges system
 - [x] Leaderboards (Top 1000 contributors)
-- [x] Social sharing (Twitter, Farcaster)
-- [x] Story categories (9 themes)
-- [x] Admin dashboard with full controls
 
-### Phase 2: Launch 🚧 (Current - Ready for Testnet)
-- [x] Farcaster.json updated and compliant
+### Phase 2: Launch 🚧 (Current)
+- [x] AI integration complete
+- [x] NFT image generation
 - [ ] Deploy to Base Sepolia testnet
-- [ ] End-to-end NFT creation testing
-- [ ] IPFS metadata implementation
-- [ ] Visual asset generation (NFT images)
 - [ ] Beta testing with community
 - [ ] Deploy to Base mainnet
 
-### Phase 3: AI & Content Enhancement 📅 (Next)
-- [ ] Integrate Neynar AI for story templates
-- [ ] Automated story title generation
-- [ ] Community voting on stories
-- [ ] Story remixing features
-- [ ] Advanced moderation tools
-
-### Phase 4: Ecosystem Expansion 🔮 (Future)
-- [ ] Mobile app (iOS/Android)
-- [ ] Multi-chain expansion (Optimism, Arbitrum)
-- [ ] $GHOST governance token
-- [ ] Liquidity mining incentives
-- [ ] DAO for template curation
-- [ ] Token rewards for quality contributions
+### Phase 3: Enhancement 📅 (Next)
+- [ ] Farcaster user lookup integration
+- [ ] IPFS metadata storage
+- [ ] Advanced analytics
+- [ ] Mobile app optimization
 
 ---
 
@@ -735,8 +496,7 @@ Contributions welcome! Please:
 
 This project is licensed under the Fair Source License (5 users) - see the [LICENSE](LICENSE) file for details.
 
-**Free for up to 5 users.** Need more? [Contact me](https://github.com/drdeeks) for commercial licensing.
-
+**Free for up to 5 users.** Need more? Contact for commercial licensing.
 
 ---
 
@@ -744,26 +504,21 @@ This project is licensed under the Fair Source License (5 users) - see the [LICE
 
 Built with ❤️ by the Ghost Writer team.
 
-For questions or support, reach out:
+For questions or support:
 - GitHub: https://github.com/drdeeks
 - Email: drdeeks@outlook.com
-- Discord: @drdeeks#0
-- Twitter/X: @drdeeks
-- TG: @drdeeks
-- Farcaster: @drdeeks
-- Base App: https://base.app/profile/0x5F94824f65C2a43F5473c52550215D7150892BEF
 
 ---
 
 ## 🙏 Acknowledgments
 
 - [Base](https://base.org) - L2 blockchain platform
-- [Monad](https://monad.xyz) - High-performance L1 blockchain
 - [Farcaster](https://farcaster.xyz) - Decentralized social protocol
 - [OnchainKit](https://onchainkit.com) - Base blockchain toolkit
 - [OpenZeppelin](https://openzeppelin.com) - Smart contract libraries
+- [OpenAI](https://openai.com) - AI story generation and moderation
 - [Hardhat](https://hardhat.org) - Ethereum development environment
 
 ---
 
-**Built with 💜 by DrDeeks | Powered by Monad and Base 🟪  | Secured by OpenZeppelin 🛡️**
+**Built with 💜 by DrDeeks | Powered by Base 🟪 | Secured by OpenZeppelin 🛡️ | Enhanced by AI 🤖**
