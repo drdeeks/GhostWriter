@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2025-01-10
+
+### Added
+- **AI-Powered Word Moderation:** Integrated OpenAI Moderation API for intelligent content filtering. The system checks words for profanity, hate speech, violence, and other inappropriate content before allowing contributions.
+- **AI-Powered Story Generation:** Implemented OpenAI GPT-4o-mini integration for dynamic story template generation. Stories are now generated on-demand based on selected categories, replacing static templates.
+- **Farcaster User API:** Created new API endpoint `/api/farcaster-user` to fetch Farcaster user information (FID and username) from wallet addresses for creator NFT metadata.
+- **Minimal Creator NFT Metadata:** Updated creator NFT metadata to include only essential information: user name/FID, story title, category, and date created. Removed story template/content from creator NFTs as specified.
+- **Enhanced NFT Image Generation:** Updated NFT image generation to dynamically create SVG images for creator NFTs with proper branding, creator information, category, and creation date.
+- **AI Integration Documentation:** Created comprehensive `docs/AI_INTEGRATION.md` guide explaining AI features, API usage, configuration, and cost considerations.
+
+### Changed
+- **Word Moderation API:** Upgraded from basic `bad-words` library to OpenAI Moderation API with detailed category scoring and fallback mechanisms.
+- **Story Generation API:** Enhanced to use OpenAI GPT-4o-mini for dynamic story creation while maintaining template-based fallback for cost optimization.
+- **Creator NFT Metadata Structure:** Simplified creator NFT metadata to only include: creator name/FID, story title, category (Normal/Epic), and date created. Removed all story content and template information.
+- **NFT Image Route:** Completely rewrote `/api/nft/[tokenId]/image` to generate proper SVG images for both creator and contributor NFTs with distinct designs.
+- **Environment Configuration:** Added `OPENAI_API_KEY` to `env.example` with documentation.
+
+### Fixed
+- **OpenAI Client Initialization:** Fixed build errors by implementing lazy initialization of OpenAI client to prevent module-level instantiation during build time.
+- **Creator NFT Display:** Ensured creator NFTs display only required metadata fields as specified, removing unnecessary story content.
+
+### Technical Details
+- AI features include fallback mechanisms: word moderation falls back to basic validation, story generation falls back to template-based system if OpenAI API key is not configured.
+- Creator NFT auto-minting occurs automatically when stories are completed via the `_completeStory` function in `StoryManager.sol`.
+- Farcaster user lookup is implemented as a placeholder API ready for integration with Farcaster's official API or Neynar service.
+- All AI endpoints use lazy client initialization to support builds without API keys configured.
+
+## [1.2.1] - 2025-01-10
+
+### Added
+- **Postinstall Script:** Created `scripts/postinstall.js` to automatically generate wagmi/experimental compatibility shim after npm install, ensuring consistent builds across all environments.
+- **Wagmi Experimental Shim Documentation:** Added comprehensive documentation in `docs/WAGMI_EXPERIMENTAL_SHIM.md` explaining the compatibility shim, its purpose, usage, and troubleshooting.
+- **Vercel Deployment Documentation:** Created `docs/VERCEL_DEPLOYMENT.md` with deployment configuration details, environment variables, and troubleshooting guide.
+- **Vercel Configuration:** Added `vercel.json` with optimized build settings, install command with legacy peer deps, and API route timeout configuration.
+- **PostCSS Dependency:** Added `@tailwindcss/postcss` as a dev dependency to support Tailwind CSS v4 PostCSS processing.
+- **TypeScript Type Definitions:** Added `@types/react` and `@types/react-dom` (v19.2.3) to dev dependencies for proper TypeScript support with React 19.
+
+### Changed
+- **Package.json Scripts:** Added `postinstall` script to automatically run the wagmi/experimental shim creation after dependency installation.
+- **TypeScript Configuration:** Updated `tsconfig.json` to exclude Hardhat scripts, test files, and contracts from Next.js build process, preventing type conflicts.
+- **Next.js Configuration:** Enhanced `next.config.js` with webpack alias for `wagmi/experimental` as a fallback mechanism for module resolution.
+- **Bad Words Import:** Changed from default import to named import (`import { Filter } from 'bad-words'`) to match the package's export structure.
+
+### Fixed
+- **Build Errors - Missing PostCSS:** Resolved build failure caused by missing `@tailwindcss/postcss` dependency required for Tailwind CSS v4.
+- **Wagmi Experimental Module Resolution:** Fixed "Cannot find module 'wagmi/experimental'" errors by creating compatibility shim that re-exports experimental hooks from wagmi v3 main package.
+- **Bad Words Import Error:** Fixed "Export default doesn't exist" error by switching to named import syntax.
+- **TypeScript Compilation Conflicts:** Resolved TypeScript errors during Next.js build by excluding Hardhat-specific files from Next.js TypeScript compilation.
+- **Missing Type Definitions:** Added missing TypeScript type definitions for React 19 to ensure proper type checking.
+- **Package Lock File:** Regenerated `package-lock.json` to include all updated dependencies and ensure consistent installs across environments.
+
+### Technical Details
+- The wagmi/experimental shim is automatically created via postinstall script, ensuring compatibility between `@coinbase/onchainkit` v1.1.2 (which expects wagmi/experimental) and wagmi v3.1.4 (which exports experimental features from the main package).
+- All build issues have been resolved, and the project now builds successfully with all components functional.
+- Vercel deployment is configured to use `--legacy-peer-deps` flag to handle peer dependency conflicts gracefully.
+
 ## [1.2.0] - 2024-07-26
 
 ### Added
