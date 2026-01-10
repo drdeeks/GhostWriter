@@ -4,6 +4,38 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Providers } from './providers';
 
+export const metadata: Metadata = {
+  title: "Ghost Writer",
+  description: "Storytelling NFT Game - Collaborative storytelling where contributions mint hidden NFTs that reveal when stories complete. Each word earns creation credits on Base Chain.",
+  icons: {
+    icon: '/icon.png',
+  },
+  // Open Graph / general social sharing
+  openGraph: {
+    title: "Ghost Writer - NFT Game",
+    description: "Collaborative stories with hidden NFTs that reveal on completion. Earn rewards on Base Chain.",
+    images: [
+      {
+        url: "https://ghost-writer-three.vercel.app/splash.png",
+        width: 1200,
+        height: 630,
+        alt: "Ghost Writer Splash",
+      },
+    ],
+    type: "website",
+  },
+  // Farcaster Mini App frame metadata
+  other: {
+    "fc:frame": "vNext",
+    "fc:frame:image": "https://ghost-writer-three.vercel.app/splash.png",
+    "fc:frame:button:1": "Start Writing",
+    "fc:frame:button:1:action": "launch_frame",
+    "fc:frame:button:1:target": "https://ghost-writer-three.vercel.app",
+    "fc:frame:splashImageUrl": "https://ghost-writer-three.vercel.app/splash.png",
+    "fc:frame:splashBackgroundColor": "#000000",
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,15 +53,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-export const metadata: Metadata = {
-  title: "Ghost Writer",
-  description: "Community Storytelling • NFT Rewards • Base Chain",
-  icons: {
-    icon: '/icon.png',
-  },
-  other: {
-    "fc:frame": JSON.stringify({ "version": "next", "imageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/thumbnail_eef894e2-9571-49f4-820b-75c4415f4244-jBSXrQuX5LQc8ZgP4ui9o25wgBYd85", "button": { "title": "Open with Ohara", "action": { "type": "launch_frame", "name": "Response Formats", "url": "https://any-park-417.app.ohara.ai", "splashImageUrl": "https://usdozf7pplhxfvrl.public.blob.vercel-storage.com/farcaster/splash_images/splash_image1.svg", "splashBackgroundColor": "#ffffff" } } }
-    )
-  }
-};
