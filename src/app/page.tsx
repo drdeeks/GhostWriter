@@ -3,15 +3,15 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'sonner';
-import { sdk } from '@farcaster/miniapp-sdk';
 
-// ── Hooks ────────────────────────────────────────────────
-import { useFarcaster } from '@/components/FarcasterWrapper';
-import { useAddMiniApp } from '@/hooks/useAddMiniApp';
+// ── Enhanced Hooks ───────────────────────────────────────
+import { useHaptic } from '@/lib/haptic';
+import { useFarcasterEnhanced } from '@/lib/farcaster-enhanced';
+import { usePerformanceMonitor } from '@/lib/performance';
 import { useAllStories, useUserStats } from '@/hooks/useContract';
 import { useStories } from '@/hooks/useStories';
 
-// ── Components ───────────────────────────────────────────
+// ── Lazy Components ──────────────────────────────────────
 const ContributionModal = React.lazy(() =>
   import('@/components/contribution-modal').then((mod) => ({
     default: mod.ContributionModal,
@@ -40,6 +40,8 @@ import {
   PlusCircle,
   Sparkles,
   Trophy,
+  Smartphone,
+  Zap,
 } from 'lucide-react';
 
 import { areContractsDeployed } from '@/lib/contracts';
@@ -47,48 +49,70 @@ import type { Story, StoryType } from '@/types/ghostwriter';
 
 export default function Home() {
   const { address } = useAccount();
-  const { isMiniApp } = useFarcaster();
-  const { addMiniApp } = useAddMiniApp();
+  const haptic = useHaptic();
+  const farcaster = useFarcasterEnhanced();
+  const performance = usePerformanceMonitor();
 
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [showContributionModal, setShowContributionModal] = useState(false);
   const [showCreationModal, setShowCreationModal] = useState(false);
   const [farcasterUser, setFarcasterUser] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Contract data
+  // Contract data with performance monitoring
   const { storyIds, isLoading: storyIdsLoading, refetch: refetchStories } = useAllStories();
   const { stories, isLoading: storiesLoading, refetchAll } = useStories(storyIds);
   const { stats: userStats, refetch: refetchStats } = useUserStats(address);
 
-  // Farcaster mini-app context
+  // Enhanced Farcaster initialization
   useEffect(() => {
     const init = async () => {
       try {
-        if (isMiniApp) {
-          await addMiniApp();
-          await sdk.actions.ready();
-          const context = await sdk.context;
-          setFarcasterUser(context?.user?.username || null);
-        } else {
-          console.log('Running in development - Farcaster features disabled');
-          setFarcasterUser(null);
-        }
+        setIsLoading(true);
+        
+        await performance.measureAsync('farcaster-init', async () => {
+          await farcaster.initialize();
+          const context = farcaster.getContext();
+          
+          if (farcaster.isInMiniApp() && context?.user) {
+            setFarcasterUser(context.user.username || null);
+            haptic.trigger('light'); // Welcome haptic
+            
+            // Request notification permission for mini-app
+            await farcaster.requestNotificationPermission();
+          }
+        });
       } catch (error) {
-        console.error('Failed to initialize Farcaster:', error);
+        console.error('Initialization failed:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     init();
-  }, [isMiniApp, addMiniApp]);
+  }, [farcaster, haptic, performance]);
 
   const contractsDeployed = areContractsDeployed();
 
-  // Derived story lists
-  const validStories = (stories || []).filter(Boolean) as Story[];
-  const activeStories = validStories.filter((s) => s.status === 'active');
-  const completedStories = validStories.filter((s) => s.status === 'complete');
+  // Derived story lists with performance optimization
+  const validStories = React.useMemo(() => 
+    (stories || []).filter(Boolean) as Story[], 
+    [stories]
+  );
+  
+  const activeStories = React.useMemo(() => 
+    validStories.filter((s) => s.status === 'active'), 
+    [validStories]
+  );
+  
+  const completedStories = React.useMemo(() => 
+    validStories.filter((s) => s.status === 'complete'), 
+    [validStories]
+  );
 
   const handleContribute = (storyId: string) => {
+    haptic.trigger('medium'); // Haptic feedback for interaction
+    
     const story = stories.find((s) => s.storyId === storyId);
     if (story) {
       setSelectedStory(story);
@@ -98,14 +122,30 @@ export default function Home() {
 
   const handleSubmitContribution = async (word: string) => {
     try {
+      haptic.trigger('light');
       toast.success('Processing contribution...');
-      await refetchStats();
-      await refetchStories();
+      
+      await performance.measureAsync('contribution-submit', async () => {
+        await refetchStats();
+        await refetchStories();
+      });
+      
       setShowContributionModal(false);
+      haptic.trigger('success');
+      
       toast.success('Contribution successful!', {
         description: `You contributed "${word}" and earned 1 creation credit!`,
       });
+
+      // Send Farcaster notification if in mini-app
+      if (farcaster.isInMiniApp()) {
+        await farcaster.sendNotification(
+          'Contribution Success!',
+          `You contributed "${word}" to a story!`
+        );
+      }
     } catch (error) {
+      haptic.trigger('error');
       toast.error('Contribution failed', {
         description: error instanceof Error ? error.message : 'Please try again',
       });
@@ -114,41 +154,93 @@ export default function Home() {
 
   const handleCreateStory = async (storyType: StoryType) => {
     try {
+      haptic.trigger('medium');
       toast.success('Creating story...');
-      await refetchStats();
-      await refetchStories();
+      
+      await performance.measureAsync('story-creation', async () => {
+        await refetchStats();
+        await refetchStories();
+      });
+      
       setShowCreationModal(false);
+      haptic.trigger('success');
       toast.success('Story created!');
+
+      // Send Farcaster notification if in mini-app
+      if (farcaster.isInMiniApp()) {
+        await farcaster.sendNotification(
+          'Story Created!',
+          'Your new story is ready for contributions!'
+        );
+      }
     } catch (error) {
+      haptic.trigger('error');
       toast.error('Creation failed', {
         description: error instanceof Error ? error.message : 'Please try again',
       });
     }
   };
 
+  const handleShareStory = async (storyId: string, title: string) => {
+    haptic.trigger('light');
+    await farcaster.shareStory(storyId, title);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-cyan-400 mx-auto mb-4" />
+          <p className="text-gray-300">Initializing Ghost Writer...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 relative overflow-hidden">
-      {/* Ambient glow effects */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      {/* Enhanced ambient effects for mobile */}
+      <div className="absolute top-0 left-1/4 w-72 h-72 md:w-96 md:h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-0 right-1/4 w-72 h-72 md:w-96 md:h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl relative z-10">
-        {/* Header */}
-        <div className="mb-12 text-center relative">
+      <div className="container mx-auto px-3 md:px-4 py-4 md:py-8 max-w-7xl relative z-10">
+        {/* Enhanced Header with mobile optimization */}
+        <div className="mb-8 md:mb-12 text-center relative">
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-orange-500/5 blur-3xl -z-10" />
-          <h1 className="text-5xl md:text-6xl font-black mb-4 bg-gradient-to-r from-cyan-400 via-purple-400 to-orange-400 bg-clip-text text-transparent drop-shadow-lg">
+          
+          {/* Mobile-optimized title */}
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-3 md:mb-4 bg-gradient-to-r from-cyan-400 via-purple-400 to-orange-400 bg-clip-text text-transparent drop-shadow-lg">
             👻 Ghost Writer
           </h1>
-          <p className="text-xl text-gray-300 mb-3 font-medium">Community Storytelling • NFT Rewards</p>
+          
+          <p className="text-lg md:text-xl text-gray-300 mb-2 md:mb-3 font-medium">
+            Community Storytelling • NFT Rewards
+          </p>
 
+          {/* Farcaster user display with enhanced styling */}
           {farcasterUser && (
-            <p className="text-sm text-cyan-400 font-semibold">Welcome back, @{farcasterUser}!</p>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Smartphone className="h-4 w-4 text-cyan-400" />
+              <p className="text-sm text-cyan-400 font-semibold">
+                Welcome back, @{farcasterUser}!
+              </p>
+              <Zap className="h-4 w-4 text-cyan-400 animate-pulse" />
+            </div>
           )}
 
+          {/* Mobile-optimized address display */}
           {address && (
-            <p className="text-xs text-gray-500 font-mono mt-2">
+            <p className="text-xs text-gray-500 font-mono mt-1 md:mt-2 break-all">
               {address.slice(0, 6)}...{address.slice(-4)}
             </p>
+          )}
+
+          {/* Mini-app indicator */}
+          {farcaster.isInMiniApp() && (
+            <div className="inline-flex items-center gap-1 mt-2 px-2 py-1 bg-cyan-500/20 rounded-full text-xs text-cyan-300">
+              <Smartphone className="h-3 w-3" />
+              Farcaster Mini App
+            </div>
           )}
         </div>
 

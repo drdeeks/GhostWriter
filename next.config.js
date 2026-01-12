@@ -20,7 +20,7 @@ const nextConfig = {
   // Transpile packages that sometimes need it
   transpilePackages: ['wagmi', 'viem'],
 
-  // Webpack config (kept for alias & fallback support)
+  // Webpack config (kept for fallback support)
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
@@ -31,7 +31,6 @@ const nextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': require('path').resolve(__dirname, 'src'),
-      'wagmi/experimental': require('path').resolve(__dirname, 'src/lib/wagmi-experimental-shim.ts'),
     };
 
     return config;
