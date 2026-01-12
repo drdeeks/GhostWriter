@@ -10,8 +10,8 @@ async function main() {
   const balance = await hre.ethers.provider.getBalance(deployer.address);
   console.log("Account balance:", hre.ethers.formatEther(balance), "ETH\n");
 
-  if (balance < hre.ethers.parseEther("0.01")) {
-    console.log("⚠️  Low balance! Get testnet ETH from: https://www.base.org/faucet");
+  if (balance < hre.ethers.parseEther("0.001")) {
+    console.log("⚠️  Insufficient balance! Get testnet ETH from: https://www.base.org/faucet");
     console.log("   Address:", deployer.address);
     console.log("");
     return;
@@ -28,7 +28,9 @@ async function main() {
   // Deploy GhostWriterNFT
   console.log("\n📦 Deploying GhostWriterNFT...");
   const GhostWriterNFT = await hre.ethers.getContractFactory("GhostWriterNFT");
-  const nft = await GhostWriterNFT.deploy();
+  const hiddenURI = "https://ghost-writer-three.vercel.app/api/nft/hidden/";
+  const revealedURI = "https://ghost-writer-three.vercel.app/api/nft/";
+  const nft = await GhostWriterNFT.deploy(hiddenURI, revealedURI);
   await nft.waitForDeployment();
   const nftAddress = await nft.getAddress();
   console.log("✅ GhostWriterNFT deployed to:", nftAddress);
