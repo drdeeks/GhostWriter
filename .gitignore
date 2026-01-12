@@ -289,3 +289,5 @@ deployments/hardhat/
 
 # Local development
 .local/
+.vercel
+.env*.local
