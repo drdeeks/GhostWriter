@@ -1,4 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/dom';
+import '@testing-library/jest-dom';
 import { StoryCreationModal } from './story-creation-modal';
 
 // Mock the useStoryManager hook

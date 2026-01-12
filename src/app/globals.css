@@ -2,7 +2,7 @@
 
 @layer base {
   :root {
-    /* Dark theme as default - deep, rich dark colors */
+    /* Enhanced dark theme with mobile-optimized colors */
     --background: 220 20% 8%;
     --foreground: 210 40% 98%;
     --card: 220 18% 10%;
@@ -10,11 +10,11 @@
     --popover: 220 18% 10%;
     --popover-foreground: 210 40% 98%;
     
-    /* Cyan/Blue primary - color-blind friendly */
+    /* High-contrast primary colors for mobile visibility */
     --primary: 195 100% 50%;
     --primary-foreground: 220 20% 8%;
     
-    /* Orange secondary - high contrast with blue */
+    /* Orange secondary - excellent mobile contrast */
     --secondary: 30 100% 50%;
     --secondary-foreground: 220 20% 8%;
     
@@ -23,7 +23,7 @@
     --accent: 270 70% 60%;
     --accent-foreground: 210 40% 98%;
     
-    /* Orange-red for destructive (better than pure red for color-blind) */
+    /* Enhanced destructive color for mobile */
     --destructive: 25 95% 53%;
     --destructive-foreground: 210 40% 98%;
     
@@ -31,18 +31,18 @@
     --input: 220 15% 18%;
     --ring: 195 100% 50%;
     
-    /* Enhanced chart colors - color-blind accessible palette */
+    /* Mobile-optimized chart colors */
     --chart-1: 195 100% 50%;
     --chart-2: 30 100% 50%;
     --chart-3: 270 70% 60%;
     --chart-4: 145 70% 50%;
     --chart-5: 340 75% 55%;
     
-    --radius: 0.5rem;
+    --radius: 0.75rem; /* Larger radius for mobile */
   }
 
   .light {
-    /* Light mode fallback */
+    /* Light mode with enhanced mobile contrast */
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -74,17 +74,34 @@
   * {
     border-color: hsl(var(--border));
   }
+  
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Enhanced mobile font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Mobile-first touch targets */
+  button, [role="button"], input, select, textarea {
+    min-height: 44px; /* iOS recommended minimum */
+    min-width: 44px;
+  }
+
+  /* Enhanced focus states for accessibility */
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 }
 
-/* Custom scrollbar for dark theme */
+/* Mobile-optimized scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -93,9 +110,113 @@
 
 ::-webkit-scrollbar-thumb {
   background: hsl(220 15% 25%);
-  border-radius: 5px;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(195 100% 50%);
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  /* Larger touch targets on mobile */
+  .mobile-touch {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  /* Improved text sizing for mobile */
+  .mobile-text {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Enhanced button spacing */
+  .mobile-button {
+    padding: 12px 16px;
+    margin: 4px;
+  }
+}
+
+/* Haptic feedback visual cues */
+.haptic-feedback {
+  transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+}
+
+.haptic-feedback:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Farcaster mini-app specific styles */
+.farcaster-miniapp {
+  /* Optimized for Farcaster frame dimensions */
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.farcaster-miniapp .container {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Loading states with better UX */
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(220 15% 15%) 0%,
+    hsl(220 15% 20%) 50%,
+    hsl(220 15% 15%) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Enhanced animations for mobile */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dark mode media query support */
+@media (prefers-color-scheme: light) {
+  :root {
+    /* Light mode overrides if needed */
+  }
 }

@@ -1,7 +1,7 @@
 import "@nomicfoundation/hardhat-chai-matchers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import hre from "hardhat";
 import { GhostWriterNFT, LiquidityPool, StoryManager } from "../typechain-types";
 
 /**
@@ -17,26 +17,26 @@ describe("Bootstrap Flow Tests", function () {
   let user1: SignerWithAddress;
   let user2: SignerWithAddress;
 
-  const CONTRIBUTION_FEE = ethers.parseEther("0.00005");
-  const CREATION_FEE = ethers.parseEther("0.0001");
+  const CONTRIBUTION_FEE = hre.ethers.parseEther("0.00005");
+  const CREATION_FEE = hre.ethers.parseEther("0.0001");
 
   beforeEach(async function () {
-    [owner, user1, user2] = await ethers.getSigners();
+    [owner, user1, user2] = await hre.ethers.getSigners();
 
     // Deploy contracts
-    const LiquidityPool = await ethers.getContractFactory("LiquidityPool");
-    liquidityPool = await LiquidityPool.deploy();
+    const LiquidityPool = await hre.ethers.getContractFactory("LiquidityPool");
+    liquidityPool = await LiquidityPool.connect(owner).deploy();
     await liquidityPool.waitForDeployment();
 
-    const GhostWriterNFT = await ethers.getContractFactory("GhostWriterNFT");
-    nftContract = await GhostWriterNFT.deploy(
+    const GhostWriterNFT = await hre.ethers.getContractFactory("GhostWriterNFT");
+    nftContract = await GhostWriterNFT.connect(owner).deploy(
       "ipfs://QmHidden/",
       "ipfs://QmRevealed/"
     );
     await nftContract.waitForDeployment();
 
-    const StoryManager = await ethers.getContractFactory("StoryManager");
-    storyManager = await StoryManager.deploy(
+    const StoryManager = await hre.ethers.getContractFactory("StoryManager");
+    storyManager = await StoryManager.connect(owner).deploy(
       await nftContract.getAddress(),
       await liquidityPool.getAddress()
     );
