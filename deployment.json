@@ -1,0 +1,11 @@
+{
+  "network": "baseSepolia",
+  "chainId": 84532,
+  "deployer": "0x7Aba38cf89137aefF27c4032C743dB553Fb6986b",
+  "timestamp": "2026-01-12T13:20:14.511Z",
+  "contracts": {
+    "GhostWriterNFT": "0x5280aAB22ff26726dbE41f22De8D52eD869565ED",
+    "StoryManager": "0x9b7c9B1E3Ff89203afd97a79E57E54933d0b749C",
+    "LiquidityPool": "0x8592478599B34946866926eb7Af78Bb9b0b7C78A"
+  }
+}
