@@ -8,7 +8,7 @@ import { base, baseSepolia } from 'wagmi/chains';
 import { Toaster } from 'sonner';
 import { useEffect } from 'react';
 
-import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID } from '@/app/config/onchainkit';
+import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID } from './config/onchainkit';
 import FarcasterWrapper from '@/components/FarcasterWrapper';
 import { PerformanceMonitor } from '@/lib/performance';
 import { FarcasterManager } from '@/lib/farcaster-enhanced';
