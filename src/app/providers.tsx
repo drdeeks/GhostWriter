@@ -8,7 +8,7 @@ import { base, baseSepolia } from 'wagmi/chains';
 import { Toaster } from 'sonner';
 import { useEffect } from 'react';
 
-import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID } from './config/onchainkit';
+import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID, isOnchainKitConfigured } from './config/onchainkit';
 import FarcasterWrapper from '@/components/FarcasterWrapper';
 import { PerformanceMonitor } from '@/lib/performance';
 import { FarcasterManager } from '@/lib/farcaster-enhanced';
@@ -86,28 +86,36 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <OnchainKitProvider
-          apiKey={ONCHAINKIT_API_KEY}
-          projectId={ONCHAINKIT_PROJECT_ID}
-          chain={chain}
-          config={{
-            appearance: {
-              name: 'Ghost Writer',
-              logo: '/icon.png',
-              mode: 'dark',
-              theme: 'cyberpunk',
-            },
-            wallet: {
-              display: 'modal',
-            },
-          }}
-        >
+        {isOnchainKitConfigured() ? (
+          <OnchainKitProvider
+            apiKey={ONCHAINKIT_API_KEY}
+            projectId={ONCHAINKIT_PROJECT_ID}
+            chain={chain}
+            config={{
+              appearance: {
+                name: 'Ghost Writer',
+                logo: '/icon.png',
+                mode: 'dark',
+                theme: 'cyberpunk',
+              },
+              wallet: {
+                display: 'modal',
+              },
+            }}
+          >
+            <FarcasterWrapper>
+              <EnhancedProviders>
+                {children}
+              </EnhancedProviders>
+            </FarcasterWrapper>
+          </OnchainKitProvider>
+        ) : (
           <FarcasterWrapper>
             <EnhancedProviders>
               {children}
             </EnhancedProviders>
           </FarcasterWrapper>
-        </OnchainKitProvider>
+        )}
       </QueryClientProvider>
     </WagmiProvider>
   );
