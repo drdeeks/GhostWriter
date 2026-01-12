@@ -5,7 +5,11 @@
   "framework": "nextjs",
   "regions": ["iad1"],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "NEXT_PUBLIC_CHAIN_ID": "84532",
+    "NEXT_PUBLIC_FARCASTER_MINIAPP_ID": "ghost-writer",
+    "ENABLE_PERFORMANCE_MONITORING": "true",
+    "ENABLE_HAPTIC_FEEDBACK": "true"
   },
   "build": {
     "env": {
