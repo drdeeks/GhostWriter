@@ -36,53 +36,45 @@ const config: HardhatUserConfig = {
 
   networks: {
     hardhat: {
-      type: "edr-simulated",
-      accounts: accounts as any, // TS narrowing workaround for EDR branch
+      accounts: accounts.length > 0 ? accounts.map(key => ({ privateKey: key, balance: "10000000000000000000000" })) : undefined,
     },
 
     localhost: {
-      type: "http",
       url: "http://127.0.0.1:8545",
       accounts,
     },
 
     baseSepolia: {
-      type: "http",
       url: "https://sepolia.base.org",
       accounts,
       chainId: 84532,
     },
 
     base: {
-      type: "http",
       url: "https://mainnet.base.org",
       accounts,
       chainId: 8453,
     },
 
     monadTestnet: {
-      type: "http",
       url: "https://testnet.monad.xyz/rpc",
       accounts,
       chainId: 10143,
     },
 
     monad: {
-      type: "http",
       url: "https://rpc.monad.xyz",
       accounts,
       chainId: 143,
     },
 
     modeSepolia: {
-      type: "http",
       url: "https://sepolia.mode.network",
       accounts,
       chainId: 919,
     },
 
     mode: {
-      type: "http",
       url: "https://mainnet.mode.network",
       accounts,
       chainId: 34443,
