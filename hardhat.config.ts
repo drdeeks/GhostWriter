@@ -1,7 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-ethers";
-import "@nomicfoundation/hardhat-ignition-ethers";
 import dotenv from "dotenv";
 import fs from "fs";
 import { Wallet } from "ethers";
