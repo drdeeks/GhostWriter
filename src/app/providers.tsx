@@ -6,10 +6,8 @@ import type { ReactNode } from 'react';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { base, baseSepolia } from 'wagmi/chains';
 import { Toaster } from 'sonner';
-import { useEffect } from 'react';
 
 import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID, isOnchainKitConfigured } from './config/onchainkit';
-import FarcasterWrapper from '@/components/FarcasterWrapper';
 
 // Enhanced Wagmi config for Farcaster Mini Apps
 const wagmiConfig = createConfig({
@@ -39,47 +37,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-function EnhancedProviders({ children }: { children: ReactNode }) {
-  useEffect(() => {
-    console.log('🚀 EnhancedProviders initializing...');
-    
-    // Initialize performance monitoring (lazy load)
-    import('@/lib/performance').then(({ PerformanceMonitor }) => {
-      const performanceMonitor = PerformanceMonitor.getInstance();
-      performanceMonitor.initialize();
-      console.log('✅ Performance monitor initialized');
-    }).catch(console.error);
-
-    // Initialize Farcaster manager (lazy load)
-    import('@/lib/farcaster-enhanced').then(({ FarcasterManager }) => {
-      const farcasterManager = FarcasterManager.getInstance();
-      farcasterManager.initialize();
-      console.log('✅ Farcaster manager initialized');
-    }).catch(console.error);
-  }, []);
-
-  return (
-    <>
-      {children}
-      <Toaster 
-        theme="dark"
-        position="top-center"
-        expand={false}
-        richColors
-        closeButton
-        toastOptions={{
-          style: {
-            background: 'hsl(220 18% 10%)',
-            border: '1px solid hsl(220 15% 20%)',
-            color: 'hsl(210 40% 98%)',
-          },
-          className: 'mobile-toast',
-        }}
-      />
-    </>
-  );
-}
 
 export function Providers({ children }: { children: ReactNode }) {
   const chain = process.env.NODE_ENV === 'production' ? base : baseSepolia;
@@ -120,18 +77,42 @@ export function Providers({ children }: { children: ReactNode }) {
               },
             }}
           >
-            <FarcasterWrapper>
-              <EnhancedProviders>
-                {children}
-              </EnhancedProviders>
-            </FarcasterWrapper>
+            {children}
+            <Toaster 
+              theme="dark"
+              position="top-center"
+              expand={false}
+              richColors
+              closeButton
+              toastOptions={{
+                style: {
+                  background: 'hsl(220 18% 10%)',
+                  border: '1px solid hsl(220 15% 20%)',
+                  color: 'hsl(210 40% 98%)',
+                },
+                className: 'mobile-toast',
+              }}
+            />
           </OnchainKitProvider>
         ) : (
-          <FarcasterWrapper>
-            <EnhancedProviders>
-              {children}
-            </EnhancedProviders>
-          </FarcasterWrapper>
+          <>
+            {children}
+            <Toaster 
+              theme="dark"
+              position="top-center"
+              expand={false}
+              richColors
+              closeButton
+              toastOptions={{
+                style: {
+                  background: 'hsl(220 18% 10%)',
+                  border: '1px solid hsl(220 15% 20%)',
+                  color: 'hsl(210 40% 98%)',
+                },
+                className: 'mobile-toast',
+              }}
+            />
+          </>
         )}
       </QueryClientProvider>
     </WagmiProvider>
