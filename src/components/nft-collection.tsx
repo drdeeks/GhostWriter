@@ -33,13 +33,13 @@ export function NFTCollection({ address }: NFTCollectionProps) {
 
   if (!address) {
     return (
-      <Card className="border-2 border-dashed border-gray-300 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50">
+      <Card className="border-2 border-dashed border-gray-600/50 bg-gray-800/30 backdrop-blur-sm">
         <CardContent className="flex flex-col items-center justify-center py-16">
-          <ImageIcon className="h-16 w-16 text-gray-400 mb-4" />
-          <p className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <ImageIcon className="h-16 w-16 text-gray-500 mb-4" />
+          <p className="text-xl font-semibold text-gray-300 mb-2">
             Connect your wallet
           </p>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-gray-400">
             View your Ghost Writer NFT collection
           </p>
         </CardContent>
@@ -49,7 +49,7 @@ export function NFTCollection({ address }: NFTCollectionProps) {
 
   // Memoize tab list and tab content rendering
   const tabList = useMemo(() => (
-    <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-indigo-200 dark:border-indigo-800">
+    <TabsList className="grid w-full grid-cols-4 bg-gray-800/80 backdrop-blur-sm border-2 border-gray-700/50 mb-8 h-14">
       <TabsTrigger value="all">All ({nftCount})</TabsTrigger>
       <TabsTrigger value="hidden">Hidden ({hiddenNFTs.length})</TabsTrigger>
       <TabsTrigger value="revealed">Revealed ({revealedNFTs.length})</TabsTrigger>
@@ -75,7 +75,7 @@ export function NFTCollection({ address }: NFTCollectionProps) {
 
         <TabsContent value="all" className="mt-6">
           {nftCount === 0 ? (
-            <Card className="border-2 border-dashed border-indigo-300 dark:border-indigo-700 bg-white/50 dark:bg-gray-800/50">
+            <Card className="border-2 border-dashed border-gray-600/50 bg-gray-800/30 backdrop-blur-sm">
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <ImageIcon className="h-16 w-16 text-indigo-400 mb-4" />
                 <p className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
