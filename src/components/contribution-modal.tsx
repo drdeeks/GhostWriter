@@ -93,7 +93,7 @@ export function ContributionModal({ open, onClose, story, onSubmit }: Contributi
 
         <div className="space-y-6 py-4">
           {/* Progress */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-purple-200 dark:border-purple-800">
+          <div className="bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 border-2 border-purple-500/50">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Story Progress</span>
               <span className="text-sm font-bold text-purple-600 dark:text-purple-400">

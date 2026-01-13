@@ -29,7 +29,7 @@ interface CardFooterProps {
 export function Card({ children, className = '', onClick }: CardProps) {
     return (
         <div
-            className={`bg-white border border-gray-200 rounded-lg shadow-sm ${onClick ? 'cursor-pointer' : ''} ${className}`}
+            className={`bg-gray-900/80 backdrop-blur-sm border-2 border-gray-700/50 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 ${onClick ? 'cursor-pointer hover:border-cyan-500/50' : ''} ${className}`}
             onClick={onClick}
         >
             {children}
@@ -47,7 +47,7 @@ export function CardHeader({ children, className = '' }: CardHeaderProps) {
 
 export function CardTitle({ children, className = '' }: CardTitleProps) {
     return (
-        <h3 className={`text-lg font-semibold leading-none tracking-tight ${className}`}>
+        <h3 className={`text-lg font-semibold leading-none tracking-tight text-gray-100 ${className}`}>
             {children}
         </h3>
     );
