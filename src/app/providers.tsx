@@ -10,8 +10,6 @@ import { useEffect } from 'react';
 
 import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID, isOnchainKitConfigured } from './config/onchainkit';
 import FarcasterWrapper from '@/components/FarcasterWrapper';
-import { PerformanceMonitor } from '@/lib/performance';
-import { FarcasterManager } from '@/lib/farcaster-enhanced';
 
 // Enhanced Wagmi config for Farcaster Mini Apps
 const wagmiConfig = createConfig({
@@ -46,20 +44,19 @@ function EnhancedProviders({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log('🚀 EnhancedProviders initializing...');
     
-    // Initialize performance monitoring
-    const performanceMonitor = PerformanceMonitor.getInstance();
-    performanceMonitor.initialize();
-    console.log('✅ Performance monitor initialized');
+    // Initialize performance monitoring (lazy load)
+    import('@/lib/performance').then(({ PerformanceMonitor }) => {
+      const performanceMonitor = PerformanceMonitor.getInstance();
+      performanceMonitor.initialize();
+      console.log('✅ Performance monitor initialized');
+    }).catch(console.error);
 
-    // Initialize Farcaster manager
-    const farcasterManager = FarcasterManager.getInstance();
-    farcasterManager.initialize();
-    console.log('✅ Farcaster manager initialized');
-
-    // Cleanup on unmount
-    return () => {
-      performanceMonitor.cleanup();
-    };
+    // Initialize Farcaster manager (lazy load)
+    import('@/lib/farcaster-enhanced').then(({ FarcasterManager }) => {
+      const farcasterManager = FarcasterManager.getInstance();
+      farcasterManager.initialize();
+      console.log('✅ Farcaster manager initialized');
+    }).catch(console.error);
   }, []);
 
   return (
