@@ -381,11 +381,11 @@ export default function Home() {
                 <Loader2 className="h-12 w-12 animate-spin text-cyan-400" />
               </div>
             ) : activeStories.length === 0 ? (
-              <Card className="border-2 border-dashed border-gray-700 bg-gray-900/50 backdrop-blur-sm">
+              <Card className="border-2 border-dashed border-gray-600/50 bg-gray-800/30 backdrop-blur-sm">
                 <CardContent className="flex flex-col items-center justify-center py-16">
-                  <BookOpen className="h-16 w-16 text-gray-600 mb-4" />
+                  <BookOpen className="h-16 w-16 text-gray-500 mb-4" />
                   <p className="text-xl font-semibold text-gray-300 mb-2">No active stories yet</p>
-                  <p className="text-gray-500">
+                  <p className="text-gray-400">
                     {contractsDeployed ? 'Be the first to create one!' : 'Deploy contracts to get started'}
                   </p>
                 </CardContent>
@@ -414,11 +414,11 @@ export default function Home() {
             </div>
 
             {completedStories.length === 0 ? (
-              <Card className="border-2 border-dashed border-gray-700 bg-gray-900/50 backdrop-blur-sm">
+              <Card className="border-2 border-dashed border-gray-600/50 bg-gray-800/30 backdrop-blur-sm">
                 <CardContent className="flex flex-col items-center justify-center py-16">
-                  <Sparkles className="h-16 w-16 text-gray-600 mb-4" />
+                  <Sparkles className="h-16 w-16 text-gray-500 mb-4" />
                   <p className="text-xl font-semibold text-gray-300 mb-2">No completed stories yet</p>
-                  <p className="text-gray-500">Be the first to finish one!</p>
+                  <p className="text-gray-400">Be the first to finish one!</p>
                 </CardContent>
               </Card>
             ) : (
@@ -585,7 +585,7 @@ export default function Home() {
               </div>
 
               {/* Game Rules */}
-              <Card className="border-2 border-gray-600 bg-gray-900/50 backdrop-blur-sm">
+              <Card className="border-2 border-gray-600/50 bg-gray-800/50 backdrop-blur-sm">
                 <CardHeader>
                   <h3 className="text-2xl font-bold text-gray-200 flex items-center gap-2">
                     📋 Game Rules

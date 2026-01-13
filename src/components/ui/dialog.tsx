@@ -53,7 +53,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
                 {/* Dialog content */}
                 <div
                     ref={dialogRef}
-                    className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-auto rounded-lg bg-white p-0 shadow-xl dark:bg-gray-900"
+                    className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-auto rounded-xl bg-gray-900/95 backdrop-blur-md border-2 border-gray-700/50 p-0 shadow-2xl"
                     tabIndex={-1}
                 >
                     {children}
@@ -96,7 +96,7 @@ interface DialogTitleProps {
 
 export function DialogTitle({ children, className = '' }: DialogTitleProps) {
     return (
-        <h2 className={`text-lg font-semibold leading-none tracking-tight ${className}`}>
+        <h2 className={`text-lg font-semibold leading-none tracking-tight text-gray-100 ${className}`}>
             {children}
         </h2>
     );
@@ -109,7 +109,7 @@ interface DialogDescriptionProps {
 
 export function DialogDescription({ children, className = '' }: DialogDescriptionProps) {
     return (
-        <p className={`text-sm text-gray-600 dark:text-gray-400 ${className}`}>
+        <p className={`text-sm text-gray-400 ${className}`}>
             {children}
         </p>
     );
