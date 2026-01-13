@@ -68,24 +68,55 @@ export default function Home() {
   useEffect(() => {
     const init = async () => {
       try {
+        console.log('🚀 Main page initialization starting...');
         setIsLoading(true);
         
-        await performance.measureAsync('farcaster-init', async () => {
+        console.log('📊 Contract deployment status:', {
+          contractsDeployed: areContractsDeployed(),
+          addresses: {
+            nft: process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS,
+            storyManager: process.env.NEXT_PUBLIC_STORY_MANAGER_ADDRESS,
+            liquidityPool: process.env.NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS,
+          }
+        });
+        
+        // Add timeout to prevent infinite hanging
+        const initPromise = performance.measureAsync('farcaster-init', async () => {
+          console.log('🎯 Initializing Farcaster...');
           await farcaster.initialize();
+          console.log('✅ Farcaster initialized');
+          
           const context = farcaster.getContext();
+          console.log('📱 Farcaster context:', { 
+            isInMiniApp: farcaster.isInMiniApp(),
+            hasUser: !!context?.user,
+            username: context?.user?.username 
+          });
           
           if (farcaster.isInMiniApp() && context?.user) {
             setFarcasterUser(context.user.username || null);
             haptic.trigger('light'); // Welcome haptic
             
             // Request notification permission for mini-app
+            console.log('🔔 Requesting notification permission...');
             await farcaster.requestNotificationPermission();
+            console.log('✅ Notification permission requested');
           }
         });
+        
+        // Timeout after 10 seconds
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Initialization timeout')), 10000)
+        );
+        
+        await Promise.race([initPromise, timeoutPromise]);
+        console.log('✅ Main page initialization completed');
       } catch (error) {
-        console.error('Initialization failed:', error);
+        console.error('❌ Initialization failed:', error);
+        // Continue anyway - don't block the app
       } finally {
         setIsLoading(false);
+        console.log('🏁 Loading state set to false');
       }
     };
 

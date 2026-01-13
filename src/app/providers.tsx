@@ -44,13 +44,17 @@ const queryClient = new QueryClient({
 
 function EnhancedProviders({ children }: { children: ReactNode }) {
   useEffect(() => {
+    console.log('🚀 EnhancedProviders initializing...');
+    
     // Initialize performance monitoring
     const performanceMonitor = PerformanceMonitor.getInstance();
     performanceMonitor.initialize();
+    console.log('✅ Performance monitor initialized');
 
     // Initialize Farcaster manager
     const farcasterManager = FarcasterManager.getInstance();
     farcasterManager.initialize();
+    console.log('✅ Farcaster manager initialized');
 
     // Cleanup on unmount
     return () => {
@@ -82,6 +86,22 @@ function EnhancedProviders({ children }: { children: ReactNode }) {
 
 export function Providers({ children }: { children: ReactNode }) {
   const chain = process.env.NODE_ENV === 'production' ? base : baseSepolia;
+
+  console.log('🔧 Providers configuration:', {
+    nodeEnv: process.env.NODE_ENV,
+    chainId: chain.id,
+    chainName: chain.name,
+    onchainKitConfigured: isOnchainKitConfigured(),
+    contractAddresses: {
+      nft: process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS,
+      storyManager: process.env.NEXT_PUBLIC_STORY_MANAGER_ADDRESS,
+      liquidityPool: process.env.NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS,
+    },
+    onchainKitConfig: {
+      projectId: !!process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_ID,
+      apiKey: !!process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY,
+    }
+  });
 
   return (
     <WagmiProvider config={wagmiConfig}>
