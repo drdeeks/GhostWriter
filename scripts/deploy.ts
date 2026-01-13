@@ -1,21 +1,10 @@
-const { ethers } = require("hardhat");
-const fs = require("fs");
+import { ethers } from "hardhat";
+import * as fs from "fs";
 
 async function main() {
   console.log("🚀 Deploying Ghost Writer contracts...\n");
 
-  const network = hre.network.name;
-  console.log("Network:", network);
-
-  const signers = await ethers.getSigners();
-  console.log("Available signers:", signers.length);
-  
-  if (signers.length === 0) {
-    console.log("❌ No signers available! Check your keystore/private key configuration.");
-    return;
-  }
-
-  const [deployer] = signers;
+  const [deployer] = await ethers.getSigners();
   console.log("Deploying with account:", deployer.address);
   
   const balance = await ethers.provider.getBalance(deployer.address);
@@ -35,16 +24,11 @@ async function main() {
   const liquidityPoolAddress = await liquidityPool.getAddress();
   console.log("✅ LiquidityPool deployed to:", liquidityPoolAddress);
 
-  // Deploy GhostWriterNFT with constructor args
+  // Deploy GhostWriterNFT
   console.log("\n📦 Deploying GhostWriterNFT...");
   const GhostWriterNFT = await ethers.getContractFactory("GhostWriterNFT");
-  const hiddenURI = process.env.NEXT_PUBLIC_BASE_URL 
-    ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/nft/hidden/`
-    : "https://ghost-writer-three.vercel.app/api/nft/hidden/";
-  const revealedURI = process.env.NEXT_PUBLIC_BASE_URL
-    ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/nft/`
-    : "https://ghost-writer-three.vercel.app/api/nft/";
-  
+  const hiddenURI = "https://ghost-writer-three.vercel.app/api/nft/hidden/";
+  const revealedURI = "https://ghost-writer-three.vercel.app/api/nft/";
   const nft = await GhostWriterNFT.deploy(hiddenURI, revealedURI);
   await nft.waitForDeployment();
   const nftAddress = await nft.getAddress();
@@ -60,8 +44,7 @@ async function main() {
 
   // Set permissions
   console.log("\n🔗 Setting up permissions...");
-  const tx = await nft.setStoryManager(storyManagerAddress);
-  await tx.wait();
+  await nft.setStoryManager(storyManagerAddress);
   console.log("✅ StoryManager set as NFT minter");
 
   // Update .env
@@ -86,14 +69,9 @@ async function main() {
 
   // Save deployment info
   const deploymentInfo = {
-    network: network,
+    network: process.env.HARDHAT_NETWORK || "unknown",
     deployer: deployer.address,
     timestamp: new Date().toISOString(),
-    constructorArgs: {
-      GhostWriterNFT: [hiddenURI, revealedURI],
-      StoryManager: [nftAddress, liquidityPoolAddress],
-      LiquidityPool: []
-    },
     contracts: {
       GhostWriterNFT: nftAddress,
       StoryManager: storyManagerAddress,
@@ -109,9 +87,6 @@ async function main() {
   console.log("   GhostWriterNFT:", nftAddress);
   console.log("   StoryManager:", storyManagerAddress);
   console.log("   LiquidityPool:", liquidityPoolAddress);
-  
-  console.log("\n🔍 To verify contracts, run:");
-  console.log("   npm run verify");
 }
 
 main()
