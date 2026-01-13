@@ -89,11 +89,6 @@ async function createKeystore() {
       process.exit(1);
     }
     
-    if (password.length < 8) {
-      console.log('❌ Password must be at least 8 characters long.');
-      process.exit(1);
-    }
-    
     // Create encrypted keystore
     console.log('\n🔄 Creating encrypted keystore...');
     const keystore = await wallet.encrypt(password);
