@@ -1,5 +1,8 @@
 const hre = require("hardhat");
 const fs = require('fs');
+const { exec } = require('child_process');
+const util = require('util');
+const execPromise = util.promisify(exec);
 
 async function main() {
   console.log("🔍 Verifying Ghost Writer contracts...\n");
@@ -24,44 +27,33 @@ async function main() {
   if (!process.env.BASESCAN_API_KEY && (network.includes('base') || network.includes('Base'))) {
     console.log("⚠️  BASESCAN_API_KEY not found in .env");
     console.log("   Add your API key to enable verification");
+    console.log("   Get one at: https://basescan.org/myapikey");
     return;
   }
 
   try {
     // Verify LiquidityPool (no constructor args)
     console.log("🔍 Verifying LiquidityPool...");
-    await hre.run("verify:verify", {
-      network: network,
-      address: contracts.LiquidityPool,
-      constructorArguments: constructorArgs.LiquidityPool,
-    });
+    const lpArgs = constructorArgs.LiquidityPool.length > 0 ? constructorArgs.LiquidityPool.join(' ') : '';
+    await execPromise(`npx hardhat verify --network ${network} ${contracts.LiquidityPool} ${lpArgs}`);
     console.log("✅ LiquidityPool verified");
 
     // Verify PriceOracle (with constructor args)
     console.log("\n🔍 Verifying PriceOracle...");
-    await hre.run("verify:verify", {
-      network: network,
-      address: contracts.PriceOracle,
-      constructorArguments: constructorArgs.PriceOracle,
-    });
+    const oracleArgs = constructorArgs.PriceOracle.join(' ');
+    await execPromise(`npx hardhat verify --network ${network} ${contracts.PriceOracle} ${oracleArgs}`);
     console.log("✅ PriceOracle verified");
 
     // Verify GhostWriterNFT (with constructor args)
     console.log("\n🔍 Verifying GhostWriterNFT...");
-    await hre.run("verify:verify", {
-      network: network,
-      address: contracts.GhostWriterNFT,
-      constructorArguments: constructorArgs.GhostWriterNFT,
-    });
+    const nftArgs = constructorArgs.GhostWriterNFT.map(arg => `"${arg}"`).join(' ');
+    await execPromise(`npx hardhat verify --network ${network} ${contracts.GhostWriterNFT} ${nftArgs}`);
     console.log("✅ GhostWriterNFT verified");
 
     // Verify StoryManager (with constructor args)
     console.log("\n🔍 Verifying StoryManager...");
-    await hre.run("verify:verify", {
-      network: network,
-      address: contracts.StoryManager,
-      constructorArguments: constructorArgs.StoryManager,
-    });
+    const smArgs = constructorArgs.StoryManager.join(' ');
+    await execPromise(`npx hardhat verify --network ${network} ${contracts.StoryManager} ${smArgs}`);
     console.log("✅ StoryManager verified");
 
     console.log("\n🎉 All contracts verified successfully!");
