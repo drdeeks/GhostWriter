@@ -59,8 +59,8 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
       borderColor: 'border-green-200 dark:border-green-800',
     },
     {
-      type: 'extended' as StoryType,
-      title: 'Extended Story',
+      type: 'normal' as StoryType,
+      title: 'Normal Story',
       words: '~100 words',
       slots: '20 slots',
       duration: 'Classic length',

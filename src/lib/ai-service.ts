@@ -167,8 +167,11 @@ Category: ${categoryObj.name}
 Description: ${categoryObj.description}
 
 Requirements:
-- Story should be 3-5 sentences long
-- Include 8-15 word placeholders using [WORD_TYPE] format
+- Story should be 50-150 words total (narrative + placeholders)
+- Include 10-35 word placeholders using [WORD_TYPE] format
+- Mini stories: ~50 words total, 10 placeholders
+- Normal stories: ~100 words total, 15-25 placeholders
+- Epic stories: ~150 words total, 35 placeholders
 - Use valid word types: adjective, noun, verb, adverb, plural_noun, past_tense_verb, verb_ing, persons_name, place, number, color, body_part, food, animal, exclamation, emotion
 - Make it fun, creative, and appropriate for all ages
 - Provide a catchy title

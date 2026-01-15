@@ -1,4 +1,4 @@
-export type StoryType = 'normal' | 'extended' | 'dev';
+export type StoryType = 'mini' | 'normal' | 'epic';
 export type StoryStatus = 'active' | 'complete';
 export type NFTStatus = 'hidden' | 'revealed';
 
@@ -367,7 +367,7 @@ export const WORD_TYPE_DEFINITIONS: Record<WordType, WordTypeInfo> = {
 };
 
 export const STORY_TYPE_INFO: Record<StoryType, { totalWords: number; playerSlots: number; fee: string }> = {
-  normal: { totalWords: 50, playerSlots: 10, fee: '$0.05' },
-  extended: { totalWords: 100, playerSlots: 20, fee: '$0.10' },
-  dev: { totalWords: 250, playerSlots: 250, fee: '$0.05' },
+  mini: { totalWords: 50, playerSlots: 10, fee: 'Dynamic ($0.05)' },
+  normal: { totalWords: 100, playerSlots: 20, fee: 'Dynamic ($0.10)' },
+  epic: { totalWords: 150, playerSlots: 35, fee: 'Dynamic ($0.10)' },
 };

@@ -85,6 +85,18 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* Prevent flash of unstyled content */
+  html {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  /* Prevent layout shift during load */
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
   /* Mobile-first touch targets */
   button, [role="button"], input, select, textarea {
     min-height: 44px; /* iOS recommended minimum */
@@ -135,7 +147,45 @@
     padding: 12px 16px;
     margin: 4px;
   }
+
+  /* Prevent text truncation */
+  h1, h2, h3, h4, h5, h6, p, span, div {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
 }
+
+/* Responsive text scaling */
+@media (min-width: 320px) {
+  html { font-size: 14px; }
+}
+
+@media (min-width: 640px) {
+  html { font-size: 15px; }
+}
+
+@media (min-width: 768px) {
+  html { font-size: 16px; }
+}
+
+@media (min-width: 1024px) {
+  html { font-size: 16px; }
+}
+
+@media (min-width: 1280px) {
+  html { font-size: 17px; }
+}
+
+/* Fluid typography */
+.text-fluid-xs { font-size: clamp(0.75rem, 2vw, 0.875rem); }
+.text-fluid-sm { font-size: clamp(0.875rem, 2.5vw, 1rem); }
+.text-fluid-base { font-size: clamp(1rem, 3vw, 1.125rem); }
+.text-fluid-lg { font-size: clamp(1.125rem, 3.5vw, 1.25rem); }
+.text-fluid-xl { font-size: clamp(1.25rem, 4vw, 1.5rem); }
+.text-fluid-2xl { font-size: clamp(1.5rem, 5vw, 2rem); }
+.text-fluid-3xl { font-size: clamp(1.875rem, 6vw, 2.5rem); }
+.text-fluid-4xl { font-size: clamp(2.25rem, 7vw, 3rem); }
 
 /* Haptic feedback visual cues */
 .haptic-feedback {

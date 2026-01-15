@@ -54,8 +54,9 @@ function mapContractStory(contractStory: any): Story {
 function mapStoryType(value: number | bigint | undefined): StoryType {
   if (value === undefined || value === null) return 'normal';
   const numeric = typeof value === 'bigint' ? Number(value) : value;
-  if (numeric === 1) return 'extended';
-  if (numeric === 2) return 'dev';
+  if (numeric === 0) return 'mini';
+  if (numeric === 1) return 'normal';
+  if (numeric === 2) return 'epic';
   return 'normal';
 }
 
