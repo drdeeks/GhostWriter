@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./GhostWriterNFT.sol";
 import "./LiquidityPool.sol";
+import "./PriceOracle.sol";
 
 /**
  * @title StoryManager
@@ -14,10 +15,11 @@ import "./LiquidityPool.sol";
 contract StoryManager is Ownable, ReentrancyGuard {
     GhostWriterNFT public nftContract;
     LiquidityPool public liquidityPool;
+    PriceOracle public priceOracle;
 
-    // Fee amounts in wei
-    uint256 public contributionFee;
-    uint256 public creationFee;
+    // Fee amounts in USD cents (5 cents and 10 cents)
+    uint256 public constant CONTRIBUTION_FEE_USD_CENTS = 5;
+    uint256 public constant CREATION_FEE_USD_CENTS = 10;
 
     // Story types
     enum StoryType {
@@ -152,15 +154,30 @@ contract StoryManager is Ownable, ReentrancyGuard {
 
     constructor(
         address _nftContract,
-        address payable _liquidityPool
+        address payable _liquidityPool,
+        address _priceOracle
     ) Ownable(msg.sender) {
         require(_nftContract != address(0), "Invalid NFT contract");
         require(_liquidityPool != address(0), "Invalid pool");
+        require(_priceOracle != address(0), "Invalid price oracle");
         nftContract = GhostWriterNFT(_nftContract);
         liquidityPool = LiquidityPool(_liquidityPool);
-        contributionFee = 0.00005 ether;
-        creationFee = 0.0001 ether;
+        priceOracle = PriceOracle(_priceOracle);
         _initializeAchievements();
+    }
+
+    /**
+     * @dev Get current contribution fee in ETH
+     */
+    function getContributionFee() public view returns (uint256) {
+        return priceOracle.usdToEth(CONTRIBUTION_FEE_USD_CENTS);
+    }
+
+    /**
+     * @dev Get current creation fee in ETH
+     */
+    function getCreationFee() public view returns (uint256) {
+        return priceOracle.usdToEth(CREATION_FEE_USD_CENTS);
     }
 
     /**
@@ -187,7 +204,8 @@ contract StoryManager is Ownable, ReentrancyGuard {
         StoryCategory category,
         string[] memory wordTypes
     ) external payable nonReentrant {
-        require(msg.value == creationFee, "Incorrect creation fee");
+        uint256 requiredFee = getCreationFee();
+        require(msg.value >= requiredFee, "Insufficient creation fee");
         require(bytes(storyId).length > 0, "Invalid storyId");
         require(!storyExists[storyId], "Story already exists");
         require(
@@ -205,9 +223,9 @@ contract StoryManager is Ownable, ReentrancyGuard {
         if (storyType == StoryType.MINI) {
             require(totalSlots <= 10, "Mini stories max 10 slots");
         } else if (storyType == StoryType.NORMAL) {
-            require(totalSlots <= 20, "Normal stories max 20 slots");
+            require(totalSlots <= 25, "Normal stories max 25 slots");
         } else if (storyType == StoryType.EPIC) {
-            require(totalSlots <= 200, "Epic stories max 200 slots");
+            require(totalSlots <= 35, "Epic stories max 35 slots");
             require(msg.sender == owner(), "Only owner can create epic stories");
         }
 
@@ -260,8 +278,16 @@ contract StoryManager is Ownable, ReentrancyGuard {
         }
 
         // Forward fee to liquidity pool
-        liquidityPool.deposit{value: msg.value}();
-        emit FeesCollected(msg.value, address(liquidityPool));
+        liquidityPool.deposit{value: requiredFee}();
+        
+        // Refund excess payment (checks-effects-interactions pattern)
+        uint256 refundAmount = msg.value - requiredFee;
+        if (refundAmount > 0) {
+            (bool success, ) = payable(msg.sender).call{value: refundAmount}("");
+            require(success, "Refund failed");
+        }
+        
+        emit FeesCollected(requiredFee, address(liquidityPool));
 
         emit StoryCreated(storyId, msg.sender, storyType, totalSlots);
     }
@@ -288,7 +314,8 @@ contract StoryManager is Ownable, ReentrancyGuard {
         uint256 position,
         string memory word
     ) external payable nonReentrant {
-        require(msg.value == contributionFee, "Incorrect contribution fee");
+        uint256 requiredFee = getContributionFee();
+        require(msg.value >= requiredFee, "Insufficient contribution fee");
         require(storyExists[storyId], "Story does not exist");
 
         Story storage story = stories[storyId];
@@ -381,8 +408,16 @@ contract StoryManager is Ownable, ReentrancyGuard {
         }
 
         // Forward fee to liquidity pool
-        liquidityPool.deposit{value: msg.value}();
-        emit FeesCollected(msg.value, address(liquidityPool));
+        liquidityPool.deposit{value: requiredFee}();
+        
+        // Refund excess payment (checks-effects-interactions pattern)
+        uint256 refundAmount = msg.value - requiredFee;
+        if (refundAmount > 0) {
+            (bool success, ) = payable(msg.sender).call{value: refundAmount}("");
+            require(success, "Refund failed");
+        }
+        
+        emit FeesCollected(requiredFee, address(liquidityPool));
 
         emit WordContributed(storyId, position, msg.sender, nftId);
         emit CreationCreditEarned(
@@ -708,17 +743,15 @@ contract StoryManager is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Owner can update fee amounts
+     * @dev Owner can update price oracle
      */
-    function setFee(
-        uint256 newContributionFee,
-        uint256 newCreationFee
-    ) external onlyOwner {
-        require(newContributionFee > 0, "Fee must be positive");
-        require(newCreationFee > 0, "Fee must be positive");
-        contributionFee = newContributionFee;
-        creationFee = newCreationFee;
+    function updatePriceOracle(address _priceOracle) external onlyOwner {
+        require(_priceOracle != address(0), "Invalid price oracle");
+        priceOracle = PriceOracle(_priceOracle);
+        emit PriceOracleUpdated(_priceOracle);
     }
+
+    event PriceOracleUpdated(address indexed newOracle);
 
     /**
      * @dev Emergency withdrawal (only owner)

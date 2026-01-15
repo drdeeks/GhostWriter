@@ -5,6 +5,7 @@ describe("GhostWriter System", function () {
   let nft;
   let storyManager;
   let liquidityPool;
+  let priceOracle;
   let owner;
   let user1;
   let user2;
@@ -16,6 +17,11 @@ describe("GhostWriter System", function () {
     const LiquidityPool = await ethers.getContractFactory("LiquidityPool");
     liquidityPool = await LiquidityPool.deploy();
 
+    // Deploy PriceOracle with mock Chainlink feed (use fallback)
+    const PriceOracle = await ethers.getContractFactory("PriceOracle");
+    const mockFeedAddress = "0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1"; // Base Sepolia feed
+    priceOracle = await PriceOracle.deploy(mockFeedAddress);
+
     // Deploy NFT contract
     const GhostWriterNFT = await ethers.getContractFactory("GhostWriterNFT");
     nft = await GhostWriterNFT.deploy(
@@ -23,11 +29,12 @@ describe("GhostWriter System", function () {
       "https://api.example.com/revealed/"
     );
 
-    // Deploy StoryManager
+    // Deploy StoryManager with PriceOracle
     const StoryManager = await ethers.getContractFactory("StoryManager");
     storyManager = await StoryManager.deploy(
       await nft.getAddress(),
-      await liquidityPool.getAddress()
+      await liquidityPool.getAddress(),
+      await priceOracle.getAddress()
     );
 
     // Set permissions

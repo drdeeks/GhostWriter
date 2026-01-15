@@ -43,7 +43,7 @@ export function SelectTrigger({ children, className = '' }: SelectTriggerProps) 
     return (
         <button
             type="button"
-            className={`flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+            className={`flex h-12 w-full items-center justify-between rounded-xl border-2 border-gray-600/50 bg-gray-800/80 backdrop-blur-sm px-4 py-3 text-sm text-gray-100 ring-offset-background placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 ${className}`}
             onClick={() => context.setOpen(!context.open)}
         >
             {children}
@@ -68,7 +68,7 @@ export function SelectValue({ placeholder = 'Select...' }: SelectValueProps) {
     const context = useContext(SelectContext);
     if (!context) throw new Error('SelectValue must be used within Select');
 
-    return <span>{context.value || placeholder}</span>;
+    return <span className="text-gray-100">{context.value || placeholder}</span>;
 }
 
 interface SelectContentProps {
@@ -103,7 +103,7 @@ export function SelectContent({ children, className = '' }: SelectContentProps) 
     return (
         <div
             ref={ref}
-            className={`absolute z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-80 ${className}`}
+            className={`absolute z-50 mt-2 min-w-full overflow-hidden rounded-xl border-2 border-gray-700/50 bg-gray-800/95 backdrop-blur-md p-2 text-gray-100 shadow-2xl animate-in fade-in-80 ${className}`}
         >
             {children}
         </div>
@@ -122,15 +122,15 @@ export function SelectItem({ value, children, className = '' }: SelectItemProps)
 
     return (
         <div
-            className={`relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground ${className}`}
+            className={`relative flex w-full cursor-pointer select-none items-center rounded-lg py-2.5 pl-10 pr-3 text-sm outline-none transition-colors hover:bg-gray-700/50 focus:bg-gray-700/50 text-gray-100 ${context.value === value ? 'bg-cyan-500/20 text-cyan-300' : ''} ${className}`}
             onClick={() => {
                 context.onValueChange(value);
                 context.setOpen(false);
             }}
         >
             {context.value === value && (
-                <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                <span className="absolute left-3 flex h-3.5 w-3.5 items-center justify-center">
+                    <svg className="h-4 w-4 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                 </span>

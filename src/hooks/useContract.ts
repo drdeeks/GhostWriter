@@ -2,6 +2,7 @@ import { CONTRACTS, FEES, NFT_ABI, STORY_MANAGER_ABI } from '@/lib/contracts';
 import type { StoryType, UserStats as UserStatsType } from '@/types/ghostwriter';
 import { useState } from 'react';
 import { useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useFees } from './useFees';
 
 /**
  * Hook for reading and writing to Story Manager contract
@@ -9,6 +10,7 @@ import { useReadContract, useWaitForTransactionReceipt, useWriteContract } from 
 export function useStoryManager() {
   const [isPending, setIsPending] = useState<boolean>(false);
   const { writeContractAsync } = useWriteContract();
+  const { contributionFee, creationFee, isLoading: isLoadingFees } = useFees();
 
   const createStory = async (
     storyId: string,
@@ -21,9 +23,9 @@ export function useStoryManager() {
     setIsPending(true);
     try {
       let storyTypeEnum = 0;
-      if (storyType === 'normal') storyTypeEnum = 0;
-      else if (storyType === 'extended') storyTypeEnum = 1;
-      else if (storyType === 'dev') storyTypeEnum = 2;
+      if (storyType === 'mini') storyTypeEnum = 0;
+      else if (storyType === 'normal') storyTypeEnum = 1;
+      else if (storyType === 'epic') storyTypeEnum = 2;
       const categoryEnum = getCategoryEnum(category);
 
       const hash = await writeContractAsync({
@@ -31,7 +33,7 @@ export function useStoryManager() {
         abi: STORY_MANAGER_ABI,
         functionName: 'createStory',
         args: [storyId, title, template, storyTypeEnum, categoryEnum, wordTypes],
-        value: FEES.creation,
+        value: creationFee,
       } as any);
 
       return {
@@ -61,7 +63,7 @@ export function useStoryManager() {
         abi: STORY_MANAGER_ABI,
         functionName: 'contributeWord',
         args: [storyId, BigInt(position), word],
-        value: FEES.contribution,
+        value: contributionFee,
       } as any);
 
       return {
@@ -83,6 +85,7 @@ export function useStoryManager() {
     createStory,
     contributeWord,
     isPending,
+    isLoadingFees,
   };
 }
 

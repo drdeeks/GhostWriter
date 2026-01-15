@@ -74,6 +74,8 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
         string memory hiddenURI,
         string memory revealedURI
     ) ERC721("Ghost Writer NFT", "GHOST") Ownable(msg.sender) {
+        require(bytes(hiddenURI).length > 0, "Invalid hidden URI");
+        require(bytes(revealedURI).length > 0, "Invalid revealed URI");
         _hiddenBaseURI = hiddenURI;
         _revealedBaseURI = revealedURI;
     }
