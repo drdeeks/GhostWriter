@@ -1,11 +1,26 @@
 {
   "network": "baseSepolia",
-  "chainId": 84532,
-  "deployer": "0x7Aba38cf89137aefF27c4032C743dB553Fb6986b",
-  "timestamp": "2026-01-12T13:20:14.511Z",
+  "deployer": "0x12F1B38DC35AA65B50E5849d02559078953aE24b",
+  "timestamp": "2026-01-15T13:51:03.120Z",
+  "constructorArgs": {
+    "GhostWriterNFT": [
+      "http://localhost:3000/api/nft/hidden/",
+      "http://localhost:3000/api/nft/"
+    ],
+    "StoryManager": [
+      "0xe20424329D77340Fd36B0a0200C69e0D93bBC64b",
+      "0xC9a262E33E74a192D0e67360ed2353DF01B287cb",
+      "0x79Cb53CE9020A3E4C292249DCb3Fe80F6a9C2318"
+    ],
+    "PriceOracle": [
+      "0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1"
+    ],
+    "LiquidityPool": []
+  },
   "contracts": {
-    "GhostWriterNFT": "0x5280aAB22ff26726dbE41f22De8D52eD869565ED",
-    "StoryManager": "0x9b7c9B1E3Ff89203afd97a79E57E54933d0b749C",
-    "LiquidityPool": "0x8592478599B34946866926eb7Af78Bb9b0b7C78A"
+    "GhostWriterNFT": "0xe20424329D77340Fd36B0a0200C69e0D93bBC64b",
+    "StoryManager": "0xd680A3bF8821F3A0337eDCCc96EEb72D0b87782d",
+    "PriceOracle": "0x79Cb53CE9020A3E4C292249DCb3Fe80F6a9C2318",
+    "LiquidityPool": "0xC9a262E33E74a192D0e67360ed2353DF01B287cb"
   }
 }

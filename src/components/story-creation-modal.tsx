@@ -48,8 +48,8 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
 
   const storyTypes = [
     {
-      type: 'normal' as StoryType,
-      title: 'Normal Story',
+      type: 'mini' as StoryType,
+      title: 'Mini Story',
       words: '~50 words',
       slots: '10 slots',
       duration: 'Quick & fun!',
@@ -189,8 +189,8 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
                 {storyTypes.map((story) => (
                   <Card
                     key={story.type}
-                    className={`cursor-pointer transition-all duration-200 ${selectedType === story.type
-                      ? `ring-4 ring-offset-2 ring-blue-500 ${story.bgColor} ${story.borderColor} border-2`
+                    className={`cursor-pointer transition-all duration-200 ${story.bgColor} ${selectedType === story.type
+                      ? `ring-4 ring-offset-2 ring-blue-500 ${story.borderColor} border-2`
                       : `${story.borderColor} border-2 hover:border-blue-400`
                       } ${story.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => !story.disabled && setSelectedType(story.type)}

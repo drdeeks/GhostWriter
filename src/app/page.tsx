@@ -3,6 +3,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'sonner';
+import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownLink, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
 
 // ── Enhanced Hooks ───────────────────────────────────────
 import { useHaptic } from '@/lib/haptic';
@@ -237,10 +238,23 @@ export default function Home() {
           )}
 
           {/* Mobile-optimized address display */}
-          {address && (
-            <p className="text-xs text-gray-500 font-mono mt-1 md:mt-2 break-all">
-              {address.slice(0, 6)}...{address.slice(-4)}
-            </p>
+          {address ? (
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <Wallet>
+                <ConnectWallet>
+                  <WalletDropdown>
+                    <WalletDropdownLink icon="wallet" href="https://keys.coinbase.com">
+                      Wallet
+                    </WalletDropdownLink>
+                    <WalletDropdownDisconnect />
+                  </WalletDropdown>
+                </ConnectWallet>
+              </Wallet>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center mt-4">
+              <ConnectWallet className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200" />
+            </div>
           )}
 
           {/* Mini-app indicator */}
