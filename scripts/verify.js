@@ -31,6 +31,7 @@ async function main() {
     // Verify LiquidityPool (no constructor args)
     console.log("🔍 Verifying LiquidityPool...");
     await hre.run("verify:verify", {
+      network: network,
       address: contracts.LiquidityPool,
       constructorArguments: constructorArgs.LiquidityPool,
     });
@@ -39,6 +40,7 @@ async function main() {
     // Verify PriceOracle (with constructor args)
     console.log("\n🔍 Verifying PriceOracle...");
     await hre.run("verify:verify", {
+      network: network,
       address: contracts.PriceOracle,
       constructorArguments: constructorArgs.PriceOracle,
     });
@@ -47,6 +49,7 @@ async function main() {
     // Verify GhostWriterNFT (with constructor args)
     console.log("\n🔍 Verifying GhostWriterNFT...");
     await hre.run("verify:verify", {
+      network: network,
       address: contracts.GhostWriterNFT,
       constructorArguments: constructorArgs.GhostWriterNFT,
     });
@@ -55,6 +58,7 @@ async function main() {
     // Verify StoryManager (with constructor args)
     console.log("\n🔍 Verifying StoryManager...");
     await hre.run("verify:verify", {
+      network: network,
       address: contracts.StoryManager,
       constructorArguments: constructorArgs.StoryManager,
     });
