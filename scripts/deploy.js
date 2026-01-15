@@ -35,6 +35,28 @@ async function main() {
   const liquidityPoolAddress = await liquidityPool.getAddress();
   console.log("✅ LiquidityPool deployed to:", liquidityPoolAddress);
 
+  // Deploy PriceOracle
+  console.log("\n📦 Deploying PriceOracle...");
+  const PriceOracle = await ethers.getContractFactory("PriceOracle");
+  
+  // Chainlink ETH/USD Price Feed addresses
+  const priceFeedAddresses = {
+    baseSepolia: "0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1", // Base Sepolia ETH/USD
+    base: "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70" // Base Mainnet ETH/USD
+  };
+  
+  const priceFeedAddress = network === "base" 
+    ? priceFeedAddresses.base 
+    : priceFeedAddresses.baseSepolia;
+  
+  console.log("Using Chainlink Price Feed:", priceFeedAddress);
+  console.log("⚠️  Verify this feed is active at https://data.chain.link");
+  
+  const priceOracle = await PriceOracle.deploy(priceFeedAddress);
+  await priceOracle.waitForDeployment();
+  const priceOracleAddress = await priceOracle.getAddress();
+  console.log("✅ PriceOracle deployed to:", priceOracleAddress);
+
   // Deploy GhostWriterNFT with constructor args
   console.log("\n📦 Deploying GhostWriterNFT...");
   const GhostWriterNFT = await ethers.getContractFactory("GhostWriterNFT");
@@ -53,7 +75,7 @@ async function main() {
   // Deploy StoryManager
   console.log("\n📦 Deploying StoryManager...");
   const StoryManager = await ethers.getContractFactory("StoryManager");
-  const storyManager = await StoryManager.deploy(nftAddress, liquidityPoolAddress);
+  const storyManager = await StoryManager.deploy(nftAddress, liquidityPoolAddress, priceOracleAddress);
   await storyManager.waitForDeployment();
   const storyManagerAddress = await storyManager.getAddress();
   console.log("✅ StoryManager deployed to:", storyManagerAddress);
@@ -80,6 +102,10 @@ async function main() {
     /NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS=.*/,
     `NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS=${liquidityPoolAddress}`
   );
+  envContent = envContent.replace(
+    /NEXT_PUBLIC_PRICE_ORACLE_ADDRESS=.*/,
+    `NEXT_PUBLIC_PRICE_ORACLE_ADDRESS=${priceOracleAddress}`
+  );
   
   fs.writeFileSync('.env', envContent);
   console.log("✅ .env file updated");
@@ -91,12 +117,14 @@ async function main() {
     timestamp: new Date().toISOString(),
     constructorArgs: {
       GhostWriterNFT: [hiddenURI, revealedURI],
-      StoryManager: [nftAddress, liquidityPoolAddress],
+      StoryManager: [nftAddress, liquidityPoolAddress, priceOracleAddress],
+      PriceOracle: [priceFeedAddress],
       LiquidityPool: []
     },
     contracts: {
       GhostWriterNFT: nftAddress,
       StoryManager: storyManagerAddress,
+      PriceOracle: priceOracleAddress,
       LiquidityPool: liquidityPoolAddress
     }
   };
@@ -108,6 +136,7 @@ async function main() {
   console.log("\n📋 Contract Addresses:");
   console.log("   GhostWriterNFT:", nftAddress);
   console.log("   StoryManager:", storyManagerAddress);
+  console.log("   PriceOracle:", priceOracleAddress);
   console.log("   LiquidityPool:", liquidityPoolAddress);
   
   console.log("\n🔍 To verify contracts, run:");

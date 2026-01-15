@@ -26,9 +26,9 @@ export function Leaderboard() {
     if (!rawLeaderboard || rawLeaderboard.length === 0) return [];
     return rawLeaderboard.map((entry: any) => {
       const userAddress = entry.user as `0x${string}`;
-      // For now, use placeholder values for completedStories and achievements
-      const completedStories = 0; // TODO: Fetch from contract
-      const achievements = 0; // TODO: Fetch from contract
+      // Fetch from userStats if available
+      const completedStories = Number(entry.completedStories || 0);
+      const achievements = Number(entry.achievements || 0);
       return {
         rank: Number(entry.rank),
         address: userAddress,
