@@ -89,14 +89,7 @@ module.exports = {
   },
 
   etherscan: {
-    apiKey: {
-      baseSepolia: process.env.BASESCAN_API_KEY || "",
-      base: process.env.BASESCAN_API_KEY || "",
-      monadTestnet: "no-api-key-needed",
-      monad: "no-api-key-needed",
-      modeSepolia: "no-api-key-needed", 
-      mode: "no-api-key-needed",
-    },
+    apiKey: process.env.BASESCAN_API_KEY || "",
     customChains: [
       {
         network: "baseSepolia",
