@@ -16,6 +16,7 @@ async function main() {
   console.log(`📋 Verifying contracts on ${network}:`);
   console.log("   GhostWriterNFT:", contracts.GhostWriterNFT);
   console.log("   StoryManager:", contracts.StoryManager);
+  console.log("   PriceOracle:", contracts.PriceOracle);
   console.log("   LiquidityPool:", contracts.LiquidityPool);
   console.log("");
 
@@ -34,6 +35,14 @@ async function main() {
       constructorArguments: constructorArgs.LiquidityPool,
     });
     console.log("✅ LiquidityPool verified");
+
+    // Verify PriceOracle (with constructor args)
+    console.log("\n🔍 Verifying PriceOracle...");
+    await hre.run("verify:verify", {
+      address: contracts.PriceOracle,
+      constructorArguments: constructorArgs.PriceOracle,
+    });
+    console.log("✅ PriceOracle verified");
 
     // Verify GhostWriterNFT (with constructor args)
     console.log("\n🔍 Verifying GhostWriterNFT...");
@@ -76,6 +85,7 @@ async function main() {
     console.log("\n🔗 View on Explorer:");
     console.log(`   GhostWriterNFT: ${getExplorerUrl(network, contracts.GhostWriterNFT)}`);
     console.log(`   StoryManager: ${getExplorerUrl(network, contracts.StoryManager)}`);
+    console.log(`   PriceOracle: ${getExplorerUrl(network, contracts.PriceOracle)}`);
     console.log(`   LiquidityPool: ${getExplorerUrl(network, contracts.LiquidityPool)}`);
 
   } catch (error) {
