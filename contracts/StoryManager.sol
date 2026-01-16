@@ -127,6 +127,12 @@ contract StoryManager is Ownable, ReentrancyGuard {
     string[] public achievementIds;
     mapping(address => uint256) public achievementCount;
 
+    // Pending refunds (pull-over-push pattern)
+    mapping(address => uint256) public pendingRefunds;
+
+    // Final word count tracking (for achievement)
+    mapping(address => uint256) public finalWordCount;
+
     // Events
     event StoryCreated(
         string indexed storyId,
@@ -159,7 +165,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
     ) Ownable(msg.sender) {
         require(_nftContract != address(0), "Invalid NFT contract");
         require(_liquidityPool != address(0), "Invalid pool");
-        require(_priceOracle != address(0), "Invalid price oracle");
+        require(_priceOracle != address(0), "Invalid oracle");
         nftContract = GhostWriterNFT(_nftContract);
         liquidityPool = LiquidityPool(_liquidityPool);
         priceOracle = PriceOracle(_priceOracle);
@@ -280,11 +286,10 @@ contract StoryManager is Ownable, ReentrancyGuard {
         // Forward fee to liquidity pool
         liquidityPool.deposit{value: requiredFee}();
         
-        // Refund excess payment (checks-effects-interactions pattern)
+        // Store refund for pull withdrawal
         uint256 refundAmount = msg.value - requiredFee;
         if (refundAmount > 0) {
-            (bool success, ) = payable(msg.sender).call{value: refundAmount}("");
-            require(success, "Refund failed");
+            pendingRefunds[msg.sender] += refundAmount;
         }
         
         emit FeesCollected(requiredFee, address(liquidityPool));
@@ -410,11 +415,10 @@ contract StoryManager is Ownable, ReentrancyGuard {
         // Forward fee to liquidity pool
         liquidityPool.deposit{value: requiredFee}();
         
-        // Refund excess payment (checks-effects-interactions pattern)
+        // Store refund for pull withdrawal
         uint256 refundAmount = msg.value - requiredFee;
         if (refundAmount > 0) {
-            (bool success, ) = payable(msg.sender).call{value: refundAmount}("");
-            require(success, "Refund failed");
+            pendingRefunds[msg.sender] += refundAmount;
         }
         
         emit FeesCollected(requiredFee, address(liquidityPool));
@@ -433,58 +437,13 @@ contract StoryManager is Ownable, ReentrancyGuard {
 
     /**
      * @dev Internal function to complete a story
-     * Reveals all NFTs for the story
+     * Marks story as complete and emits event for off-chain processing
      */
     function _completeStory(string memory storyId) internal {
         Story storage story = stories[storyId];
         require(story.status == StoryStatus.ACTIVE, "Story not active");
         story.status = StoryStatus.COMPLETE;
         story.completedAt = block.timestamp;
-
-        // Update completed stories count for all contributors
-
-        for (uint256 i = 1; i <= story.totalSlots; i++) {
-            address contributor = storySlots[storyId][i].contributor;
-
-            if (
-                contributor != address(0) &&
-                !storyCompletedContributors[storyId][contributor]
-            ) {
-                userStats[contributor].completedStories++;
-
-                storyCompletedContributors[storyId][contributor] = true; // Mark as counted
-            }
-
-            // Check for completion king achievement (contributed final word to 5 stories)
-
-            if (i == story.totalSlots) {
-                uint256 finalWordCount = 0;
-
-                for (uint256 j = 0; j < allStoryIds.length; j++) {
-                    Story memory s = stories[allStoryIds[j]];
-
-                    if (
-                        s.status == StoryStatus.COMPLETE &&
-                        storySlots[allStoryIds[j]][s.totalSlots].contributor ==
-                        contributor
-                    ) {
-                        finalWordCount++;
-                    }
-                }
-
-                if (
-                    finalWordCount >= 5 &&
-                    !userAchievements[contributor]["completion_king"].unlocked
-                ) {
-                    _unlockAchievement(
-                        contributor,
-                        "completion_king",
-                        "Completion King",
-                        "Contributed the final word to 5 stories"
-                    );
-                }
-            }
-        }
 
         // Check for speed demon achievement (completed in < 24 hours)
         uint256 timeTaken = block.timestamp - story.createdAt;
@@ -500,6 +459,61 @@ contract StoryManager is Ownable, ReentrancyGuard {
             );
         }
 
+        emit StoryCompleted(storyId, block.timestamp);
+    }
+
+    /**
+     * @dev Process story completion in batches (callable by anyone after completion)
+     * Updates contributor stats and checks achievements
+     */
+    function processCompletionBatch(
+        string memory storyId,
+        uint256 startPosition,
+        uint256 endPosition
+    ) external nonReentrant {
+        Story storage story = stories[storyId];
+        require(story.status == StoryStatus.COMPLETE, "Story not complete");
+        require(startPosition > 0 && startPosition <= story.totalSlots, "Invalid start");
+        require(endPosition >= startPosition && endPosition <= story.totalSlots, "Invalid end");
+        require(endPosition - startPosition < 50, "Batch too large");
+
+        for (uint256 i = startPosition; i <= endPosition; i++) {
+            address contributor = storySlots[storyId][i].contributor;
+
+            if (
+                contributor != address(0) &&
+                !storyCompletedContributors[storyId][contributor]
+            ) {
+                userStats[contributor].completedStories++;
+                storyCompletedContributors[storyId][contributor] = true;
+            }
+
+            // Track final word count for achievement
+            if (i == story.totalSlots && contributor != address(0)) {
+                finalWordCount[contributor]++;
+                
+                if (
+                    finalWordCount[contributor] >= 5 &&
+                    !userAchievements[contributor]["completion_king"].unlocked
+                ) {
+                    _unlockAchievement(
+                        contributor,
+                        "completion_king",
+                        "Completion King",
+                        "Contributed the final word to 5 stories"
+                    );
+                }
+            }
+        }
+    }
+
+    /**
+     * @dev Reveal NFTs and mint creator NFT (callable after completion processing)
+     */
+    function finalizeStory(string memory storyId) external nonReentrant {
+        Story storage story = stories[storyId];
+        require(story.status == StoryStatus.COMPLETE, "Story not complete");
+
         // Reveal all contributor NFTs
         nftContract.revealStoryNFTs(storyId);
 
@@ -510,12 +524,11 @@ contract StoryManager is Ownable, ReentrancyGuard {
             story.title,
             story.template
         );
-
-        emit StoryCompleted(storyId, block.timestamp);
     }
 
     /**
      * @dev Update leaderboard with user's contribution count
+     * Simplified to avoid gas-intensive sorting
      */
     function _updateLeaderboard(address user) internal {
         uint256 userContributions = userStats[user].contributionsCount;
@@ -532,39 +545,24 @@ contract StoryManager is Ownable, ReentrancyGuard {
         }
 
         // If leaderboard is full, check if user should replace lowest
-        if (leaderboard.length >= MAX_LEADERBOARD_SIZE) {
+        if (
+            leaderboard.length >= MAX_LEADERBOARD_SIZE &&
+            leaderboardIndex[user] == 0
+        ) {
             address lowestUser = leaderboard[leaderboard.length - 1];
-            uint256 lowestContributions = userStats[lowestUser]
-                .contributionsCount;
+            uint256 lowestContributions = userStats[lowestUser].contributionsCount;
 
-            if (
-                userContributions > lowestContributions &&
-                leaderboardIndex[user] == 0
-            ) {
-                // Replace lowest with new user
+            if (userContributions > lowestContributions) {
                 delete leaderboardIndex[lowestUser];
                 leaderboard[leaderboard.length - 1] = user;
                 leaderboardIndex[user] = leaderboard.length;
+                emit LeaderboardUpdated(user, leaderboard.length);
             }
         }
 
-        // Insertion sort to place the user in the correct position
-        uint256 currentIndex = leaderboardIndex[user];
-        if (currentIndex > 0) {
-            for (uint256 i = currentIndex - 1; i > 0; i--) {
-                if (userStats[leaderboard[i - 1]].contributionsCount < userContributions) {
-                    // Swap with the user above
-                    address temp = leaderboard[i - 1];
-                    leaderboard[i - 1] = user;
-                    leaderboard[i] = temp;
-                    leaderboardIndex[user] = i;
-                    leaderboardIndex[temp] = i + 1;
-                    emit LeaderboardUpdated(user, i);
-                } else {
-                    // Found the correct position
-                    break;
-                }
-            }
+        // Emit event for off-chain sorting
+        if (leaderboardIndex[user] > 0) {
+            emit LeaderboardUpdated(user, leaderboardIndex[user]);
         }
     }
 
@@ -752,6 +750,23 @@ contract StoryManager is Ownable, ReentrancyGuard {
     }
 
     event PriceOracleUpdated(address indexed newOracle);
+
+    /**
+     * @dev Withdraw pending refund (pull pattern)
+     */
+    function withdrawRefund() external nonReentrant {
+        uint256 amount = pendingRefunds[msg.sender];
+        require(amount > 0, "No refund available");
+        
+        pendingRefunds[msg.sender] = 0;
+        
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "Refund transfer failed");
+        
+        emit RefundWithdrawn(msg.sender, amount);
+    }
+
+    event RefundWithdrawn(address indexed user, uint256 amount);
 
     /**
      * @dev Emergency withdrawal (only owner)

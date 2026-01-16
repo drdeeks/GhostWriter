@@ -23,6 +23,11 @@ const StoryCreationModal = React.lazy(() =>
     default: mod.StoryCreationModal,
   })),
 );
+const StoryCompletionModal = React.lazy(() =>
+  import('@/components/story-completion-modal').then((mod) => ({
+    default: mod.StoryCompletionModal,
+  })),
+);
 const LoadingScreen = React.lazy(() =>
   import('@/components/LoadingScreen').then((mod) => ({
     default: mod.LoadingScreen,
@@ -32,6 +37,7 @@ const LoadingScreen = React.lazy(() =>
 import { NFTCollection } from '@/components/nft-collection';
 import { StoryCard } from '@/components/story-card';
 import { UserStatsDisplay } from '@/components/user-stats';
+import { RefundBanner } from '@/components/refund-banner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -62,6 +68,8 @@ export default function Home() {
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [showContributionModal, setShowContributionModal] = useState(false);
   const [showCreationModal, setShowCreationModal] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completedStoryData, setCompletedStoryData] = useState<{ id: string; title: string; slots: number } | null>(null);
   const [farcasterUser, setFarcasterUser] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -148,6 +156,16 @@ export default function Home() {
       toast.success('Contribution successful!', {
         description: `You contributed "${word}" and earned 1 creation credit!`,
       });
+
+      // Check if story is now complete
+      if (selectedStory && selectedStory.filledSlots + 1 >= selectedStory.totalSlots) {
+        setCompletedStoryData({
+          id: selectedStory.storyId,
+          title: selectedStory.title,
+          slots: selectedStory.totalSlots,
+        });
+        setShowCompletionModal(true);
+      }
 
       // Send Farcaster notification if in mini-app
       if (farcaster.isInMiniApp()) {
@@ -277,6 +295,9 @@ export default function Home() {
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Refund Banner */}
+        {address && <RefundBanner />}
 
         {/* User Stats */}
         {contractsDeployed && address && (
@@ -638,6 +659,19 @@ export default function Home() {
             creationCredits={userStats?.creationCredits ?? 0}
             onSubmit={handleCreateStory}
           />
+          {completedStoryData && (
+            <StoryCompletionModal
+              isOpen={showCompletionModal}
+              onClose={() => {
+                setShowCompletionModal(false);
+                setCompletedStoryData(null);
+                refetchStories();
+              }}
+              storyId={completedStoryData.id}
+              storyTitle={completedStoryData.title}
+              totalSlots={completedStoryData.slots}
+            />
+          )}
         </Suspense>
       </div>
     </div>

@@ -130,16 +130,23 @@ NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS=0x...
 - **GhostWriterNFT.sol** - ERC-721 with hidden/revealed states
 - **StoryManager.sol** - Game logic, contributions, and rewards
 - **LiquidityPool.sol** - Fee collection and management
+- **PriceOracle.sol** - USD to ETH conversion with Chainlink
 
 ### Security Features
 - ✅ OpenZeppelin contracts (ReentrancyGuard, Ownable)
 - ✅ Access control (only StoryManager can mint/reveal)
 - ✅ Input validation and duplicate prevention
 - ✅ Gas optimized storage patterns
+- ✅ Pull-over-push refund pattern (prevents gas griefing)
+- ✅ Batch processing for large operations (prevents DoS)
+- ✅ Price oracle circuit breaker (prevents manipulation)
+- ✅ Off-chain leaderboard sorting (gas optimization)
+
+**📋 Security Audit**: See [SECURITY_FIXES.md](./SECURITY_FIXES.md) for detailed security improvements.
 
 ### Deployment Status
 - **Base Sepolia**: Ready for testnet deployment
-- **Base Mainnet**: Production ready
+- **Base Mainnet**: Production ready (audit recommended)
 
 ---
 
