@@ -774,7 +774,11 @@ contract StoryManager is Ownable, ReentrancyGuard {
     function emergencyWithdraw() external onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "No balance");
-        payable(owner()).transfer(balance);
+        
+        // Bug #34 fix: Use call instead of transfer
+        (bool success, ) = payable(owner()).call{value: balance}("");
+        require(success, "Transfer failed");
+        
         emit EmergencyWithdrawal(owner(), balance);
     }
 

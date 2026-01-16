@@ -82,6 +82,8 @@ export default function Home() {
   // Enhanced Farcaster initialization
   useEffect(() => {
     const init = async () => {
+      let timeoutId: NodeJS.Timeout | null = null;
+      
       try {
         setIsLoading(true);
         
@@ -96,13 +98,18 @@ export default function Home() {
           }
         });
         
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Initialization timeout')), 5000)
-        );
+        // Bug #38 fix: Clear timeout on success
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('Initialization timeout')), 5000);
+        });
         
         await Promise.race([initPromise, timeoutPromise]);
+        
+        // Clear timeout if init succeeded
+        if (timeoutId) clearTimeout(timeoutId);
       } catch (error) {
         console.error('Initialization failed:', error);
+        if (timeoutId) clearTimeout(timeoutId);
       } finally {
         setIsInitialized(true);
         setTimeout(() => setIsLoading(false), 500);

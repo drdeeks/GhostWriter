@@ -3,6 +3,12 @@ import '@coinbase/onchainkit/styles.css';
 import type { Metadata } from 'next';
 import './globals.css';
 import { Providers } from './providers';
+import { PerformanceMonitor } from '@/lib/performance';
+
+// Initialize performance monitoring
+if (typeof window !== 'undefined') {
+  PerformanceMonitor.getInstance().initialize();
+}
 
 export const metadata: Metadata = {
   title: "Ghost Writer",
