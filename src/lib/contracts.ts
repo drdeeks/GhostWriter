@@ -259,6 +259,54 @@ export const STORY_MANAGER_ABI = [
     name: "StoryCompleted",
     type: "event",
   },
+  {
+    inputs: [{ name: "user", type: "address" }],
+    name: "pendingRefunds",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "withdrawRefund",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "storyId", type: "string" },
+      { name: "startPosition", type: "uint256" },
+      { name: "endPosition", type: "uint256" },
+    ],
+    name: "processCompletionBatch",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "storyId", type: "string" }],
+    name: "finalizeStory",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "user", type: "address" }],
+    name: "finalWordCount",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "user", type: "address" },
+      { indexed: false, name: "amount", type: "uint256" },
+    ],
+    name: "RefundWithdrawn",
+    type: "event",
+  },
 ] as const;
 
 // NFT Contract ABI (essential functions only)

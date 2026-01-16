@@ -66,6 +66,7 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
     event BaseURIUpdated(string hiddenURI, string revealedURI);
 
     modifier onlyStoryManager() {
+        require(storyManager != address(0), "StoryManager not set");
         require(msg.sender == storyManager, "Only StoryManager can call");
         _;
     }
