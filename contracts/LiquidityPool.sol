@@ -53,7 +53,9 @@ contract LiquidityPool is Ownable, ReentrancyGuard {
         require(amount > 0, "Amount must be positive");
         require(amount <= address(this).balance, "Insufficient balance");
 
-        payable(owner()).transfer(amount);
+        // Bug #35 fix: Use call instead of transfer
+        (bool success, ) = payable(owner()).call{value: amount}("");
+        require(success, "Transfer failed");
 
         emit Withdrawn(owner(), amount);
     }
@@ -65,7 +67,9 @@ contract LiquidityPool is Ownable, ReentrancyGuard {
         uint256 balance = address(this).balance;
         require(balance > 0, "No balance");
 
-        payable(owner()).transfer(balance);
+        // Bug #35 fix: Use call instead of transfer
+        (bool success, ) = payable(owner()).call{value: balance}("");
+        require(success, "Transfer failed");
 
         emit Withdrawn(owner(), balance);
     }
