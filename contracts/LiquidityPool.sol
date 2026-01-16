@@ -10,14 +10,11 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * All fees (100%) flow to this pool for future token liquidity
  */
 contract LiquidityPool is Ownable, ReentrancyGuard {
-    // Total fees collected
-    uint256 public totalCollected;
-
     // Address authorized to deposit (StoryManager)
     address public storyManager;
 
     // Events
-    event Deposited(address indexed from, uint256 amount, uint256 newTotal);
+    event Deposited(address indexed from, uint256 amount);
     event Withdrawn(address indexed to, uint256 amount);
     event StoryManagerUpdated(address indexed newManager);
 
@@ -45,8 +42,7 @@ contract LiquidityPool is Ownable, ReentrancyGuard {
      */
     function deposit() external payable onlyStoryManager nonReentrant {
         require(msg.value > 0, "Must deposit positive amount");
-        totalCollected += msg.value;
-        emit Deposited(msg.sender, msg.value, totalCollected);
+        emit Deposited(msg.sender, msg.value);
     }
 
     /**
@@ -57,7 +53,6 @@ contract LiquidityPool is Ownable, ReentrancyGuard {
         require(amount > 0, "Amount must be positive");
         require(amount <= address(this).balance, "Insufficient balance");
 
-        totalCollected -= amount;
         payable(owner()).transfer(amount);
 
         emit Withdrawn(owner(), amount);
@@ -70,7 +65,6 @@ contract LiquidityPool is Ownable, ReentrancyGuard {
         uint256 balance = address(this).balance;
         require(balance > 0, "No balance");
 
-        totalCollected = 0;
         payable(owner()).transfer(balance);
 
         emit Withdrawn(owner(), balance);
@@ -82,13 +76,19 @@ contract LiquidityPool is Ownable, ReentrancyGuard {
     function getBalance() external view returns (uint256) {
         return address(this).balance;
     }
+    
+    /**
+     * @dev Get total collected (same as balance)
+     */
+    function totalCollected() external view returns (uint256) {
+        return address(this).balance;
+    }
 
     /**
      * @dev Receive function to accept ETH
      */
     receive() external payable {
         require(msg.sender == storyManager, "Only StoryManager can send");
-        totalCollected += msg.value;
-        emit Deposited(msg.sender, msg.value, totalCollected);
+        emit Deposited(msg.sender, msg.value);
     }
 }

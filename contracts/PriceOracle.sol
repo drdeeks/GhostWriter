@@ -23,10 +23,13 @@ contract PriceOracle is Ownable {
     
     // Fallback price in case oracle fails (in USD per ETH, 8 decimals)
     int256 public fallbackPrice = 3000_00000000; // $3000
-    uint256 public priceValidityDuration = 1 hours;
+    uint256 public priceValidityDuration = 15 minutes;
+    uint256 public maxPriceDeviation = 20; // 20% max deviation from fallback
     
     event PriceFeedUpdated(address indexed newFeed);
     event FallbackPriceUpdated(int256 newPrice);
+    event PriceValidityDurationUpdated(uint256 newDuration);
+    event MaxPriceDeviationUpdated(uint256 newDeviation);
     
     constructor(address _priceFeed) Ownable(msg.sender) {
         require(_priceFeed != address(0), "Invalid price feed");
@@ -46,6 +49,16 @@ contract PriceOracle is Ownable {
         ) {
             require(price > 0, "Invalid price");
             require(block.timestamp - updatedAt < priceValidityDuration, "Stale price");
+            
+            // Circuit breaker: check deviation from fallback
+            int256 deviation = (price > fallbackPrice) 
+                ? ((price - fallbackPrice) * 100) / fallbackPrice
+                : ((fallbackPrice - price) * 100) / fallbackPrice;
+            
+            if (uint256(deviation) > maxPriceDeviation) {
+                return fallbackPrice; // Use fallback if deviation too high
+            }
+            
             return price;
         } catch {
             return fallbackPrice;
@@ -95,6 +108,17 @@ contract PriceOracle is Ownable {
      */
     function updatePriceValidityDuration(uint256 _duration) external onlyOwner {
         require(_duration > 0, "Invalid duration");
+        require(_duration <= 1 hours, "Duration too long");
         priceValidityDuration = _duration;
+        emit PriceValidityDurationUpdated(_duration);
+    }
+    
+    /**
+     * @dev Update max price deviation
+     */
+    function updateMaxPriceDeviation(uint256 _deviation) external onlyOwner {
+        require(_deviation > 0 && _deviation <= 50, "Invalid deviation");
+        maxPriceDeviation = _deviation;
+        emit MaxPriceDeviationUpdated(_deviation);
     }
 }
