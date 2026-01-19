@@ -21,16 +21,19 @@ interface ContributionModalProps {
   onSubmit: (word: string) => void;
 }
 
-export function ContributionModal({ open, onClose, story, onSubmit }: ContributionModalProps) {
+export function ContributionModal(props: ContributionModalProps) {
+  if (!props.story) return null;
+  return <ContributionModalInner {...props} story={props.story} />;
+}
+
+function ContributionModalInner({ open, onClose, story, onSubmit }: ContributionModalProps & { story: Story }) {
   const [word, setWord] = useState<string>('');
   const { contributeWord, isPending } = useStoryManager();
   const { address } = useAccount();
 
-  if (!story) return null;
-
   // Get next word type needed from contract
   const nextPosition = story.filledSlots + 1;
-  const { slot: nextSlot, isLoading: slotLoading } = useSlot(story.storyId, nextPosition);
+  const { slot: nextSlot } = useSlot(story.storyId, nextPosition);
   const wordType = (nextSlot?.wordType || 'adjective') as WordType;
   const wordInfo = WORD_TYPE_DEFINITIONS[wordType];
 
@@ -156,7 +159,7 @@ export function ContributionModal({ open, onClose, story, onSubmit }: Contributi
               <span className="font-semibold">Fee: $0.05 + gas</span>
             </div>
             <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-              You'll earn 1 creation credit after contributing
+              You&apos;ll earn 1 creation credit after contributing
             </p>
           </div>
         </div>
