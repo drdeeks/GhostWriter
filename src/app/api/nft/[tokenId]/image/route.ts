@@ -1,13 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CONTRACTS, NFT_ABI } from '@/lib/contracts';
+import { CONTRACTS, NFT_ABI, STORY_MANAGER_ABI } from '@/lib/contracts';
 import { createPublicClient, http } from 'viem';
-import { baseSepolia } from 'viem/chains';
+import { base, baseSepolia } from 'viem/chains';
 
-// Create public client for reading from blockchain
-const publicClient = createPublicClient({
-  chain: baseSepolia,
-  transport: http(),
-});
+function getChain() {
+  const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? '84532');
+  return chainId === 8453 ? base : baseSepolia;
+}
+
+function getRpcUrl() {
+  const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? '84532');
+  if (chainId === 8453) {
+    return process.env.BASE_RPC_URL || 'https://mainnet.base.org';
+  }
+  return process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org';
+}
+
+const chain = getChain();
+const publicClient = createPublicClient({ chain, transport: http(getRpcUrl()) });
+
+function escapeXml(input: string): string {
+  return input
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;');
+}
+
+function truncate(input: string, max: number): string {
+  if (input.length <= max) return input;
+  return input.slice(0, Math.max(0, max - 1)) + '…';
+}
 
 interface NFTData {
   storyId: string;
@@ -29,12 +53,14 @@ interface StoryData {
   title: string;
   template: string;
   storyType: number;
+  category: number;
   totalSlots: number;
   filledSlots: number;
   creator: string;
   createdAt: number;
   completedAt: number;
   status: number;
+  shareCount: number;
 }
 
 /**
@@ -57,14 +83,20 @@ export async function GET(
       return new NextResponse('Invalid token ID', { status: 400 });
     }
 
+    if (CONTRACTS.nft.toLowerCase() === '0x0000000000000000000000000000000000000000') {
+      return new NextResponse('NFT contract address not configured', { status: 500 });
+    }
+    if (CONTRACTS.storyManager.toLowerCase() === '0x0000000000000000000000000000000000000000') {
+      return new NextResponse('StoryManager address not configured', { status: 500 });
+    }
+
     // Get NFT data from contract
-    const rawNftData = await publicClient.readContract({
+    const rawNftData = (await publicClient.readContract({
       address: CONTRACTS.nft,
       abi: NFT_ABI,
       functionName: 'getNFTData',
-      args: [BigInt(tokenId)],
-      authorizationList: [],
-    }) as any;
+      args: [BigInt(tokenIdNum)],
+    })) as any;
 
     const nftData: NFTData = {
       storyId: rawNftData[0],
@@ -86,58 +118,41 @@ export async function GET(
     if (nftData.isCreatorNFT) {
       // Creator NFT - Only show: user name/FID, story title, category, date created
       // Get story data for category
-      const rawStoryData = await publicClient.readContract({
+      const rawStoryData = (await publicClient.readContract({
         address: CONTRACTS.storyManager,
-        abi: [
-          {
-            inputs: [{ name: 'storyId', type: 'string' }],
-            name: 'getStory',
-            outputs: [
-              {
-                components: [
-                  { name: 'storyId', type: 'string' },
-                  { name: 'title', type: 'string' },
-                  { name: 'template', type: 'string' },
-                  { name: 'storyType', type: 'uint8' },
-                  { name: 'totalSlots', type: 'uint256' },
-                  { name: 'filledSlots', type: 'uint256' },
-                  { name: 'creator', type: 'address' },
-                  { name: 'createdAt', type: 'uint256' },
-                  { name: 'completedAt', type: 'uint256' },
-                  { name: 'status', type: 'uint8' },
-                ],
-                name: '',
-                type: 'tuple',
-              },
-            ],
-            stateMutability: 'view',
-            type: 'function',
-          },
-        ],
+        abi: STORY_MANAGER_ABI,
         functionName: 'getStory',
         args: [nftData.storyId],
-        authorizationList: [],
-      }) as any;
+      })) as any;
 
       const storyData: StoryData = {
-        storyId: rawStoryData[0],
-        title: rawStoryData[1],
-        template: rawStoryData[2],
-        storyType: Number(rawStoryData[3]),
-        totalSlots: Number(rawStoryData[4]),
-        filledSlots: Number(rawStoryData[5]),
-        creator: rawStoryData[6],
-        createdAt: Number(rawStoryData[7]),
-        completedAt: Number(rawStoryData[8]),
-        status: Number(rawStoryData[9]),
+        storyId: rawStoryData.storyId ?? rawStoryData[0],
+        title: rawStoryData.title ?? rawStoryData[1],
+        template: rawStoryData.template ?? rawStoryData[2],
+        storyType: Number(rawStoryData.storyType ?? rawStoryData[3]),
+        category: Number(rawStoryData.category ?? rawStoryData[4]),
+        totalSlots: Number(rawStoryData.totalSlots ?? rawStoryData[5]),
+        filledSlots: Number(rawStoryData.filledSlots ?? rawStoryData[6]),
+        creator: rawStoryData.creator ?? rawStoryData[7],
+        createdAt: Number(rawStoryData.createdAt ?? rawStoryData[8]),
+        completedAt: Number(rawStoryData.completedAt ?? rawStoryData[9]),
+        status: Number(rawStoryData.status ?? rawStoryData[10]),
+        shareCount: Number(rawStoryData.shareCount ?? rawStoryData[11]),
       };
 
       // Get Farcaster user info
       let creatorDisplay = storyData.creator.slice(0, 6) + '...' + storyData.creator.slice(-4);
       try {
-        const farcasterResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/farcaster-user?address=${storyData.creator}`
-        );
+        const origin = new URL(request.url).origin;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 2000);
+
+        const farcasterResponse = await fetch(`${origin}/api/farcaster-user?address=${storyData.creator}`, {
+          signal: controller.signal,
+          cache: 'no-store',
+        });
+
+        clearTimeout(timeout);
         if (farcasterResponse.ok) {
           const farcasterData = await farcasterResponse.json();
           const username = farcasterData.username || farcasterData.displayName || '';
@@ -152,9 +167,31 @@ export async function GET(
         // Use default display
       }
 
-      // Map story type to category
-      const storyTypeNames = ['Normal', 'Epic'];
-      const category = storyTypeNames[storyData.storyType] || 'Normal';
+      const storyTypeNames = ['Mini', 'Normal', 'Epic'];
+      const storyTypeName = storyTypeNames[storyData.storyType] || 'Normal';
+
+      const categoryNames = [
+        'Adventure',
+        'Fantasy',
+        'Comedy',
+        'Mystery',
+        'Sci-Fi',
+        'Horror',
+        'Romance',
+        'Crypto',
+        'Sports',
+        'Animals',
+        'School',
+        'Superheroes',
+        'Friendship',
+        'Holidays',
+        'Food',
+        'Nature',
+        'History',
+        'Random',
+      ];
+
+      const category = categoryNames[storyData.category] || 'Random';
       const dateCreated = new Date(storyData.createdAt * 1000).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -162,6 +199,9 @@ export async function GET(
       });
 
       // Generate creator NFT SVG
+      const safeTitle = escapeXml(truncate(storyData.title, 60));
+      const safeCreator = escapeXml(truncate(creatorDisplay, 48));
+
       svg = `
       <svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -186,7 +226,7 @@ export async function GET(
         
         <!-- Story Title -->
         <text x="512" y="220" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="36" font-weight="bold">
-          "${storyData.title}"
+          "${safeTitle}"
         </text>
         
         <!-- Creator Info -->
@@ -194,12 +234,15 @@ export async function GET(
           Created by
         </text>
         <text x="512" y="360" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="32" font-weight="bold">
-          ${creatorDisplay}
+          ${safeCreator}
         </text>
         
         <!-- Category -->
         <text x="512" y="450" text-anchor="middle" fill="#D4AF37" font-family="Arial, sans-serif" font-size="24">
-          Category: ${category}
+          Category: ${escapeXml(category)}
+        </text>
+        <text x="512" y="480" text-anchor="middle" fill="#D4AF37" font-family="Arial, sans-serif" font-size="20">
+          Type: ${escapeXml(storyTypeName)}
         </text>
         
         <!-- Date Created -->
@@ -236,13 +279,13 @@ export async function GET(
             GHOST WRITER
           </text>
           <text x="512" y="200" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="32">
-            "${nftData.storyTitle}"
+            "${escapeXml(truncate(nftData.storyTitle, 60))}"
           </text>
           <text x="512" y="350" text-anchor="middle" fill="#F3F4F6" font-family="Arial, sans-serif" font-size="28">
             Position: ${nftData.wordPosition}/${nftData.totalWords}
           </text>
           <text x="512" y="400" text-anchor="middle" fill="#F3F4F6" font-family="Arial, sans-serif" font-size="24">
-            Word Type: ${nftData.wordType}
+            Word Type: ${escapeXml(truncate(nftData.wordType, 24))}
           </text>
           <circle cx="512" cy="600" r="120" fill="#D4AF37" opacity="0.3"/>
           <text x="512" y="610" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="48">
@@ -268,16 +311,16 @@ export async function GET(
             GHOST WRITER
           </text>
           <text x="512" y="200" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="32">
-            "${nftData.storyTitle}"
+            "${escapeXml(truncate(nftData.storyTitle, 60))}"
           </text>
           <text x="512" y="350" text-anchor="middle" fill="#10B981" font-family="Arial, sans-serif" font-size="36" font-weight="bold">
             Your Contribution:
           </text>
           <text x="512" y="420" text-anchor="middle" fill="#3B82F6" font-family="Arial, sans-serif" font-size="48" font-weight="bold">
-            "${nftData.contributedWord}"
+            "${escapeXml(truncate(nftData.contributedWord, 24))}"
           </text>
           <text x="512" y="500" text-anchor="middle" fill="#F3F4F6" font-family="Arial, sans-serif" font-size="24">
-            Position ${nftData.wordPosition}/${nftData.totalWords} • ${nftData.wordType}
+            Position ${nftData.wordPosition}/${nftData.totalWords} • ${escapeXml(truncate(nftData.wordType, 24))}
           </text>
           <text x="512" y="600" text-anchor="middle" fill="#D4AF37" font-family="Arial, sans-serif" font-size="28">
             ✨ Story Complete ✨
@@ -290,7 +333,8 @@ export async function GET(
     return new NextResponse(svg, {
       headers: {
         'Content-Type': 'image/svg+xml',
-        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        // Keep images reasonably fresh for hidden -> revealed transitions
+        'Cache-Control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=600',
       },
     });
 

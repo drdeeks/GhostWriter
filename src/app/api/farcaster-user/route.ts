@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createPublicClient, http } from 'viem';
-import { baseSepolia } from 'viem/chains';
-
-// Create public client for reading from blockchain
-const publicClient = createPublicClient({
-  chain: baseSepolia,
-  transport: http(),
-});
+import { isAddress } from 'viem';
 
 /**
  * Get Farcaster user information (FID and username) from wallet address
@@ -25,11 +18,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Validate address format
-    if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
-      return NextResponse.json(
-        { error: 'Invalid address format' },
-        { status: 400 }
-      );
+    if (!isAddress(address)) {
+      return NextResponse.json({ error: 'Invalid address format' }, { status: 400 });
     }
 
     // TODO: In production, integrate with Farcaster API or Neynar
@@ -57,13 +47,20 @@ export async function GET(request: NextRequest) {
 
     // Placeholder response - replace with actual Farcaster API call
     // For development, you can use a mock service or hardcode test values
-    return NextResponse.json({
-      address,
-      fid: null, // Will be populated when Farcaster API is integrated
-      username: null, // Will be populated when Farcaster API is integrated
-      displayName: null,
-      note: 'Farcaster integration pending - using placeholder data',
-    });
+    return NextResponse.json(
+      {
+        address,
+        fid: null, // Will be populated when Farcaster API is integrated
+        username: null, // Will be populated when Farcaster API is integrated
+        displayName: null,
+        note: 'Farcaster integration pending - using placeholder data',
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store',
+        },
+      }
+    );
 
   } catch (error: any) {
     console.error('Error fetching Farcaster user:', error);
