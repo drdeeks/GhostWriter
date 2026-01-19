@@ -3,14 +3,23 @@ export type StoryStatus = 'active' | 'complete';
 export type NFTStatus = 'hidden' | 'revealed';
 
 export type StoryCategory =
-  | 'fantasy'
-  | 'scifi'
-  | 'comedy'
-  | 'horror'
   | 'adventure'
+  | 'fantasy'
+  | 'comedy'
   | 'mystery'
+  | 'scifi'
+  | 'horror'
   | 'romance'
   | 'crypto'
+  | 'sports'
+  | 'animals'
+  | 'school'
+  | 'superheroes'
+  | 'friendship'
+  | 'holidays'
+  | 'food'
+  | 'nature'
+  | 'history'
   | 'random';
 
 export type WordType =
@@ -188,45 +197,90 @@ export const ACHIEVEMENT_DEFINITIONS: Record<string, Achievement> = {
 };
 
 export const CATEGORY_INFO: Record<StoryCategory, { name: string; emoji: string; description: string }> = {
+  adventure: {
+    name: 'Adventure',
+    emoji: '🗺️',
+    description: 'Exciting journeys, hidden treasures, and daring escapes',
+  },
   fantasy: {
     name: 'Fantasy',
     emoji: '🧙',
-    description: 'Magical worlds and mythical creatures',
-  },
-  scifi: {
-    name: 'Sci-Fi',
-    emoji: '🚀',
-    description: 'Futuristic technology and space adventures',
+    description: 'Magic, mythical creatures, and enchanted lands',
   },
   comedy: {
     name: 'Comedy',
     emoji: '😂',
-    description: 'Hilarious and absurd scenarios',
-  },
-  horror: {
-    name: 'Horror',
-    emoji: '👻',
-    description: 'Spooky and frightening tales',
-  },
-  adventure: {
-    name: 'Adventure',
-    emoji: '🗺️',
-    description: 'Exciting journeys and quests',
+    description: 'Silly situations, puns, and light-hearted fun',
   },
   mystery: {
     name: 'Mystery',
     emoji: '🔍',
-    description: 'Puzzles and unsolved cases',
+    description: 'Puzzles, secrets, and clever twists',
+  },
+  scifi: {
+    name: 'Sci-Fi',
+    emoji: '🚀',
+    description: 'Space, robots, time travel, and futuristic inventions',
+  },
+  horror: {
+    name: 'Horror',
+    emoji: '👻',
+    description: 'Spooky and suspenseful stories (still family-friendly)',
   },
   romance: {
     name: 'Romance',
     emoji: '💕',
-    description: 'Love stories and relationships',
+    description: 'Sweet, funny love stories and friendships',
   },
   crypto: {
     name: 'Crypto',
     emoji: '₿',
-    description: 'Blockchain and web3 themed',
+    description: 'Blockchain, web3, and onchain absurdity',
+  },
+  sports: {
+    name: 'Sports',
+    emoji: '🏟️',
+    description: 'Games, teamwork, and funny competition moments',
+  },
+  animals: {
+    name: 'Animals',
+    emoji: '🐾',
+    description: 'Talking animals, wild adventures, and animal friendships',
+  },
+  school: {
+    name: 'School',
+    emoji: '🏫',
+    description: 'Classroom antics, teachers, and schoolyard fun',
+  },
+  superheroes: {
+    name: 'Superheroes',
+    emoji: '🦸',
+    description: 'Unusual powers, heroic deeds, and comic misadventures',
+  },
+  friendship: {
+    name: 'Friendship',
+    emoji: '🤝',
+    description: 'Bonds, teamwork, and funny misunderstandings',
+  },
+  holidays: {
+    name: 'Holidays',
+    emoji: '🎉',
+    description: 'Festive fun, traditions, and holiday mishaps',
+  },
+  food: {
+    name: 'Food',
+    emoji: '🍕',
+    description: 'Cooking, eating, and food-related adventures',
+  },
+  nature: {
+    name: 'Nature',
+    emoji: '🌿',
+    description: 'Outdoor adventures, weather, and funny animal encounters',
+  },
+  history: {
+    name: 'History',
+    emoji: '🏛️',
+    description: 'Time travel, famous figures, and silly historical twists',
   },
   random: {
     name: 'Random',
