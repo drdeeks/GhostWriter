@@ -29,6 +29,9 @@ dist/
 next-env.d.ts
 .vercel/
 
+# TypeScript incremental build info
+*.tsbuildinfo
+
 # Hardhat artifacts
 artifacts/
 cache/
