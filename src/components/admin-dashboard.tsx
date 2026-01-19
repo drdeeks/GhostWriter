@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,18 +10,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsOwner } from '@/hooks/useContract';
 import type { StoryCategory, StoryType } from '@/types/ghostwriter';
+import { useEffect } from 'react';
 import { CATEGORY_INFO } from '@/types/ghostwriter';
 import { AlertTriangle, BookOpen, Settings, Shield, TrendingUp, Users } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAccount } from 'wagmi';
 
-export function AdminDashboard() {
+const AdminDashboardComponent = () => {
   const { address } = useAccount();
   const [selectedCategory, setSelectedCategory] = useState<StoryCategory>('random');
   const [storyTitle, setStoryTitle] = useState<string>('');
   const [storyTemplate, setStoryTemplate] = useState<string>('');
   const [storyType, setStoryType] = useState<StoryType>('normal');
+  // If dev selects epic story, auto-fill template
+  useEffect(() => {
+    if (storyType === 'epic') {
+      setStoryTitle('The Absurd Onchain Odyssey of Jesse and the Bot Farmers');
+      setStoryTemplate(`In a world where Jesse from Base Chain ruled the leaderboards, bot farmers hatched eggs faster than Farcaster memes could spread. Coinbase and NeynarScoring joined forces to buildin and expand networks/net worths, all in the name of bringing everyone on chain. One day, Jesse woke up to find his breakfast eggs had turned into NFTs, and every time he blinked, a new leaderboard appeared. The bot farmers, armed with rubber chickens and disco shoes, challenged Jesse to a dance-off for the fate of the blockchain. As the crowd cheered, the eggs began to hatch, revealing tiny Farcaster avatars chanting 'onchain or bust!' In a twist, Coinbase announced airdrops for anyone who could tell a joke about network effects, and NeynarScoring started awarding points for the most absurd wallet names. By sunset, the entire world was on chain, including the family dog, who promptly started a meme coin. The moral: if you can't beat the bots, join the dance and bring your own eggs. [ADJECTIVE] [NOUN] [VERB] [ADVERB] [PLURAL_NOUN] [PAST_TENSE_VERB] [VERB_ING] [PERSONS_NAME] [PLACE] [NUMBER] [COLOR] [BODY_PART] [FOOD] [ANIMAL] [EXCLAMATION] [EMOTION] ... (continue for 250 slots)`);
+    }
+  }, [storyType]);
 
   // Check if user is contract owner
   const { isOwner, isLoading: ownerLoading } = useIsOwner(address);
@@ -144,20 +153,20 @@ export function AdminDashboard() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="stories" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6 h-14 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-purple-200 dark:border-purple-800">
-            <TabsTrigger value="stories" className="text-base font-semibold">
+          <TabsList className="grid w-full grid-cols-4 mb-6 h-14 bg-gray-800/80 backdrop-blur-sm border-2 border-purple-500/30">
+            <TabsTrigger value="stories" className="text-base font-semibold text-gray-200 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
               <BookOpen className="mr-2 h-4 w-4" />
               Stories
             </TabsTrigger>
-            <TabsTrigger value="users" className="text-base font-semibold">
+            <TabsTrigger value="users" className="text-base font-semibold text-gray-200 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
               <Users className="mr-2 h-4 w-4" />
               Users
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="text-base font-semibold">
+            <TabsTrigger value="analytics" className="text-base font-semibold text-gray-200 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
               <TrendingUp className="mr-2 h-4 w-4" />
               Analytics
             </TabsTrigger>
-            <TabsTrigger value="settings" className="text-base font-semibold">
+            <TabsTrigger value="settings" className="text-base font-semibold text-gray-200 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
               <Settings className="mr-2 h-4 w-4" />
               Settings
             </TabsTrigger>
@@ -184,21 +193,21 @@ export function AdminDashboard() {
 
                   <div>
                     <Label htmlFor="story-type">Story Type</Label>
-                    <Select value={storyType} onValueChange={(value: StoryType) => setStoryType(value)}>
+                    <Select value={storyType} onValueChange={(value) => setStoryType(value as StoryType)}>
                       <SelectTrigger className="mt-2">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="mini">Mini (10 slots)</SelectItem>
-                        <SelectItem value="normal">Normal (20 slots)</SelectItem>
-                        <SelectItem value="epic">Epic (200 slots)</SelectItem>
+                        <SelectItem value="mini">Mini (10 slots, ~50 words)</SelectItem>
+                        <SelectItem value="normal">Normal (15-25 slots, ~100 words)</SelectItem>
+                        <SelectItem value="epic">Epic (35 slots, ~150 words, owner only)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
                     <Label htmlFor="category">Category</Label>
-                    <Select value={selectedCategory} onValueChange={(value: StoryCategory) => setSelectedCategory(value)}>
+                    <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as StoryCategory)}>
                       <SelectTrigger className="mt-2">
                         <SelectValue />
                       </SelectTrigger>
@@ -220,9 +229,9 @@ export function AdminDashboard() {
                     placeholder="Once upon a time, there was a [ADJECTIVE] witch who lived in a [NOUN]..."
                     value={storyTemplate}
                     onChange={(e) => setStoryTemplate(e.target.value)}
-                    className="w-full mt-2 min-h-[200px] p-3 rounded-md border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                    className="w-full mt-2 min-h-[200px] p-3 rounded-xl border-2 border-gray-600/50 bg-gray-800/80 backdrop-blur-sm text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  <p className="text-xs text-gray-400 mt-2">
                     Use [ADJECTIVE], [NOUN], [VERB], etc. to mark blanks
                   </p>
                 </div>
@@ -250,9 +259,9 @@ export function AdminDashboard() {
                     <textarea
                       id="addresses"
                       placeholder="0x123...&#10;0x456...&#10;0x789..."
-                      className="w-full mt-2 min-h-[150px] p-3 rounded-md border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono text-sm"
+                      className="w-full mt-2 min-h-[150px] p-3 rounded-xl border-2 border-gray-600/50 bg-gray-800/80 backdrop-blur-sm text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 font-mono text-sm"
                     />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    <p className="text-xs text-gray-400 mt-2">
                       One address per line
                     </p>
                   </div>
@@ -409,3 +418,5 @@ export function AdminDashboard() {
     </div>
   );
 }
+
+export const AdminDashboard = React.memo(AdminDashboardComponent);

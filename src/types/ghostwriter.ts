@@ -367,7 +367,7 @@ export const WORD_TYPE_DEFINITIONS: Record<WordType, WordTypeInfo> = {
 };
 
 export const STORY_TYPE_INFO: Record<StoryType, { totalWords: number; playerSlots: number; fee: string }> = {
-  mini: { totalWords: 50, playerSlots: 10, fee: '$0.05' },
-  normal: { totalWords: 100, playerSlots: 20, fee: '$0.05' },
-  epic: { totalWords: 1000, playerSlots: 200, fee: '$0.05' },
+  mini: { totalWords: 50, playerSlots: 10, fee: 'Dynamic ($0.05)' },
+  normal: { totalWords: 100, playerSlots: 20, fee: 'Dynamic ($0.10)' },
+  epic: { totalWords: 150, playerSlots: 35, fee: 'Dynamic ($0.10)' },
 };

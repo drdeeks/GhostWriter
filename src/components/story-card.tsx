@@ -13,11 +13,13 @@ interface StoryCardProps {
   onViewStory: (storyId: string) => void;
 }
 
-export function StoryCard({ story, onContribute, onViewStory }: StoryCardProps) {
+import React from 'react';
+
+const StoryCardComponent = ({ story, onContribute, onViewStory }: StoryCardProps) => {
   const progress = (story.filledSlots / story.totalSlots) * 100;
   const isComplete = story.status === 'complete';
 
-  const storyTypeColors = {
+  const storyTypeColors: Record<Story['storyType'], string> = {
     mini: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     normal: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     epic: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
@@ -101,3 +103,5 @@ export function StoryCard({ story, onContribute, onViewStory }: StoryCardProps) 
     </Card>
   );
 }
+
+export const StoryCard = React.memo(StoryCardComponent);
