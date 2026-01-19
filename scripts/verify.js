@@ -17,6 +17,7 @@ async function main() {
   const { contracts, constructorArgs, network } = deployment;
 
   console.log(`📋 Verifying contracts on ${network}:`);
+  console.log("   GhostWriterToken:", contracts.GhostWriterToken);
   console.log("   GhostWriterNFT:", contracts.GhostWriterNFT);
   console.log("   StoryManager:", contracts.StoryManager);
   console.log("   PriceOracle:", contracts.PriceOracle);
@@ -37,6 +38,12 @@ async function main() {
     const lpArgs = constructorArgs.LiquidityPool.length > 0 ? constructorArgs.LiquidityPool.join(' ') : '';
     await execPromise(`npx hardhat verify --network ${network} ${contracts.LiquidityPool} ${lpArgs}`);
     console.log("✅ LiquidityPool verified");
+
+    // Verify GhostWriterToken (no constructor args)
+    console.log("\n🔍 Verifying GhostWriterToken...");
+    const tokenArgs = constructorArgs.GhostWriterToken.length > 0 ? constructorArgs.GhostWriterToken.join(' ') : '';
+    await execPromise(`npx hardhat verify --network ${network} ${contracts.GhostWriterToken} ${tokenArgs}`);
+    console.log("✅ GhostWriterToken verified");
 
     // Verify PriceOracle (with constructor args)
     console.log("\n🔍 Verifying PriceOracle...");
@@ -79,6 +86,7 @@ async function main() {
     };
 
     console.log("\n🔗 View on Explorer:");
+    console.log(`   GhostWriterToken: ${getExplorerUrl(network, contracts.GhostWriterToken)}`);
     console.log(`   GhostWriterNFT: ${getExplorerUrl(network, contracts.GhostWriterNFT)}`);
     console.log(`   StoryManager: ${getExplorerUrl(network, contracts.StoryManager)}`);
     console.log(`   PriceOracle: ${getExplorerUrl(network, contracts.PriceOracle)}`);

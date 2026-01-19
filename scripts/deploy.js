@@ -35,6 +35,14 @@ async function main() {
   const liquidityPoolAddress = await liquidityPool.getAddress();
   console.log("✅ LiquidityPool deployed to:", liquidityPoolAddress);
 
+  // Deploy GhostWriterToken
+  console.log("\n📦 Deploying GhostWriterToken...");
+  const GhostWriterToken = await ethers.getContractFactory("GhostWriterToken");
+  const token = await GhostWriterToken.deploy();
+  await token.waitForDeployment();
+  const tokenAddress = await token.getAddress();
+  console.log("✅ GhostWriterToken deployed to:", tokenAddress);
+
   // Deploy PriceOracle
   console.log("\n📦 Deploying PriceOracle...");
   const PriceOracle = await ethers.getContractFactory("PriceOracle");
@@ -82,9 +90,25 @@ async function main() {
 
   // Set permissions
   console.log("\n🔗 Setting up permissions...");
+
+  // Allow StoryManager to mint NFTs
   const tx = await nft.setStoryManager(storyManagerAddress);
   await tx.wait();
   console.log("✅ StoryManager set as NFT minter");
+
+  // Allow StoryManager to deposit fees into LiquidityPool
+  const tx2 = await liquidityPool.setStoryManager(storyManagerAddress);
+  await tx2.wait();
+  console.log("✅ StoryManager set as LiquidityPool depositor");
+
+  // Configure server-authorized signer for story template approvals (EIP-712)
+  const signerAddress = process.env.STORY_TEMPLATE_SIGNER_ADDRESS || deployer.address;
+  const tx3 = await storyManager.setStoryTemplateSigner(signerAddress);
+  await tx3.wait();
+  console.log("✅ Story template signer set to:", signerAddress);
+  if (!process.env.STORY_TEMPLATE_SIGNER_ADDRESS) {
+    console.log("⚠️  STORY_TEMPLATE_SIGNER_ADDRESS not set; defaulting to deployer for development");
+  }
 
   // Update .env
   console.log("\n📝 Updating .env file...");
@@ -106,6 +130,10 @@ async function main() {
     /NEXT_PUBLIC_PRICE_ORACLE_ADDRESS=.*/,
     `NEXT_PUBLIC_PRICE_ORACLE_ADDRESS=${priceOracleAddress}`
   );
+  envContent = envContent.replace(
+    /NEXT_PUBLIC_TOKEN_ADDRESS=.*/,
+    `NEXT_PUBLIC_TOKEN_ADDRESS=${tokenAddress}`
+  );
   
   fs.writeFileSync('.env', envContent);
   console.log("✅ .env file updated");
@@ -116,12 +144,14 @@ async function main() {
     deployer: deployer.address,
     timestamp: new Date().toISOString(),
     constructorArgs: {
+      GhostWriterToken: [],
       GhostWriterNFT: [hiddenURI, revealedURI],
       StoryManager: [nftAddress, liquidityPoolAddress, priceOracleAddress],
       PriceOracle: [priceFeedAddress],
       LiquidityPool: []
     },
     contracts: {
+      GhostWriterToken: tokenAddress,
       GhostWriterNFT: nftAddress,
       StoryManager: storyManagerAddress,
       PriceOracle: priceOracleAddress,
@@ -134,6 +164,7 @@ async function main() {
 
   console.log("\n🎉 Deployment completed!");
   console.log("\n📋 Contract Addresses:");
+  console.log("   GhostWriterToken:", tokenAddress);
   console.log("   GhostWriterNFT:", nftAddress);
   console.log("   StoryManager:", storyManagerAddress);
   console.log("   PriceOracle:", priceOracleAddress);
