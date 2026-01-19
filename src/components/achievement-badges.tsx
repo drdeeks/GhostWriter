@@ -100,7 +100,7 @@ export function AchievementBadges({ achievements }: AchievementBadgesProps) {
               🎉 Achievement Master! 🎉
             </p>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
-              You've unlocked all achievements!
+              You&apos;ve unlocked all achievements!
             </p>
           </div>
         )}

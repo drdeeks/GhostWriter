@@ -12,13 +12,15 @@ export function useStoryManager() {
   const { writeContractAsync } = useWriteContract();
   const { contributionFee, creationFee, isLoading: isLoadingFees } = useFees();
 
-  const createStory = async (
+  const createStoryApproved = async (
     storyId: string,
     title: string,
     template: string,
     storyType: StoryType,
     category: string,
-    wordTypes: string[]
+    wordTypes: string[],
+    expiresAt: bigint,
+    signature: `0x${string}`
   ) => {
     setIsPending(true);
     try {
@@ -26,13 +28,23 @@ export function useStoryManager() {
       if (storyType === 'mini') storyTypeEnum = 0;
       else if (storyType === 'normal') storyTypeEnum = 1;
       else if (storyType === 'epic') storyTypeEnum = 2;
+
       const categoryEnum = getCategoryEnum(category);
 
       const hash = await writeContractAsync({
         address: CONTRACTS.storyManager,
         abi: STORY_MANAGER_ABI,
-        functionName: 'createStory',
-        args: [storyId, title, template, storyTypeEnum, categoryEnum, wordTypes],
+        functionName: 'createStoryApproved',
+        args: [
+          storyId,
+          title,
+          template,
+          storyTypeEnum,
+          categoryEnum,
+          wordTypes,
+          expiresAt,
+          signature,
+        ],
         value: creationFee,
       } as any);
 
@@ -82,7 +94,7 @@ export function useStoryManager() {
   };
 
   return {
-    createStory,
+    createStoryApproved,
     contributeWord,
     isPending,
     isLoadingFees,
@@ -92,11 +104,28 @@ export function useStoryManager() {
 // Helper function to convert category string to enum
 function getCategoryEnum(category: string): number {
   const categories = [
-    'fantasy', 'scifi', 'comedy', 'horror', 'adventure',
-    'mystery', 'romance', 'crypto', 'random'
+    'adventure',
+    'fantasy',
+    'comedy',
+    'mystery',
+    'scifi',
+    'horror',
+    'romance',
+    'crypto',
+    'sports',
+    'animals',
+    'school',
+    'superheroes',
+    'friendship',
+    'holidays',
+    'food',
+    'nature',
+    'history',
+    'random',
   ];
+
   const index = categories.indexOf(category.toLowerCase());
-  return index >= 0 ? index : 8; // Default to 'random' if not found
+  return index >= 0 ? index : categories.length - 1; // Default to 'random'
 }
 
 /**

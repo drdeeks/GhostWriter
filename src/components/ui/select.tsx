@@ -80,25 +80,26 @@ export function SelectContent({ children, className = '' }: SelectContentProps) 
     const context = useContext(SelectContext);
     if (!context) throw new Error('SelectContent must be used within Select');
 
+    const { open, setOpen } = context;
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (ref.current && !ref.current.contains(event.target as Node)) {
-                context.setOpen(false);
+                setOpen(false);
             }
         };
 
-        if (context.open) {
+        if (open) {
             document.addEventListener('mousedown', handleClickOutside);
         }
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [context.open, context.setOpen]);
+    }, [open, setOpen]);
 
-    if (!context.open) return null;
+    if (!open) return null;
 
     return (
         <div

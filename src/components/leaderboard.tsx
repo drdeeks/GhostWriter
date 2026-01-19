@@ -3,7 +3,7 @@
 import { useLeaderboard, useUserRank } from '@/hooks/useContract';
 import type { LeaderboardEntry } from '@/types/ghostwriter';
 import { Award, ChevronLeft, ChevronRight, Loader2, Medal, Trophy } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -11,10 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 export function Leaderboard() {
   const { address } = useAccount();
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [userRank, setUserRank] = useState<number | null>(null);
   const entriesPerPage = 50;
 
   // Use contract hooks for real data
@@ -39,12 +36,8 @@ export function Leaderboard() {
     });
   }, [rawLeaderboard]);
 
-  useEffect(() => {
-    setEntries(processedEntries);
-    setUserRank(userRankData > 0 ? userRankData : null);
-    setIsLoading(false);
-  }, [processedEntries, userRankData]);
-
+  const entries = processedEntries;
+  const userRank = userRankData > 0 ? userRankData : null;
   const loading = leaderboardLoading || rankLoading;
 
   const getRankIcon = (rank: number) => {
@@ -115,7 +108,7 @@ export function Leaderboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            {isLoading ? (
+            {loading ? (
               <div className="flex justify-center items-center py-20">
                 <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
               </div>
