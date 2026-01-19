@@ -274,11 +274,16 @@ describe("GhostWriter System", function () {
   });
 
   describe("Protocol config + admin controls", function () {
-    it("Should allow owner to update maxActiveStories and enforce the limit", async function () {
-      await expect(storyManager.connect(user1).setMaxActiveStories(5)).to.be.reverted;
+    it("setMaxActiveStories() updates the max active stories and emits the correct event", async function () {
+      await expect(storyManager.connect(owner).setMaxActiveStories(42))
+        .to.emit(storyManager, "MaxActiveStoriesUpdated")
+        .withArgs(42);
 
+      expect(await storyManager.maxActiveStories()).to.equal(42);
+    });
+
+    it("createStoryApproved() reverts creation if maxActiveStories limit is reached", async function () {
       await storyManager.connect(owner).setMaxActiveStories(1);
-      expect(await storyManager.maxActiveStories()).to.equal(1);
 
       const wordTypes = [
         "adjective",
@@ -305,9 +310,10 @@ describe("GhostWriter System", function () {
         creator: user1.address,
         storyId: "story_limit_1",
         title: "Limit 1",
-        template: "Test [ADJECTIVE] [NOUN] [VERB] [ADVERB] [PLURAL_NOUN] [PAST_TENSE_VERB] [VERB_ING] [PERSONS_NAME] [PLACE] [NUMBER].",
-        storyType: 0,
-        category: 0,
+        template:
+          "Test [ADJECTIVE] [NOUN] [VERB] [ADVERB] [PLURAL_NOUN] [PAST_TENSE_VERB] [VERB_ING] [PERSONS_NAME] [PLACE] [NUMBER].",
+        storyType: 0, // MINI
+        category: 0, // ADVENTURE
         wordTypes,
         expiresAt,
       });
@@ -324,19 +330,22 @@ describe("GhostWriter System", function () {
         { value: creationFee }
       );
 
-      // Second story should revert due to active story cap
+      expect(await storyManager.getActiveStoriesCount()).to.equal(1);
+
       const sig2 = await signCreateStory({
         signer: owner,
         creator: user1.address,
         storyId: "story_limit_2",
         title: "Limit 2",
-        template: "Test [ADJECTIVE] [NOUN] [VERB] [ADVERB] [PLURAL_NOUN] [PAST_TENSE_VERB] [VERB_ING] [PERSONS_NAME] [PLACE] [NUMBER].",
+        template:
+          "Test [ADJECTIVE] [NOUN] [VERB] [ADVERB] [PLURAL_NOUN] [PAST_TENSE_VERB] [VERB_ING] [PERSONS_NAME] [PLACE] [NUMBER].",
         storyType: 0,
         category: 0,
         wordTypes,
         expiresAt,
       });
 
+      // Second story should revert due to active story cap
       await expect(
         storyManager.connect(user1).createStoryApproved(
           "story_limit_2",
@@ -349,13 +358,10 @@ describe("GhostWriter System", function () {
           sig2,
           { value: creationFee }
         )
-      ).to.be.reverted;
-
-      // Reset cap so other tests are not affected (fresh beforeEach already, but keep explicit)
-      await storyManager.connect(owner).setMaxActiveStories(15);
+      ).to.be.revertedWithoutReason();
     });
 
-    it("Should allow owner to force-complete a story even if unfilled", async function () {
+    it("forceCompleteStory() only executable by owner and sets story status to COMPLETE", async function () {
       const wordTypes = [
         "adjective",
         "noun",
@@ -369,9 +375,10 @@ describe("GhostWriter System", function () {
         "number",
       ];
 
-      const storyId = "story_force_complete";
+      const storyId = "story_force_complete_owner";
       const title = "Force Complete";
-      const template = "Test [ADJECTIVE] [NOUN] [VERB] [ADVERB] [PLURAL_NOUN] [PAST_TENSE_VERB] [VERB_ING] [PERSONS_NAME] [PLACE] [NUMBER].";
+      const template =
+        "Test [ADJECTIVE] [NOUN] [VERB] [ADVERB] [PLURAL_NOUN] [PAST_TENSE_VERB] [VERB_ING] [PERSONS_NAME] [PLACE] [NUMBER].";
 
       await storyManager.airdropCredits([user1.address], [1]);
       const creationFee = await storyManager.getCreationFee();
@@ -403,12 +410,68 @@ describe("GhostWriter System", function () {
         { value: creationFee }
       );
 
-      await expect(storyManager.connect(user1).forceCompleteStory(storyId)).to.be.reverted;
       await expect(storyManager.connect(owner).forceCompleteStory(storyId)).to.not.be.reverted;
 
       const story = await storyManager.getStory(storyId);
       // status enum: ACTIVE=0, COMPLETE=1
       expect(story.status).to.equal(1);
+    });
+
+    it("forceCompleteStory() cannot be called by non-owner accounts", async function () {
+      const wordTypes = [
+        "adjective",
+        "noun",
+        "verb",
+        "adverb",
+        "plural_noun",
+        "past_tense_verb",
+        "verb_ing",
+        "persons_name",
+        "place",
+        "number",
+      ];
+
+      const storyId = "story_force_complete_non_owner";
+      const title = "Force Complete";
+      const template =
+        "Test [ADJECTIVE] [NOUN] [VERB] [ADVERB] [PLURAL_NOUN] [PAST_TENSE_VERB] [VERB_ING] [PERSONS_NAME] [PLACE] [NUMBER].";
+
+      await storyManager.airdropCredits([user1.address], [1]);
+      const creationFee = await storyManager.getCreationFee();
+
+      const latestBlock = await ethers.provider.getBlock("latest");
+      const expiresAt = BigInt(latestBlock.timestamp + 60 * 60);
+
+      const signature = await signCreateStory({
+        signer: owner,
+        creator: user1.address,
+        storyId,
+        title,
+        template,
+        storyType: 0,
+        category: 0,
+        wordTypes,
+        expiresAt,
+      });
+
+      await storyManager.connect(user1).createStoryApproved(
+        storyId,
+        title,
+        template,
+        0,
+        0,
+        wordTypes,
+        expiresAt,
+        signature,
+        { value: creationFee }
+      );
+
+      await expect(storyManager.connect(user1).forceCompleteStory(storyId))
+        .to.be.revertedWithCustomError(
+          storyManager,
+          "OwnableUnauthorizedAccount"
+        )
+        .withArgs(user1.address);
     });
   });
 
@@ -499,7 +562,7 @@ describe("GhostWriter System", function () {
   });
 
   describe("Token supply cap + buckets", function () {
-    it("Should enforce per-bucket caps and a global 50,000,000 max supply", async function () {
+    it("mintFromBucket() respects bucket caps", async function () {
       const GhostWriterToken = await ethers.getContractFactory("GhostWriterToken");
       const token = await GhostWriterToken.deploy();
 
@@ -513,14 +576,68 @@ describe("GhostWriter System", function () {
       // Exceed cap
       await expect(
         token.mintFromBucket(0, user1.address, ethers.parseUnits("50", 18))
-      ).to.be.reverted;
+      ).to.be.revertedWith("Bucket cap exceeded");
+    });
 
-      // Caps sum must not exceed MAX_SUPPLY
+    it("mintFromBucket() respects the global max supply constraint", async function () {
+      const GhostWriterToken = await ethers.getContractFactory("GhostWriterToken");
+      const token = await GhostWriterToken.deploy();
+
       const max = await token.MAX_SUPPLY();
+      await token.setBucketCap(0, max);
+
+      // Mint a small amount so we can locate the ERC20 _totalSupply storage slot safely.
+      await token.mintFromBucket(0, user1.address, 1n);
+
+      const tokenAddress = await token.getAddress();
+
+      // Find the _totalSupply slot by scanning a small range of fixed storage slots.
+      // (Mappings like _balances/bucketMinted won't show up in these slots.)
+      const before = [];
+      for (let i = 0; i < 25; i++) {
+        before.push(await ethers.provider.getStorage(tokenAddress, i));
+      }
+
+      // Bump supply by 1 to detect the changing slot.
+      await token.mintFromBucket(0, user1.address, 1n);
+
+      let totalSupplySlot = null;
+      for (let i = 0; i < 25; i++) {
+        const after = await ethers.provider.getStorage(tokenAddress, i);
+        if (after !== before[i]) {
+          totalSupplySlot = i;
+          break;
+        }
+      }
+
+      expect(totalSupplySlot).to.not.equal(null);
+
+      // Force _totalSupply to MAX_SUPPLY to make the explicit max-supply check reachable.
+      await ethers.provider.send("hardhat_setStorageAt", [
+        tokenAddress,
+        ethers.toBeHex(totalSupplySlot),
+        ethers.zeroPadValue(ethers.toBeHex(max), 32),
+      ]);
+
+      await expect(token.mintFromBucket(0, user1.address, 1n)).to.be.revertedWith(
+        "Max supply exceeded"
+      );
+    });
+
+    it("setBucketCap() prevents configuring caps that exceed the global max supply", async function () {
+      const GhostWriterToken = await ethers.getContractFactory("GhostWriterToken");
+      const token = await GhostWriterToken.deploy();
+
+      const max = await token.MAX_SUPPLY();
+
+      // Keep bucket 0 at 100 tokens
+      await token.setBucketCap(0, ethers.parseUnits("100", 18));
+
+      // Set bucket 1 so that bucket 0 + bucket 1 == MAX_SUPPLY
       await token.setBucketCap(1, max - ethers.parseUnits("100", 18));
 
       // This would push total caps over max
-      await expect(token.setBucketCap(2, 1n)).to.be.reverted;
+      await expect(token.setBucketCap(2, 1n)).to.be.revertedWith("Caps exceed max");
     });
   });
 
