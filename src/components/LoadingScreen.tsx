@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface LoadingScreenProps {
@@ -10,22 +10,27 @@ interface LoadingScreenProps {
 
 export function LoadingScreen({ isLoading, minDisplayTime = 800 }: LoadingScreenProps) {
   const [shouldShow, setShouldShow] = useState(isLoading);
-  const [startTime] = useState(Date.now());
+  const startTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!isLoading) {
-      const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, minDisplayTime - elapsed);
-      
-      const timer = setTimeout(() => {
-        setShouldShow(false);
-      }, remaining);
-
-      return () => clearTimeout(timer);
-    } else {
+    // Mark the time loading started (only when loading is true)
+    if (isLoading) {
+      startTimeRef.current = Date.now();
       setShouldShow(true);
+      return;
     }
-  }, [isLoading, minDisplayTime, startTime]);
+
+    // Ensure the spinner is shown for at least `minDisplayTime` ms.
+    const startedAt = startTimeRef.current ?? Date.now();
+    const elapsed = Date.now() - startedAt;
+    const remaining = Math.max(0, minDisplayTime - elapsed);
+
+    const timer = setTimeout(() => {
+      setShouldShow(false);
+    }, remaining);
+
+    return () => clearTimeout(timer);
+  }, [isLoading, minDisplayTime]);
 
   if (!shouldShow) return null;
 

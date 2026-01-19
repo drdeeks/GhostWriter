@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - 2026-01-19 14:18:23Z
+
+### Completed
+- **Story creation UX updated for enterprise enforcement:** `StoryCreationModal` now requests **exactly 5** server-signed suggestions from `/api/generate-story`, requires user selection of 1/5, and then calls `createStoryApproved` (removes broken `createStory` usage).
+- **Category normalization:** story creation categories now use canonical keys (e.g. `scifi` not `sci-fi`) to keep frontend ↔ contract enum mapping deterministic.
+- **Slot-count consistency:** Epic stories now display/expect **35 slots** to match the onchain `EPIC_SLOTS` constant.
+- **AI service TypeScript fixed:** removed duplicated/stray legacy blocks in `src/lib/ai-service.ts` that were causing TypeScript parse failures.
+- **StoryManager deployability restored:** `StoryManager.sol` was exceeding the EIP-170 contract size limit; removed revert strings (kept checks) to reduce bytecode size below the 24KB limit.
+- **Hardhat optimizer tuned for size:** `hardhat.config.js` optimizer `runs` set to `1` to bias toward smaller bytecode for large contracts.
+- **Hooks correctness fixes (lint + correctness):**
+  - `useStories` refactored from invalid hook-in-loop `useReadContract` usage to `useReadContracts` batching.
+  - `ContributionModal` refactored to avoid conditional hooks by splitting into an inner component when `story` is present.
+  - `Leaderboard` refactored to derive state directly from hook results (removed setState-in-effect).
+  - `NFTCollection` refactored to avoid conditional `useMemo` usage.
+  - Fixed a couple of JSX unescaped entity violations.
+- **Build/validation status:**
+  - `npm run ts-check` ✅
+  - `npm run compile` ✅
+  - `npm test` ✅ (Hardhat)
+  - `npm run build` ✅ (Next.js)
+  - `npm run lint` ✅ (warnings remain)
+
+### Findings (incomplete/outdated)
+- **Next.js 16.1.1 no longer ships the `next lint` command** (CLI has no `lint` subcommand). Project linting needed migration to ESLint.
+- **Dependency constraints:** installing ESLint tooling required `npm install --legacy-peer-deps` due to existing peer dependency conflicts (notably Hardhat toolbox expecting older `@types/chai`).
+
+### Quality Notes
+- ESLint currently reports warnings (no errors). If desired, we can harden CI by raising strictness and resolving remaining warnings.
+
 ## [2.0.0] - 2026-01-16 - SECURITY & OPTIMIZATION RELEASE
 
 ### 🔒 Critical Security Fixes (40 Bugs Fixed)
