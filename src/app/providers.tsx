@@ -4,49 +4,116 @@ import { OnchainKitProvider } from '@coinbase/onchainkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { WagmiProvider, createConfig, http } from 'wagmi';
-import { base } from 'wagmi/chains';
-import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID } from './config/onchainkit';
+import { base, baseSepolia } from 'wagmi/chains';
+import { Toaster } from 'sonner';
 
-// For Farcaster Mini Apps, we don't use external connectors
-// Wallet connections are handled by the Farcaster SDK
+import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID, isOnchainKitConfigured } from './config/onchainkit';
+
+// Enhanced Wagmi config for Farcaster Mini Apps
 const wagmiConfig = createConfig({
-  chains: [base],
+  chains: [base, baseSepolia],
   connectors: [], // No external connectors for Farcaster Mini Apps
   transports: {
     [base.id]: http(),
+    [baseSepolia.id]: http(),
   },
   ssr: false,
 });
 
+// Enhanced query client with better defaults
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      retry: 1,
-      staleTime: 5_000,
+      retry: (failureCount, error: any) => {
+        // Don't retry on 4xx errors
+        if (error?.status >= 400 && error?.status < 500) {
+          return false;
+        }
+        return failureCount < 3;
+      },
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes
     },
   },
 });
 
 export function Providers({ children }: { children: ReactNode }) {
+  const chain = process.env.NODE_ENV === 'production' ? base : baseSepolia;
+
+  console.log('🔧 Providers configuration:', {
+    nodeEnv: process.env.NODE_ENV,
+    chainId: chain.id,
+    chainName: chain.name,
+    onchainKitConfigured: isOnchainKitConfigured(),
+    contractAddresses: {
+      nft: process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS,
+      storyManager: process.env.NEXT_PUBLIC_STORY_MANAGER_ADDRESS,
+      liquidityPool: process.env.NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS,
+    },
+    onchainKitConfig: {
+      projectId: !!process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_ID,
+      apiKey: !!process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY,
+    }
+  });
+
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <OnchainKitProvider
-          apiKey={ONCHAINKIT_API_KEY}
-          projectId={ONCHAINKIT_PROJECT_ID}
-          chain={base}
-          config={{
-            appearance: {
-              name: 'Ghost Writer',
-              logo: 'https://cdn.builder.io/api/v1/image/assets/TEMP/9756b3248bdd48d596519e7d98958e9df5588654dadf0bb17a71fc435bcb37b3?placeholderIfAbsent=true&apiKey=ad3941e5ec034c87bd50708c966e7b84',
-              mode: 'auto',
-              theme: 'default',
-            },
-          }}
-        >
-          {children}
-        </OnchainKitProvider>
+        {isOnchainKitConfigured() ? (
+          <OnchainKitProvider
+            apiKey={ONCHAINKIT_API_KEY}
+            projectId={ONCHAINKIT_PROJECT_ID}
+            chain={chain}
+            config={{
+              appearance: {
+                name: 'Ghost Writer',
+                logo: '/icon.png',
+                mode: 'dark',
+                theme: 'cyberpunk',
+              },
+              wallet: {
+                display: 'modal',
+              },
+            }}
+          >
+            {children}
+            <Toaster 
+              theme="dark"
+              position="top-center"
+              expand={false}
+              richColors
+              closeButton
+              toastOptions={{
+                style: {
+                  background: 'hsl(220 18% 10%)',
+                  border: '1px solid hsl(220 15% 20%)',
+                  color: 'hsl(210 40% 98%)',
+                },
+                className: 'mobile-toast',
+              }}
+            />
+          </OnchainKitProvider>
+        ) : (
+          <>
+            {children}
+            <Toaster 
+              theme="dark"
+              position="top-center"
+              expand={false}
+              richColors
+              closeButton
+              toastOptions={{
+                style: {
+                  background: 'hsl(220 18% 10%)',
+                  border: '1px solid hsl(220 15% 20%)',
+                  color: 'hsl(210 40% 98%)',
+                },
+                className: 'mobile-toast',
+              }}
+            />
+          </>
+        )}
       </QueryClientProvider>
     </WagmiProvider>
   );

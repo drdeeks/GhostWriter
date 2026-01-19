@@ -6,7 +6,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useStoryManager } from '@/hooks/useContract';
-import type { Story } from '@/types/ghostwriter';
+import { useSlot } from '@/hooks/useContract';
+import type { Story, WordType } from '@/types/ghostwriter';
 import { WORD_TYPE_DEFINITIONS } from '@/types/ghostwriter';
 import { DollarSign, Loader2, Sparkles } from 'lucide-react';
 import { useState } from 'react';
@@ -27,9 +28,10 @@ export function ContributionModal({ open, onClose, story, onSubmit }: Contributi
 
   if (!story) return null;
 
-  // Get next word type needed (simplified - in production, fetch from contract)
+  // Get next word type needed from contract
   const nextPosition = story.filledSlots + 1;
-  const wordType = 'adjective'; // Placeholder - fetch from contract in production
+  const { slot: nextSlot, isLoading: slotLoading } = useSlot(story.storyId, nextPosition);
+  const wordType = (nextSlot?.wordType || 'adjective') as WordType;
   const wordInfo = WORD_TYPE_DEFINITIONS[wordType];
 
   const handleSubmit = async () => {
@@ -40,6 +42,27 @@ export function ContributionModal({ open, onClose, story, onSubmit }: Contributi
 
     if (!word || word.length < wordInfo.minLength || word.length > wordInfo.maxLength) {
       toast.error(`Word must be between ${wordInfo.minLength} and ${wordInfo.maxLength} characters`);
+      return;
+    }
+
+    // Moderate word via API
+    const response = await fetch('/api/moderate-word', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word }),
+    });
+
+    if (!response.ok) {
+      toast.error('Failed to moderate word');
+      return;
+    }
+
+    const { isProfane } = await response.json();
+
+    if (isProfane) {
+      toast.error('Inappropriate word', {
+        description: 'Please choose a different word',
+      });
       return;
     }
 
@@ -70,7 +93,7 @@ export function ContributionModal({ open, onClose, story, onSubmit }: Contributi
 
         <div className="space-y-6 py-4">
           {/* Progress */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-purple-200 dark:border-purple-800">
+          <div className="bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 border-2 border-purple-500/50">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Story Progress</span>
               <span className="text-sm font-bold text-purple-600 dark:text-purple-400">

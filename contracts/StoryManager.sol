@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./GhostWriterNFT.sol";
 import "./LiquidityPool.sol";
+import "./PriceOracle.sol";
 
 /**
  * @title StoryManager
@@ -14,10 +15,11 @@ import "./LiquidityPool.sol";
 contract StoryManager is Ownable, ReentrancyGuard {
     GhostWriterNFT public nftContract;
     LiquidityPool public liquidityPool;
+    PriceOracle public priceOracle;
 
-    // Fee amounts in wei
-    uint256 public constant CONTRIBUTION_FEE = 0.00004 ether; // $0.10 equivalent (adjust based on ETH price)
-    uint256 public constant CREATION_FEE = 0.0002 ether; // $0.50 equivalent (adjust based on ETH price)
+    // Fee amounts in USD cents (5 cents and 10 cents)
+    uint256 public constant CONTRIBUTION_FEE_USD_CENTS = 5;
+    uint256 public constant CREATION_FEE_USD_CENTS = 10;
 
     // Story types
     enum StoryType {
@@ -81,6 +83,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
         uint256 completedStories;
         uint256 shareCount;
         uint256 lastContributionTime;
+        string[] activeContributions;
     }
 
     // Achievement struct
@@ -107,6 +110,8 @@ contract StoryManager is Ownable, ReentrancyGuard {
     mapping(string => mapping(address => bool))
         public storyCompletedContributors; // New mapping
 
+    mapping(address => mapping(string => bool)) public hasContributedToStory;
+
     // Arrays for tracking
     string[] public allStoryIds;
     mapping(address => string[]) public userCreatedStories;
@@ -121,6 +126,12 @@ contract StoryManager is Ownable, ReentrancyGuard {
     mapping(address => mapping(string => Achievement)) public userAchievements;
     string[] public achievementIds;
     mapping(address => uint256) public achievementCount;
+
+    // Pending refunds (pull-over-push pattern)
+    mapping(address => uint256) public pendingRefunds;
+
+    // Final word count tracking (for achievement)
+    mapping(address => uint256) public finalWordCount;
 
     // Events
     event StoryCreated(
@@ -145,16 +156,34 @@ contract StoryManager is Ownable, ReentrancyGuard {
     );
     event StoryShared(string indexed storyId, address indexed sharer);
     event LeaderboardUpdated(address indexed user, uint256 newRank);
+    event EmergencyWithdrawal(address indexed owner, uint256 amount);
 
     constructor(
         address _nftContract,
-        address payable _liquidityPool
+        address payable _liquidityPool,
+        address _priceOracle
     ) Ownable(msg.sender) {
         require(_nftContract != address(0), "Invalid NFT contract");
         require(_liquidityPool != address(0), "Invalid pool");
+        require(_priceOracle != address(0), "Invalid oracle");
         nftContract = GhostWriterNFT(_nftContract);
         liquidityPool = LiquidityPool(_liquidityPool);
+        priceOracle = PriceOracle(_priceOracle);
         _initializeAchievements();
+    }
+
+    /**
+     * @dev Get current contribution fee in ETH
+     */
+    function getContributionFee() public view returns (uint256) {
+        return priceOracle.usdToEth(CONTRIBUTION_FEE_USD_CENTS);
+    }
+
+    /**
+     * @dev Get current creation fee in ETH
+     */
+    function getCreationFee() public view returns (uint256) {
+        return priceOracle.usdToEth(CREATION_FEE_USD_CENTS);
     }
 
     /**
@@ -181,13 +210,17 @@ contract StoryManager is Ownable, ReentrancyGuard {
         StoryCategory category,
         string[] memory wordTypes
     ) external payable nonReentrant {
-        require(msg.value == CREATION_FEE, "Incorrect creation fee");
+        uint256 requiredFee = getCreationFee();
+        require(msg.value >= requiredFee, "Insufficient creation fee");
         require(bytes(storyId).length > 0, "Invalid storyId");
         require(!storyExists[storyId], "Story already exists");
         require(
             userStats[msg.sender].creationCredits > 0,
             "Need creation credits"
         );
+
+        // Enforce a maximum of 15 active stories
+        require(getActiveStoriesCount() < 15, "Max 15 active stories allowed");
 
         uint256 totalSlots = wordTypes.length;
         require(totalSlots > 0, "Need at least one slot");
@@ -196,9 +229,10 @@ contract StoryManager is Ownable, ReentrancyGuard {
         if (storyType == StoryType.MINI) {
             require(totalSlots <= 10, "Mini stories max 10 slots");
         } else if (storyType == StoryType.NORMAL) {
-            require(totalSlots <= 20, "Normal stories max 20 slots");
+            require(totalSlots <= 25, "Normal stories max 25 slots");
         } else if (storyType == StoryType.EPIC) {
-            require(totalSlots <= 200, "Epic stories max 200 slots");
+            require(totalSlots <= 35, "Epic stories max 35 slots");
+            require(msg.sender == owner(), "Only owner can create epic stories");
         }
 
         // Create story
@@ -250,10 +284,30 @@ contract StoryManager is Ownable, ReentrancyGuard {
         }
 
         // Forward fee to liquidity pool
-        liquidityPool.deposit{value: msg.value}();
-        emit FeesCollected(msg.value, address(liquidityPool));
+        liquidityPool.deposit{value: requiredFee}();
+        
+        // Store refund for pull withdrawal
+        uint256 refundAmount = msg.value - requiredFee;
+        if (refundAmount > 0) {
+            pendingRefunds[msg.sender] += refundAmount;
+        }
+        
+        emit FeesCollected(requiredFee, address(liquidityPool));
 
         emit StoryCreated(storyId, msg.sender, storyType, totalSlots);
+    }
+
+    /**
+     * @dev Returns the number of active stories
+     */
+    function getActiveStoriesCount() public view returns (uint256) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < allStoryIds.length; i++) {
+            if (stories[allStoryIds[i]].status == StoryStatus.ACTIVE) {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**
@@ -265,7 +319,8 @@ contract StoryManager is Ownable, ReentrancyGuard {
         uint256 position,
         string memory word
     ) external payable nonReentrant {
-        require(msg.value == CONTRIBUTION_FEE, "Incorrect contribution fee");
+        uint256 requiredFee = getContributionFee();
+        require(msg.value >= requiredFee, "Insufficient contribution fee");
         require(storyExists[storyId], "Story does not exist");
 
         Story storage story = stories[storyId];
@@ -313,6 +368,12 @@ contract StoryManager is Ownable, ReentrancyGuard {
         userStats[msg.sender].nftsOwned++;
         userStats[msg.sender].lastContributionTime = block.timestamp;
 
+        // Add story to user's active contributions if not already present
+        if (!hasContributedToStory[msg.sender][storyId]) {
+            userStats[msg.sender].activeContributions.push(storyId);
+            hasContributedToStory[msg.sender][storyId] = true;
+        }
+
         // Update leaderboard
         _updateLeaderboard(msg.sender);
 
@@ -352,8 +413,15 @@ contract StoryManager is Ownable, ReentrancyGuard {
         }
 
         // Forward fee to liquidity pool
-        liquidityPool.deposit{value: msg.value}();
-        emit FeesCollected(msg.value, address(liquidityPool));
+        liquidityPool.deposit{value: requiredFee}();
+        
+        // Store refund for pull withdrawal
+        uint256 refundAmount = msg.value - requiredFee;
+        if (refundAmount > 0) {
+            pendingRefunds[msg.sender] += refundAmount;
+        }
+        
+        emit FeesCollected(requiredFee, address(liquidityPool));
 
         emit WordContributed(storyId, position, msg.sender, nftId);
         emit CreationCreditEarned(
@@ -369,57 +437,13 @@ contract StoryManager is Ownable, ReentrancyGuard {
 
     /**
      * @dev Internal function to complete a story
-     * Reveals all NFTs for the story
+     * Marks story as complete and emits event for off-chain processing
      */
     function _completeStory(string memory storyId) internal {
         Story storage story = stories[storyId];
+        require(story.status == StoryStatus.ACTIVE, "Story not active");
         story.status = StoryStatus.COMPLETE;
         story.completedAt = block.timestamp;
-
-        // Update completed stories count for all contributors
-
-        for (uint256 i = 1; i <= story.totalSlots; i++) {
-            address contributor = storySlots[storyId][i].contributor;
-
-            if (
-                contributor != address(0) &&
-                !storyCompletedContributors[storyId][contributor]
-            ) {
-                userStats[contributor].completedStories++;
-
-                storyCompletedContributors[storyId][contributor] = true; // Mark as counted
-            }
-
-            // Check for completion king achievement (contributed final word to 5 stories)
-
-            if (i == story.totalSlots) {
-                uint256 finalWordCount = 0;
-
-                for (uint256 j = 0; j < allStoryIds.length; j++) {
-                    Story memory s = stories[allStoryIds[j]];
-
-                    if (
-                        s.status == StoryStatus.COMPLETE &&
-                        storySlots[allStoryIds[j]][s.totalSlots].contributor ==
-                        contributor
-                    ) {
-                        finalWordCount++;
-                    }
-                }
-
-                if (
-                    finalWordCount >= 5 &&
-                    !userAchievements[contributor]["completion_king"].unlocked
-                ) {
-                    _unlockAchievement(
-                        contributor,
-                        "completion_king",
-                        "Completion King",
-                        "Contributed the final word to 5 stories"
-                    );
-                }
-            }
-        }
 
         // Check for speed demon achievement (completed in < 24 hours)
         uint256 timeTaken = block.timestamp - story.createdAt;
@@ -435,24 +459,76 @@ contract StoryManager is Ownable, ReentrancyGuard {
             );
         }
 
-        // Reveal all contributor NFTs
-        nftContract.revealStoryNFTs(storyId);
-
-        // Mint creator NFT only for stories created by the contract owner
-        if (story.creator == owner()) {
-            nftContract.mintCreatorNFT(
-                story.creator,
-                storyId,
-                story.title,
-                story.template
-            );
-        }
-
         emit StoryCompleted(storyId, block.timestamp);
     }
 
     /**
+     * @dev Process story completion in batches (callable by anyone after completion)
+     * Updates contributor stats and checks achievements
+     */
+    function processCompletionBatch(
+        string memory storyId,
+        uint256 startPosition,
+        uint256 endPosition
+    ) external nonReentrant {
+        Story storage story = stories[storyId];
+        require(story.status == StoryStatus.COMPLETE, "Story not complete");
+        require(startPosition > 0 && startPosition <= story.totalSlots, "Invalid start");
+        require(endPosition >= startPosition && endPosition <= story.totalSlots, "Invalid end");
+        require(endPosition - startPosition < 50, "Batch too large");
+
+        for (uint256 i = startPosition; i <= endPosition; i++) {
+            address contributor = storySlots[storyId][i].contributor;
+
+            if (
+                contributor != address(0) &&
+                !storyCompletedContributors[storyId][contributor]
+            ) {
+                userStats[contributor].completedStories++;
+                storyCompletedContributors[storyId][contributor] = true;
+            }
+
+            // Track final word count for achievement
+            if (i == story.totalSlots && contributor != address(0)) {
+                finalWordCount[contributor]++;
+                
+                if (
+                    finalWordCount[contributor] >= 5 &&
+                    !userAchievements[contributor]["completion_king"].unlocked
+                ) {
+                    _unlockAchievement(
+                        contributor,
+                        "completion_king",
+                        "Completion King",
+                        "Contributed the final word to 5 stories"
+                    );
+                }
+            }
+        }
+    }
+
+    /**
+     * @dev Reveal NFTs and mint creator NFT (callable after completion processing)
+     */
+    function finalizeStory(string memory storyId) external nonReentrant {
+        Story storage story = stories[storyId];
+        require(story.status == StoryStatus.COMPLETE, "Story not complete");
+
+        // Reveal all contributor NFTs
+        nftContract.revealStoryNFTs(storyId);
+
+        // Mint creator NFT
+        nftContract.mintCreatorNFT(
+            story.creator,
+            storyId,
+            story.title,
+            story.template
+        );
+    }
+
+    /**
      * @dev Update leaderboard with user's contribution count
+     * Simplified to avoid gas-intensive sorting
      */
     function _updateLeaderboard(address user) internal {
         uint256 userContributions = userStats[user].contributionsCount;
@@ -469,41 +545,24 @@ contract StoryManager is Ownable, ReentrancyGuard {
         }
 
         // If leaderboard is full, check if user should replace lowest
-        if (leaderboard.length >= MAX_LEADERBOARD_SIZE) {
+        if (
+            leaderboard.length >= MAX_LEADERBOARD_SIZE &&
+            leaderboardIndex[user] == 0
+        ) {
             address lowestUser = leaderboard[leaderboard.length - 1];
-            uint256 lowestContributions = userStats[lowestUser]
-                .contributionsCount;
+            uint256 lowestContributions = userStats[lowestUser].contributionsCount;
 
-            if (
-                userContributions > lowestContributions &&
-                leaderboardIndex[user] == 0
-            ) {
-                // Replace lowest with new user
+            if (userContributions > lowestContributions) {
                 delete leaderboardIndex[lowestUser];
                 leaderboard[leaderboard.length - 1] = user;
                 leaderboardIndex[user] = leaderboard.length;
+                emit LeaderboardUpdated(user, leaderboard.length);
             }
         }
 
-        // Bubble up if needed (simplified - in production use more efficient sorting)
-        uint256 currentIndex = leaderboardIndex[user];
-        if (currentIndex > 0) {
-            for (uint256 i = currentIndex - 1; i > 0; i--) {
-                if (
-                    userStats[leaderboard[i - 1]].contributionsCount <
-                    userContributions
-                ) {
-                    // Swap
-                    address temp = leaderboard[i - 1];
-                    leaderboard[i - 1] = user;
-                    leaderboard[i] = temp;
-                    leaderboardIndex[user] = i;
-                    leaderboardIndex[temp] = i + 1;
-                    emit LeaderboardUpdated(user, i);
-                } else {
-                    break;
-                }
-            }
+        // Emit event for off-chain sorting
+        if (leaderboardIndex[user] > 0) {
+            emit LeaderboardUpdated(user, leaderboardIndex[user]);
         }
     }
 
@@ -607,6 +666,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
         uint256 limit
     ) external view returns (LeaderboardEntry[] memory) {
         require(limit <= 100, "Max 100 entries per request");
+        require(offset < leaderboard.length, "Offset out of bounds");
 
         uint256 end = offset + limit;
         if (end > leaderboard.length) {
@@ -660,8 +720,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
      * @dev Get user rank on leaderboard
      */
     function getUserRank(address user) external view returns (uint256) {
-        uint256 index = leaderboardIndex[user];
-        return index > 0 ? index : 0; // 0 means not on leaderboard
+        return leaderboardIndex[user];
     }
 
     /**
@@ -682,20 +741,32 @@ contract StoryManager is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Owner can update fee amounts (emergency only)
+     * @dev Owner can update price oracle
      */
-    function updateFees(
-        uint256 newContributionFee,
-        uint256 newCreationFee
-    ) external view onlyOwner {
-        // Note: In production, use a more sophisticated fee oracle
-        // This is a simplified version
-        require(newContributionFee > 0, "Fee must be positive");
-        require(newCreationFee > 0, "Fee must be positive");
-        // Would update constant-like storage variables if made non-constant
-        // For this implementation, fees are hardcoded as constants
-        revert("Fee updates not supported in this version");
+    function updatePriceOracle(address _priceOracle) external onlyOwner {
+        require(_priceOracle != address(0), "Invalid price oracle");
+        priceOracle = PriceOracle(_priceOracle);
+        emit PriceOracleUpdated(_priceOracle);
     }
+
+    event PriceOracleUpdated(address indexed newOracle);
+
+    /**
+     * @dev Withdraw pending refund (pull pattern)
+     */
+    function withdrawRefund() external nonReentrant {
+        uint256 amount = pendingRefunds[msg.sender];
+        require(amount > 0, "No refund available");
+        
+        pendingRefunds[msg.sender] = 0;
+        
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "Refund transfer failed");
+        
+        emit RefundWithdrawn(msg.sender, amount);
+    }
+
+    event RefundWithdrawn(address indexed user, uint256 amount);
 
     /**
      * @dev Emergency withdrawal (only owner)
@@ -703,7 +774,12 @@ contract StoryManager is Ownable, ReentrancyGuard {
     function emergencyWithdraw() external onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "No balance");
-        payable(owner()).transfer(balance);
+        
+        // Bug #34 fix: Use call instead of transfer
+        (bool success, ) = payable(owner()).call{value: balance}("");
+        require(success, "Transfer failed");
+        
+        emit EmergencyWithdrawal(owner(), balance);
     }
 
     /**

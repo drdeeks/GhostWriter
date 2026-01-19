@@ -1,6 +1,7 @@
 'use client';
 
-import { useStoryManager } from '@/hooks/useContract';
+import { useStoryManager, useIsOwner } from '@/hooks/useContract';
+import { useActiveStoriesCount } from '@/hooks/useActiveStoriesCount';
 import type { StoryType } from '@/types/ghostwriter';
 import { AlertCircle, DollarSign, Loader2, PlusCircle } from 'lucide-react';
 import { useState } from 'react';
@@ -8,6 +9,23 @@ import { toast } from 'sonner';
 import { useAccount } from 'wagmi';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+
+const STORY_CATEGORIES = [
+  "Adventure",
+  "Fantasy",
+  "Comedy",
+  "Mystery",
+  "Sci-Fi",
+  "Sports",
+  "Animals",
+  "School",
+  "Superheroes",
+  "Friendship",
+  "Holidays",
+  "Food",
+  "Nature",
+  "History",
+];
 import { Card, CardContent } from './ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { Label } from './ui/label';
@@ -22,8 +40,11 @@ interface StoryCreationModalProps {
 
 export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }: StoryCreationModalProps) {
   const [selectedType, setSelectedType] = useState<StoryType>('normal');
+  const [selectedCategory, setSelectedCategory] = useState<string>(STORY_CATEGORIES[0]);
   const { createStory, isPending } = useStoryManager();
+  const { activeStories, isLoading: isActiveStoriesLoading } = useActiveStoriesCount();
   const { address } = useAccount();
+  const { isOwner } = useIsOwner(address);
 
   const storyTypes = [
     {
@@ -51,14 +72,14 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
     {
       type: 'epic' as StoryType,
       title: 'Epic Story',
-      words: '~1000 words',
-      slots: '200 slots',
-      duration: 'Community project',
-      icon: '🏆',
-      color: 'from-purple-500 to-pink-500',
-      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-      borderColor: 'border-purple-200 dark:border-purple-800',
-      disabled: true,
+      words: '~500 words',
+      slots: '50 slots',
+      duration: 'A grand saga!',
+      icon: '🔥',
+      color: 'from-red-500 to-orange-500',
+      bgColor: 'bg-red-50 dark:bg-red-900/20',
+      borderColor: 'border-red-200 dark:border-red-800',
+      disabled: !isOwner,
     },
   ];
 
@@ -75,15 +96,30 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
       return;
     }
 
-    // Generate story ID and placeholder data
-    const storyId = `story_${Date.now()}`;
-    const title = 'Generated Story Title'; // In production, use AI to generate
-    const template = 'Story template...'; // In production, use AI to generate
-    const category = 'random'; // Default category
-    const slots = selectedType === 'mini' ? 10 : selectedType === 'epic' ? 200 : 20;
-    const wordTypes = Array(slots).fill('adjective'); // Placeholder - generate properly in production
+    if (!isActiveStoriesLoading && activeStories >= 15) {
+      toast.error('Story limit reached', {
+        description: 'There are already 15 active stories. Please complete or wait for a story to finish before creating a new one.',
+      });
+      return;
+    }
 
-    const result = await createStory(storyId, title, template, selectedType, category, wordTypes);
+    const storyId = `story_${Date.now()}`;
+
+    // Generate story template via API
+    const response = await fetch('/api/generate-story', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: selectedCategory }),
+    });
+
+    if (!response.ok) {
+      toast.error('Failed to generate story template');
+      return;
+    }
+
+    const { title, template, wordTypes } = await response.json();
+
+    const result = await createStory(storyId, title, template, selectedType, selectedCategory, wordTypes);
 
     if (result.success) {
       onSubmit(selectedType);
@@ -108,6 +144,18 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Category Selection */}
+          <div>
+            <Label className="text-base font-semibold mb-4 block">Choose Story Category:</Label>
+            <RadioGroup value={selectedCategory} onValueChange={setSelectedCategory} className="flex flex-wrap gap-2">
+              {STORY_CATEGORIES.map((cat) => (
+                <RadioGroupItem key={cat} value={cat} id={cat} />
+              ))}
+              {STORY_CATEGORIES.map((cat) => (
+                <Label key={cat} htmlFor={cat} className={`px-3 py-1 rounded cursor-pointer border ${selectedCategory === cat ? 'bg-blue-200 border-blue-500' : 'bg-gray-100 border-gray-300'}`}>{cat}</Label>
+              ))}
+            </RadioGroup>
+          </div>
           {/* Credits Info */}
           <div className={`rounded-lg p-4 border-2 ${creationCredits > 0 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'}`}>
             <div className="flex items-center justify-between">
@@ -141,8 +189,8 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
                 {storyTypes.map((story) => (
                   <Card
                     key={story.type}
-                    className={`cursor-pointer transition-all duration-200 ${selectedType === story.type
-                      ? `ring-4 ring-offset-2 ring-blue-500 ${story.bgColor} ${story.borderColor} border-2`
+                    className={`cursor-pointer transition-all duration-200 ${story.bgColor} ${selectedType === story.type
+                      ? `ring-4 ring-offset-2 ring-blue-500 ${story.borderColor} border-2`
                       : `${story.borderColor} border-2 hover:border-blue-400`
                       } ${story.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => !story.disabled && setSelectedType(story.type)}
@@ -198,7 +246,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isPending || creationCredits < 1}
+            disabled={isPending || creationCredits < 1 || (!isActiveStoriesLoading && activeStories >= 15)}
             className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold"
           >
             {isPending ? (
@@ -209,7 +257,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
             ) : (
               <>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Create Story
+                {(!isActiveStoriesLoading && activeStories >= 15) ? 'Limit Reached' : 'Create Story'}
               </>
             )}
           </Button>
