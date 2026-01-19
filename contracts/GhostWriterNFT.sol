@@ -66,6 +66,7 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
     event BaseURIUpdated(string hiddenURI, string revealedURI);
 
     modifier onlyStoryManager() {
+        require(storyManager != address(0), "StoryManager not set");
         require(msg.sender == storyManager, "Only StoryManager can call");
         _;
     }
@@ -74,6 +75,8 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
         string memory hiddenURI,
         string memory revealedURI
     ) ERC721("Ghost Writer NFT", "GHOST") Ownable(msg.sender) {
+        require(bytes(hiddenURI).length > 0, "Invalid hidden URI");
+        require(bytes(revealedURI).length > 0, "Invalid revealed URI");
         _hiddenBaseURI = hiddenURI;
         _revealedBaseURI = revealedURI;
     }
@@ -115,6 +118,8 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
     ) external onlyStoryManager nonReentrant returns (uint256) {
         require(contributor != address(0), "Invalid contributor");
         require(bytes(storyId).length > 0, "Invalid storyId");
+        require(bytes(storyTitle).length > 0, "Invalid title"); // Bug #32 fix
+        require(bytes(wordType).length > 0, "Invalid word type"); // Bug #33 fix
         require(position > 0 && position <= totalWords, "Invalid position");
         require(
             !hasContributed[storyId][position][contributor],
@@ -215,7 +220,8 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
             uint256 tokenId = tokenIds[i];
             NFTData storage data = nftData[tokenId];
 
-            require(!data.revealed, "Story already revealed");
+            // Skip if already revealed (Bug #31 fix)
+            if (data.revealed) continue;
 
             data.storyComplete = true;
             data.revealed = true;

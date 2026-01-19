@@ -11,6 +11,8 @@ export const CONTRACTS = {
     "0x0000000000000000000000000000000000000000") as `0x${string}`,
   liquidityPool: (process.env.NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS ||
     "0x0000000000000000000000000000000000000000") as `0x${string}`,
+  priceOracle: (process.env.NEXT_PUBLIC_PRICE_ORACLE_ADDRESS ||
+    "0x0000000000000000000000000000000000000000") as `0x${string}`,
 };
 
 // Chain configuration
@@ -22,14 +24,28 @@ export const CHAIN_CONFIG = {
   mode: 34443,
 };
 
-// Fee amounts (in wei)
+// Fee amounts (dynamic - fetched from contract)
 export const FEES = {
-  contribution: BigInt("50000000000000"), // 0.00005 ETH
-  creation: BigInt("100000000000000"), // 0.0001 ETH
+  contribution: BigInt("50000000000000"), // Fallback: 0.00005 ETH
+  creation: BigInt("100000000000000"), // Fallback: 0.0001 ETH
 };
 
 // Story Manager ABI (essential functions only)
 export const STORY_MANAGER_ABI = [
+  {
+    inputs: [],
+    name: "getContributionFee",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getCreationFee",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [
       { name: "storyId", type: "string" },
@@ -42,6 +58,13 @@ export const STORY_MANAGER_ABI = [
     name: "createStory",
     outputs: [],
     stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getActiveStoriesCount",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -234,6 +257,54 @@ export const STORY_MANAGER_ABI = [
       { indexed: false, name: "completedAt", type: "uint256" },
     ],
     name: "StoryCompleted",
+    type: "event",
+  },
+  {
+    inputs: [{ name: "user", type: "address" }],
+    name: "pendingRefunds",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "withdrawRefund",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "storyId", type: "string" },
+      { name: "startPosition", type: "uint256" },
+      { name: "endPosition", type: "uint256" },
+    ],
+    name: "processCompletionBatch",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "storyId", type: "string" }],
+    name: "finalizeStory",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "user", type: "address" }],
+    name: "finalWordCount",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "user", type: "address" },
+      { indexed: false, name: "amount", type: "uint256" },
+    ],
+    name: "RefundWithdrawn",
     type: "event",
   },
 ] as const;
