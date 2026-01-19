@@ -29,7 +29,19 @@ All notable changes to this project will be documented in this file.
 - **Dependency constraints:** installing ESLint tooling required `npm install --legacy-peer-deps` due to existing peer dependency conflicts (notably Hardhat toolbox expecting older `@types/chai`).
 
 ### Quality Notes
-- ESLint currently reports warnings (no errors). If desired, we can harden CI by raising strictness and resolving remaining warnings.
+- ESLint currently reports no errors.
+
+### Additional Updates - 2026-01-19 16:23:00Z
+- **NFT metadata/image hardening:** `/api/nft/[tokenId]` and `/api/nft/[tokenId]/image` now:
+  - Use correct chain/RPC selection (Base vs Base Sepolia)
+  - Use canonical `STORY_MANAGER_ABI` (fixes ABI mismatch risk as Story struct evolves)
+  - Fetch slots via multicall (performance + reliability)
+  - Escape and truncate SVG-injected fields (prevents SVG/XML injection)
+  - Correctly attribute creator NFT "Category" (story category enum) and add explicit "Story Type"
+- **Hardhat test coverage expanded:** added EIP-712 approval tests (valid/invalid/expired), auto-reveal on completion, and finalize idempotency.
+- **Deterministic oracle testing:** added `contracts/mocks/MockV3Aggregator.sol` so `PriceOracle` fee calculations work reliably in local tests.
+- **Lint cleanup:** resolved remaining ESLint warnings (PostCSS config default export + SelectContent hook deps).
+- **Farcaster user API cleanup:** removed unused chain client, switched to viem `isAddress` validation, and set `Cache-Control: no-store`.
 
 ## [2.0.0] - 2026-01-16 - SECURITY & OPTIMIZATION RELEASE
 
