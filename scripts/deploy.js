@@ -1,8 +1,15 @@
 const { ethers } = require("hardhat");
 const fs = require("fs");
 
+// Parse command line flags
+const args = process.argv.slice(2);
+const DEPLOY_TOKEN = args.includes("--with-token") || args.includes("-t");
+
 async function main() {
   console.log("🚀 Deploying Ghost Writer contracts...\n");
+  if (DEPLOY_TOKEN) {
+    console.log("🪙 GHOST token deployment: ENABLED\n");
+  }
 
   const network = hre.network.name;
   console.log("Network:", network);
@@ -21,35 +28,26 @@ async function main() {
   const balance = await ethers.provider.getBalance(deployer.address);
   console.log("Account balance:", ethers.formatEther(balance), "ETH\n");
 
-  const minBalanceRequired = ethers.parseEther(process.env.MIN_DEPLOY_BALANCE || "0.00001"); // Default to 0.00001 ETH if not set
+  // Track deployed contracts
+  let tokenAddress = null;
 
-  if (balance < minBalanceRequired) {
-    console.log("⚠️  Insufficient balance! Deployment requires at least", ethers.formatEther(minBalanceRequired), "ETH.");
-    console.log("   Current balance:", ethers.formatEther(balance), "ETH");
-    console.log("   Address:", deployer.address);
-    if (network === "base") {
-      console.log("   To deploy on mainnet, ensure your account has sufficient funds for gas.");
-    } else {
-      console.log("   Get testnet ETH from a faucet.");
-    }
-    return;
+  // Deploy GHOST Token (optional)
+  if (DEPLOY_TOKEN) {
+    console.log("📦 Deploying GhostWriterToken (GHOST)...");
+    const GhostWriterToken = await ethers.getContractFactory("GhostWriterToken");
+    const token = await GhostWriterToken.deploy();
+    await token.waitForDeployment();
+    tokenAddress = await token.getAddress();
+    console.log("✅ GhostWriterToken deployed to:", tokenAddress);
   }
 
   // Deploy LiquidityPool
-  console.log("📦 Deploying LiquidityPool...");
+  console.log("\n📦 Deploying LiquidityPool...");
   const LiquidityPool = await ethers.getContractFactory("LiquidityPool");
   const liquidityPool = await LiquidityPool.deploy();
   await liquidityPool.waitForDeployment();
   const liquidityPoolAddress = await liquidityPool.getAddress();
   console.log("✅ LiquidityPool deployed to:", liquidityPoolAddress);
-
-  // Deploy GhostWriterToken
-  console.log("\n📦 Deploying GhostWriterToken...");
-  const GhostWriterToken = await ethers.getContractFactory("GhostWriterToken");
-  const token = await GhostWriterToken.deploy();
-  await token.waitForDeployment();
-  const tokenAddress = await token.getAddress();
-  console.log("✅ GhostWriterToken deployed to:", tokenAddress);
 
   // Deploy PriceOracle
   console.log("\n📦 Deploying PriceOracle...");
@@ -118,30 +116,40 @@ async function main() {
     console.log("⚠️  STORY_TEMPLATE_SIGNER_ADDRESS not set; defaulting to deployer for development");
   }
 
+  // Set GHOST token address on contracts if token was deployed
+  if (DEPLOY_TOKEN && tokenAddress) {
+    console.log("\n🪙 Configuring GHOST token on contracts...");
+    
+    const tx4 = await storyManager.setGhostToken(tokenAddress);
+    await tx4.wait();
+    console.log("✅ GHOST token set on StoryManager");
+    
+    const tx5 = await liquidityPool.setGhostToken(tokenAddress);
+    await tx5.wait();
+    console.log("✅ GHOST token set on LiquidityPool");
+  }
+
   // Update .env
   console.log("\n📝 Updating .env file...");
   let envContent = fs.readFileSync('.env', 'utf8');
   
-  envContent = envContent.replace(
-    /NEXT_PUBLIC_NFT_CONTRACT_ADDRESS=.*/,
-    `NEXT_PUBLIC_NFT_CONTRACT_ADDRESS=${nftAddress}`
-  );
-  envContent = envContent.replace(
-    /NEXT_PUBLIC_STORY_MANAGER_ADDRESS=.*/,
-    `NEXT_PUBLIC_STORY_MANAGER_ADDRESS=${storyManagerAddress}`
-  );
-  envContent = envContent.replace(
-    /NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS=.*/,
-    `NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS=${liquidityPoolAddress}`
-  );
-  envContent = envContent.replace(
-    /NEXT_PUBLIC_PRICE_ORACLE_ADDRESS=.*/,
-    `NEXT_PUBLIC_PRICE_ORACLE_ADDRESS=${priceOracleAddress}`
-  );
-  envContent = envContent.replace(
-    /NEXT_PUBLIC_TOKEN_ADDRESS=.*/,
-    `NEXT_PUBLIC_TOKEN_ADDRESS=${tokenAddress}`
-  );
+  const updateEnvVar = (content, key, value) => {
+    const regex = new RegExp(`${key}=.*`);
+    if (regex.test(content)) {
+      return content.replace(regex, `${key}=${value}`);
+    } else {
+      return content + `\n${key}=${value}`;
+    }
+  };
+  
+  envContent = updateEnvVar(envContent, 'NEXT_PUBLIC_NFT_CONTRACT_ADDRESS', nftAddress);
+  envContent = updateEnvVar(envContent, 'NEXT_PUBLIC_STORY_MANAGER_ADDRESS', storyManagerAddress);
+  envContent = updateEnvVar(envContent, 'NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS', liquidityPoolAddress);
+  envContent = updateEnvVar(envContent, 'NEXT_PUBLIC_PRICE_ORACLE_ADDRESS', priceOracleAddress);
+  
+  if (DEPLOY_TOKEN && tokenAddress) {
+    envContent = updateEnvVar(envContent, 'NEXT_PUBLIC_TOKEN_ADDRESS', tokenAddress);
+  }
   
   fs.writeFileSync('.env', envContent);
   console.log("✅ .env file updated");
@@ -152,14 +160,14 @@ async function main() {
     deployer: deployer.address,
     timestamp: new Date().toISOString(),
     constructorArgs: {
-      GhostWriterToken: [],
+      ...(DEPLOY_TOKEN && { GhostWriterToken: [] }),
       GhostWriterNFT: [hiddenURI, revealedURI],
       StoryManager: [nftAddress, liquidityPoolAddress, priceOracleAddress],
       PriceOracle: [priceFeedAddress],
       LiquidityPool: []
     },
     contracts: {
-      GhostWriterToken: tokenAddress,
+      ...(DEPLOY_TOKEN && tokenAddress && { GhostWriterToken: tokenAddress }),
       GhostWriterNFT: nftAddress,
       StoryManager: storyManagerAddress,
       PriceOracle: priceOracleAddress,
@@ -167,16 +175,29 @@ async function main() {
     }
   };
 
+  if (!DEPLOY_TOKEN) {
+    deploymentInfo.notes = {
+      ghostToken: "To deploy GHOST token, run: npx hardhat run scripts/deploy.js --network <network> -- --with-token"
+    };
+  }
+
   fs.writeFileSync('deployment.json', JSON.stringify(deploymentInfo, null, 2));
-  console.log("✅ Deployment info saved");
+  console.log("✅ Deployment info saved to deployment.json");
 
   console.log("\n🎉 Deployment completed!");
   console.log("\n📋 Contract Addresses:");
-  console.log("   GhostWriterToken:", tokenAddress);
+  if (DEPLOY_TOKEN && tokenAddress) {
+    console.log("   GhostWriterToken (GHOST):", tokenAddress);
+  }
   console.log("   GhostWriterNFT:", nftAddress);
   console.log("   StoryManager:", storyManagerAddress);
   console.log("   PriceOracle:", priceOracleAddress);
   console.log("   LiquidityPool:", liquidityPoolAddress);
+  
+  if (!DEPLOY_TOKEN) {
+    console.log("\n📝 GHOST Token:");
+    console.log("   To deploy with token, add --with-token or -t flag");
+  }
   
   console.log("\n🔍 To verify contracts, run:");
   console.log("   npm run verify");

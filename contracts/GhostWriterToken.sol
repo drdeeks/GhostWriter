@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * - LiquidityPool currently custodies ETH fees; pairing / LP deployment is handled offchain.
  */
 contract GhostWriterToken is ERC20, Ownable {
-    constructor() ERC20("GhostWriter Token", "GWT") Ownable(msg.sender) {}
+    constructor() ERC20("Ghost Token", "GHOST") Ownable(msg.sender) {}
 
     function mint(address to, uint256 amount) external onlyOwner {
         require(to != address(0), "Invalid recipient");
