@@ -21,9 +21,17 @@ async function main() {
   const balance = await ethers.provider.getBalance(deployer.address);
   console.log("Account balance:", ethers.formatEther(balance), "ETH\n");
 
-  if (balance < ethers.parseEther("0.0001")) {
-    console.log("⚠️  Insufficient balance! Get ETH from faucet");
+  const minBalanceRequired = ethers.parseEther(process.env.MIN_DEPLOY_BALANCE || "0.00001"); // Default to 0.00001 ETH if not set
+
+  if (balance < minBalanceRequired) {
+    console.log("⚠️  Insufficient balance! Deployment requires at least", ethers.formatEther(minBalanceRequired), "ETH.");
+    console.log("   Current balance:", ethers.formatEther(balance), "ETH");
     console.log("   Address:", deployer.address);
+    if (network === "base") {
+      console.log("   To deploy on mainnet, ensure your account has sufficient funds for gas.");
+    } else {
+      console.log("   Get testnet ETH from a faucet.");
+    }
     return;
   }
 
