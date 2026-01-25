@@ -1,29 +1,34 @@
 import { CONTRACTS, STORY_MANAGER_ABI } from '@/lib/contracts';
 import type { Story, StoryType } from '@/types/ghostwriter';
-import { useReadContract } from 'wagmi';
+import { useReadContracts } from 'wagmi';
 
 export function useStories(storyIds: string[] | undefined) {
-  // Fetch all stories in parallel
-  const results = (storyIds || []).map((id) =>
-    useReadContract({
-      address: CONTRACTS.storyManager,
-      abi: STORY_MANAGER_ABI,
-      functionName: 'getStory',
-      args: [id],
-      query: { enabled: !!id },
-    })
-  );
+  const ids = (storyIds || []).filter(Boolean);
 
-  // Map to story objects and loading/error states
-  const stories = results
-    .map((r) => r.data)
+  const contracts = ids.map((id) => ({
+    address: CONTRACTS.storyManager,
+    abi: STORY_MANAGER_ABI,
+    functionName: 'getStory' as const,
+    args: [id] as const,
+  }));
+
+  const { data, isLoading, error, refetch } = useReadContracts({
+    contracts,
+    query: { 
+      enabled: contracts.length > 0,
+      staleTime: 1000 * 60, // 1 minute
+      gcTime: 1000 * 60 * 5, // 5 minutes
+      retry: 2,
+      retryDelay: 1000,
+    },
+  });
+
+  const stories = (data || [])
+    .map((r) => (r.status === 'success' ? (r.result as any) : null))
     .filter(Boolean)
     .map((story) => mapContractStory(story)) as Story[];
-  const isLoading = results.some((r) => r.isLoading);
-  const error = results.find((r) => r.error)?.error;
-  const refetchAll = () => results.forEach((r) => r.refetch && r.refetch());
 
-  return { stories, isLoading, error, refetchAll };
+  return { stories, isLoading, error, refetchAll: refetch };
 }
 
 // Normalize contract tuple into frontend Story shape
@@ -38,7 +43,7 @@ function mapContractStory(contractStory: any): Story {
     title: contractStory?.title ?? 'Untitled Story',
     template: contractStory?.template ?? '',
     storyType,
-    category: 'random',
+    category: mapStoryCategory(contractStory?.category),
     totalSlots: Number(contractStory?.totalSlots ?? 0),
     filledSlots: Number(contractStory?.filledSlots ?? 0),
     slotDetails: [],
@@ -47,7 +52,7 @@ function mapContractStory(contractStory: any): Story {
     completedAt,
     status,
     completionTimestamp: completedAt,
-    shareCount: 0,
+    shareCount: Number(contractStory?.shareCount ?? 0),
   };
 }
 
@@ -64,6 +69,34 @@ function mapStoryStatus(value: number | bigint | undefined, completedAt: string 
   if (value === undefined || value === null) return completedAt ? 'complete' : 'active';
   const numeric = typeof value === 'bigint' ? Number(value) : value;
   return numeric === 1 ? 'complete' : 'active';
+}
+
+function mapStoryCategory(value: number | bigint | undefined) {
+  if (value === undefined || value === null) return 'random';
+  const numeric = typeof value === 'bigint' ? Number(value) : value;
+
+  const categories = [
+    'adventure',
+    'fantasy',
+    'comedy',
+    'mystery',
+    'scifi',
+    'horror',
+    'romance',
+    'crypto',
+    'sports',
+    'animals',
+    'school',
+    'superheroes',
+    'friendship',
+    'holidays',
+    'food',
+    'nature',
+    'history',
+    'random',
+  ] as const;
+
+  return categories[numeric] ?? 'random';
 }
 
 function normalizeTimestamp(value: number | bigint | undefined): string | null {

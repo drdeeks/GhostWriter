@@ -1,7 +1,11 @@
-'use client';
+import React, { Suspense } from 'react';
 
-import { AdminDashboard } from '@/components/admin-dashboard';
+const AdminDashboard = React.lazy(() => import('@/components/admin/admin-dashboard').then((mod) => ({ default: mod.AdminDashboard })));
 
 export default function AdminPage() {
-  return <AdminDashboard />;
+  return (
+    <Suspense fallback={<div>Loading Admin Dashboard...</div>}>
+      <AdminDashboard />
+    </Suspense>
+  );
 }

@@ -2,6 +2,102 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - 2026-01-21
+
+### Fixed
+- **Critical Build Fix:** Resolved persistent `<Html> should not be imported outside of pages/_document` error during static page generation.
+  - **Root cause:** `NODE_ENV=development` during production builds caused Next.js to incorrectly bundle Pages Router internal error pages with App Router, triggering the Html import error.
+  - **Solution:** Build must use `NODE_ENV=production` (Next.js sets this automatically; do not override).
+- **Force dynamic rendering:** Added `export const dynamic = 'force-dynamic'` to root layout and page-specific layouts (`/admin`, `/leaderboard`) to prevent static prerendering of pages that use wagmi hooks requiring `WagmiProvider` context.
+- **App Router error pages:** Created `src/app/not-found.tsx` for 404 handling in App Router.
+
+### Added
+- **Leaderboard layout:** Added `src/app/leaderboard/layout.tsx` with `force-dynamic` export.
+- **Admin layout:** Added `src/app/admin/layout.tsx` with `force-dynamic` export.
+
+### Validated
+- `npm run build` ✅ (with `NODE_ENV=production`)
+- `npm run lint` ✅
+- `npm run ts-check` ✅
+- `npm test` ✅ (10 tests passing)
+
+---
+
+## [Previous Unreleased] - 2026-01-19 14:18:23Z
+
+### Added
+- **New documentation files:** Created comprehensive documentation under `docs/` covering setup, environment variables, AI, moderation, NFT media, and admin features.
+- **AI config API endpoint:** Added `/api/admin/ai-config` to expose current AI configuration from environment variables for the admin dashboard.
+
+### Changed
+- **Wallet Connect button:** Configured Wallet Connect to default to Farcaster wallet with injected, Coinbase Wallet, and WalletConnect as fallbacks.
+- **README.md rewrite:** Rewritten and de-duplicated `README.md` with a new structure, updated quickstart, and story specifications.
+- **`env.example` update:** Updated `env.example` with missing required and optional variables, including AI tuning and NFT background options, and a quick start comment block.
+- **StoryManager slot ranges:** Modified `StoryManager.sol` to enforce story slot count ranges (Mini: 5-10, Normal: 10-15, Epic: 15-25) instead of fixed values.
+- **Frontend story slot display:** Updated `src/components/story-creation-modal.tsx` and `src/app/page.tsx` to reflect story slot ranges instead of fixed counts.
+- **AI service configuration:** Made `src/lib/ai-service.ts` environment-driven for AI model, temperature, max tokens, timeout, and system prompt append.
+- **AI story slot generation:** Updated `src/lib/ai-service.ts` to generate a random number of slots within the defined range for each story type.
+- **Admin dashboard AI config:** Added display of current AI configuration in `src/components/admin-dashboard.tsx` from environment variables.
+- **Admin dashboard story slot validation:** Updated `src/components/admin-dashboard.tsx` to validate story template slot counts against the new ranges.
+- **Word moderation logic:** Consolidated `src/app/api/moderate-word/route.ts` to route through `aiService.moderateWord()` for consistent fallback and caching.
+- **NFT background image support:** Implemented dynamic background images for NFTs in `src/app/api/nft/[tokenId]/image/route.ts` based on category and environment variables (local, remote, and gradient fallbacks).
+- **Chain selection consistency:** Fixed `src/app/providers.tsx` to use `NEXT_PUBLIC_CHAIN_ID` for chain selection, aligning client with server routes.
+- **Production logging:** Gated noisy `console.log` statements in `src/app/providers.tsx` to only run in development environments.
+- **UI clarity for unconfigured contracts:** Enhanced UI clarity in `src/app/page.tsx` when contracts are not deployed by using a full-screen `LoadingScreen` with a custom message.
+
+### Fixed
+- **npm install:** Adjusted `npm install` instructions to include `--legacy-peer-deps` for dependency conflicts.
+
+### Build Process & Troubleshooting
+- **Frontend build failure (SSR useContext error):** Encountered a persistent `TypeError: Cannot read properties of null (reading 'useContext')` during prerendering of the `/_global-error` page (`digest: '791205151'`).
+  - **Attempts to fix:**
+    - Corrected TypeScript errors related to SVG template literals and variable scoping in `src/app/api/nft/[tokenId]/image/route.ts`.
+    - Corrected `farcasterMiniAppConnector` import and usage in `src/app/providers.tsx`.
+    - Moved `wagmiConfig` and `queryClient` initialization to client-side only within `src/app/providers.tsx` using `useState` and `useEffect`.
+    - Ensured React hooks `useState`, `useEffect`, `useMemo` were imported in `src/app/providers.tsx`.
+    - Created a custom, minimal `src/app/_global-error.tsx` marked as `'use client'` to prevent server-side context access.
+    - Implemented an explicit `typeof window === 'undefined'` check in `src/app/providers.tsx` to conditionally render content only on the client side during SSR.
+  - **Outcome:** Despite multiple attempts and common workarounds, the build continues to fail with the same `useContext` error during the prerendering of `/_global-error`. This indicates a deeper incompatibility or configuration issue between Next.js App Router's prerendering, React's context system, and `wagmi`'s setup that could not be resolved with available tools and information.
+
+### Completed
+- **Story creation UX updated for enterprise enforcement:** `StoryCreationModal` now requests **exactly 5** server-signed suggestions from `/api/generate-story`, requires user selection of 1/5, and then calls `createStoryApproved` (removes broken `createStory` usage).
+- **Category normalization:** story creation categories now use canonical keys (e.g. `scifi` not `sci-fi`) to keep frontend ↔ contract enum mapping deterministic.
+- **Slot-count consistency:** Epic stories now display/expect **35 slots** to match the onchain `EPIC_SLOTS` constant.
+- **AI service TypeScript fixed:** removed duplicated/stray legacy blocks in `src/lib/ai-service.ts` that were causing TypeScript parse failures.
+- **StoryManager deployability restored:** `StoryManager.sol` was exceeding the EIP-170 contract size limit; removed revert strings (kept checks) to reduce bytecode size below the 24KB limit.
+- **Hardhat optimizer tuned for size:** `hardhat.config.js` optimizer `runs` set to `1` to bias toward smaller bytecode for large contracts.
+- **Hooks correctness fixes (lint + correctness):**
+  - `useStories` refactored from invalid hook-in-loop `useReadContract` usage to `useReadContracts` batching.
+  - `ContributionModal` refactored to avoid conditional hooks by splitting into an inner component when `story` is present.
+  - `Leaderboard` refactored to derive state directly from hook results (removed setState-in-effect).
+  - `NFTCollection` refactored to avoid conditional `useMemo` usage.
+  - Fixed a couple of JSX unescaped entity violations.
+- **Build/validation status:**
+  - `npm run ts-check` ✅
+  - `npm run compile` ✅
+  - `npm test` ✅ (Hardhat)
+  - `npm run build` ✅ (Next.js)
+  - `npm run lint` ✅ (warnings remain)
+
+### Findings (incomplete/outdated)
+- **Next.js 16.1.1 no longer ships the `next lint` command** (CLI has no `lint` subcommand). Project linting needed migration to ESLint.
+- **Dependency constraints:** installing ESLint tooling required `npm install --legacy-peer-deps` due to existing peer dependency conflicts (notably Hardhat toolbox expecting older `@types/chai`).
+
+### Quality Notes
+- ESLint currently reports no errors.
+
+### Additional Updates - 2026-01-19 16:23:00Z
+- **NFT metadata/image hardening:** `/api/nft/[tokenId]` and `/api/nft/[tokenId]/image` now:
+  - Use correct chain/RPC selection (Base vs Base Sepolia)
+  - Use canonical `STORY_MANAGER_ABI` (fixes ABI mismatch risk as Story struct evolves)
+  - Fetch slots via multicall (performance + reliability)
+  - Escape and truncate SVG-injected fields (prevents SVG/XML injection)
+  - Correctly attribute creator NFT "Category" (story category enum) and add explicit "Story Type"
+- **Hardhat test coverage expanded:** added EIP-712 approval tests (valid/invalid/expired), auto-reveal on completion, and finalize idempotency.
+- **Deterministic oracle testing:** added `contracts/mocks/MockV3Aggregator.sol` so `PriceOracle` fee calculations work reliably in local tests.
+- **Lint cleanup:** resolved remaining ESLint warnings (PostCSS config default export + SelectContent hook deps).
+- **Farcaster user API cleanup:** removed unused chain client, switched to viem `isAddress` validation, and set `Cache-Control: no-store`.
+
 ## [2.0.0] - 2026-01-16 - SECURITY & OPTIMIZATION RELEASE
 
 ### 🔒 Critical Security Fixes (40 Bugs Fixed)

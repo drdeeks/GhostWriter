@@ -1,15 +1,5 @@
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
-
-// Lazy initialization of OpenAI client
-function getOpenAIClient() {
-  if (!process.env.OPENAI_API_KEY) {
-    return null;
-  }
-  return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-}
+import { aiService } from '@/lib/ai-service'; // Import aiService
 
 /**
  * AI-powered word moderation using OpenAI
@@ -23,58 +13,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
 
-    // Validate word length
-    if (word.length < 3 || word.length > 30) {
-      return NextResponse.json({ 
-        isProfane: false,
-        reason: 'Word length validation failed'
-      });
-    }
+    const moderationResult = await aiService.moderateWord(word);
 
-    // Check if OpenAI API key is configured
-    if (!process.env.OPENAI_API_KEY) {
-      // Fallback to basic validation if OpenAI is not configured
-      console.warn('OPENAI_API_KEY not configured, using basic validation');
-      return NextResponse.json({ 
-        isProfane: false,
-        reason: 'AI moderation not available'
-      });
-    }
-
-    try {
-      const openai = getOpenAIClient();
-      if (!openai) {
-        return NextResponse.json({
-          isProfane: false,
-          reason: 'AI moderation not available',
-        });
-      }
-
-      // Use OpenAI to moderate the word
-      const moderationResponse = await openai.moderations.create({
-        input: word,
-      });
-
-      const isProfane = moderationResponse.results[0]?.flagged || false;
-      const categories = moderationResponse.results[0]?.categories || {};
-      const categoryScores = moderationResponse.results[0]?.category_scores || {};
-
+    if (!moderationResult.isAppropriate) {
       return NextResponse.json({
-        isProfane,
-        categories,
-        categoryScores,
-        reason: isProfane ? 'Word flagged by AI moderation' : 'Word approved',
-      });
-    } catch (openaiError: any) {
-      console.error('OpenAI moderation error:', openaiError);
-      
-      // Fallback: use basic validation if OpenAI fails
-      return NextResponse.json({
-        isProfane: false,
-        reason: 'AI moderation unavailable, using fallback',
-        error: openaiError.message,
+        isProfane: true,
+        reason: moderationResult.suggestion || 'Word flagged by moderation',
+        categories: moderationResult.categories,
       });
     }
+
+    return NextResponse.json({
+      isProfane: false,
+      reason: 'Word approved',
+    });
+
   } catch (error: any) {
     console.error('Word moderation error:', error);
     return NextResponse.json(
@@ -83,3 +36,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

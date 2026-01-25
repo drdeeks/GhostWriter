@@ -6,6 +6,9 @@ const nextConfig = {
   // Production best practices
   poweredByHeader: false,
   reactStrictMode: true,
+  
+  // Skip static generation of error pages (Farcaster miniapp is dynamic)
+  output: 'standalone',
 
   // Modern image optimization (replaces deprecated domains)
   images: {

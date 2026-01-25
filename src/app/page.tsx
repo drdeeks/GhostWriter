@@ -19,12 +19,12 @@ const ContributionModal = React.lazy(() =>
   })),
 );
 const StoryCreationModal = React.lazy(() =>
-  import('@/components/story-creation-modal').then((mod) => ({
+  import('@/components/story/story-creation-modal').then((mod) => ({
     default: mod.StoryCreationModal,
   })),
 );
 const StoryCompletionModal = React.lazy(() =>
-  import('@/components/story-completion-modal').then((mod) => ({
+  import('@/components/story/story-completion-modal').then((mod) => ({
     default: mod.StoryCompletionModal,
   })),
 );
@@ -33,10 +33,15 @@ const LoadingScreen = React.lazy(() =>
     default: mod.LoadingScreen,
   })),
 );
+const UserStatsDisplay = React.lazy(() =>
+  import('@/components/user/user-stats').then((mod) => ({
+    default: mod.UserStatsDisplay,
+  })),
+);
 
 import { NFTCollection } from '@/components/nft-collection';
-import { StoryCard } from '@/components/story-card';
-import { UserStatsDisplay } from '@/components/user-stats';
+import { StoryCard } from '@/components/story/story-card';
+
 import { RefundBanner } from '@/components/refund-banner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -73,20 +78,43 @@ export default function Home() {
   const [farcasterUser, setFarcasterUser] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Max loading timeout to prevent indefinite hanging
+  const MAX_LOADING_TIME = 10000;
 
   // Contract data with performance monitoring
   const { storyIds, isLoading: storyIdsLoading, refetch: refetchStories } = useAllStories();
   const { stories, isLoading: storiesLoading, refetchAll } = useStories(storyIds);
   const { stats: userStats, refetch: refetchStats } = useUserStats(address);
 
-  // Enhanced Farcaster initialization
+  // Enhanced Farcaster initialization with guaranteed completion
   useEffect(() => {
+    let mounted = true;
+    let initTimeoutId: NodeJS.Timeout | null = null;
+    let maxLoadingTimeoutId: NodeJS.Timeout | null = null;
+    
+    const cleanup = () => {
+      if (initTimeoutId) clearTimeout(initTimeoutId);
+      if (maxLoadingTimeoutId) clearTimeout(maxLoadingTimeoutId);
+    };
+    
+    const finishLoading = () => {
+      if (!mounted) return;
+      cleanup();
+      setIsInitialized(true);
+      setTimeout(() => {
+        if (mounted) setIsLoading(false);
+      }, 500);
+    };
+    
+    // Absolute max loading time - guarantees no hanging
+    maxLoadingTimeoutId = setTimeout(() => {
+      console.warn('Max loading time reached, forcing completion');
+      finishLoading();
+    }, MAX_LOADING_TIME);
+    
     const init = async () => {
-      let timeoutId: NodeJS.Timeout | null = null;
-      
       try {
-        setIsLoading(true);
-        
         const initPromise = performance.measureAsync('farcaster-init', async () => {
           await farcaster.initialize();
           const context = farcaster.getContext();
@@ -98,26 +126,25 @@ export default function Home() {
           }
         });
         
-        // Bug #38 fix: Clear timeout on success
         const timeoutPromise = new Promise((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error('Initialization timeout')), 5000);
+          initTimeoutId = setTimeout(() => reject(new Error('Initialization timeout')), 5000);
         });
         
         await Promise.race([initPromise, timeoutPromise]);
-        
-        // Clear timeout if init succeeded
-        if (timeoutId) clearTimeout(timeoutId);
       } catch (error) {
         console.error('Initialization failed:', error);
-        if (timeoutId) clearTimeout(timeoutId);
       } finally {
-        setIsInitialized(true);
-        setTimeout(() => setIsLoading(false), 500);
+        finishLoading();
       }
     };
 
     init();
-  }, [farcaster, haptic, performance]);
+    
+    return () => {
+      mounted = false;
+      cleanup();
+    };
+  }, [farcaster, haptic, performance, MAX_LOADING_TIME]);
 
   const contractsDeployed = areContractsDeployed();
 
@@ -231,6 +258,14 @@ export default function Home() {
     );
   }
 
+  if (!contractsDeployed) {
+    return (
+      <Suspense fallback={null}>
+        <LoadingScreen isLoading={true} message="Smart contracts not yet deployed. Please deploy and update .env" />
+      </Suspense>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 relative overflow-hidden">
       {/* Enhanced ambient effects for mobile */}
@@ -291,17 +326,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Contract warning */}
-        {!contractsDeployed && (
-          <Alert className="mb-8 border-2 border-orange-500/50 bg-orange-950/30 backdrop-blur-sm">
-            <AlertCircle className="h-4 w-4 text-orange-400" />
-            <AlertDescription className="text-orange-200">
-              Smart contracts not yet deployed. Please deploy contracts and update .env with addresses.
-              <br />
-              <code className="text-xs mt-2 block text-orange-300">npm run deploy:baseSepolia</code>
-            </AlertDescription>
-          </Alert>
-        )}
+
 
         {/* Refund Banner */}
         {address && <RefundBanner />}
@@ -309,19 +334,21 @@ export default function Home() {
         {/* User Stats */}
         {contractsDeployed && address && (
           <div className="mb-10">
-            <UserStatsDisplay
-              stats={{
-                address: address,
-                contributionsCount: userStats?.contributionsCount ?? 0,
-                creationCredits: userStats?.creationCredits ?? 0,
-                storiesCreated: userStats?.storiesCreated ?? 0,
-                nftsOwned: userStats?.nftsOwned ?? 0,
-                completedStories: userStats?.completedStories ?? 0,
-                shareCount: userStats?.shareCount ?? 0,
-                lastContributionTime: userStats?.lastContributionTime ?? 0,
-                activeContributions: userStats?.activeContributions ?? [],
-              }}
-            />
+            <Suspense fallback={null}>
+              <UserStatsDisplay
+                stats={{
+                  address: address,
+                  contributionsCount: userStats?.contributionsCount ?? 0,
+                  creationCredits: userStats?.creationCredits ?? 0,
+                  storiesCreated: userStats?.storiesCreated ?? 0,
+                  nftsOwned: userStats?.nftsOwned ?? 0,
+                  completedStories: userStats?.completedStories ?? 0,
+                  shareCount: userStats?.shareCount ?? 0,
+                  lastContributionTime: userStats?.lastContributionTime ?? 0,
+                  activeContributions: userStats?.activeContributions ?? [],
+                }}
+              />
+            </Suspense>
           </div>
         )}
 
@@ -551,15 +578,15 @@ export default function Home() {
                   <CardContent className="space-y-3 md:space-y-4">
                     <div className="space-y-2 md:space-y-3">
                       <div className="border-l-4 border-cyan-500 pl-3 md:pl-4">
-                        <p className="font-semibold text-cyan-400 text-fluid-sm md:text-fluid-base">Mini (10 slots)</p>
+                        <p className="font-semibold text-cyan-400 text-fluid-sm md:text-fluid-base">Mini (5-10 slots)</p>
                         <p className="text-fluid-xs md:text-fluid-sm text-gray-400 break-words">Quick fun stories</p>
                       </div>
                       <div className="border-l-4 border-purple-500 pl-3 md:pl-4">
-                        <p className="font-semibold text-purple-400 text-fluid-sm md:text-fluid-base">Normal (20 slots)</p>
+                        <p className="font-semibold text-purple-400 text-fluid-sm md:text-fluid-base">Normal (10-15 slots)</p>
                         <p className="text-fluid-xs md:text-fluid-sm text-gray-400 break-words">Balanced length</p>
                       </div>
                       <div className="border-l-4 border-orange-500 pl-3 md:pl-4">
-                        <p className="font-semibold text-orange-400 text-fluid-sm md:text-fluid-base">Epic (200 slots)</p>
+                        <p className="font-semibold text-orange-400 text-fluid-sm md:text-fluid-base">Epic (15-25 slots)</p>
                         <p className="text-fluid-xs md:text-fluid-sm text-gray-400 break-words">Massive collaboration</p>
                       </div>
                     </div>
