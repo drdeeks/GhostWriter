@@ -21,7 +21,7 @@ async function main() {
   const balance = await ethers.provider.getBalance(deployer.address);
   console.log("Account balance:", ethers.formatEther(balance), "ETH\n");
 
-  if (balance < ethers.parseEther("0.001")) {
+  if (balance < ethers.parseEther("0.0001")) {
     console.log("⚠️  Insufficient balance! Get ETH from faucet");
     console.log("   Address:", deployer.address);
     return;

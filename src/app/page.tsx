@@ -19,12 +19,12 @@ const ContributionModal = React.lazy(() =>
   })),
 );
 const StoryCreationModal = React.lazy(() =>
-  import('@/components/story-creation-modal').then((mod) => ({
+  import('@/components/story/story-creation-modal').then((mod) => ({
     default: mod.StoryCreationModal,
   })),
 );
 const StoryCompletionModal = React.lazy(() =>
-  import('@/components/story-completion-modal').then((mod) => ({
+  import('@/components/story/story-completion-modal').then((mod) => ({
     default: mod.StoryCompletionModal,
   })),
 );
@@ -33,10 +33,15 @@ const LoadingScreen = React.lazy(() =>
     default: mod.LoadingScreen,
   })),
 );
+const UserStatsDisplay = React.lazy(() =>
+  import('@/components/user/user-stats').then((mod) => ({
+    default: mod.UserStatsDisplay,
+  })),
+);
 
 import { NFTCollection } from '@/components/nft-collection';
-import { StoryCard } from '@/components/story-card';
-import { UserStatsDisplay } from '@/components/user-stats';
+import { StoryCard } from '@/components/story/story-card';
+
 import { RefundBanner } from '@/components/refund-banner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -307,19 +312,21 @@ export default function Home() {
         {/* User Stats */}
         {contractsDeployed && address && (
           <div className="mb-10">
-            <UserStatsDisplay
-              stats={{
-                address: address,
-                contributionsCount: userStats?.contributionsCount ?? 0,
-                creationCredits: userStats?.creationCredits ?? 0,
-                storiesCreated: userStats?.storiesCreated ?? 0,
-                nftsOwned: userStats?.nftsOwned ?? 0,
-                completedStories: userStats?.completedStories ?? 0,
-                shareCount: userStats?.shareCount ?? 0,
-                lastContributionTime: userStats?.lastContributionTime ?? 0,
-                activeContributions: userStats?.activeContributions ?? [],
-              }}
-            />
+            <Suspense fallback={null}>
+              <UserStatsDisplay
+                stats={{
+                  address: address,
+                  contributionsCount: userStats?.contributionsCount ?? 0,
+                  creationCredits: userStats?.creationCredits ?? 0,
+                  storiesCreated: userStats?.storiesCreated ?? 0,
+                  nftsOwned: userStats?.nftsOwned ?? 0,
+                  completedStories: userStats?.completedStories ?? 0,
+                  shareCount: userStats?.shareCount ?? 0,
+                  lastContributionTime: userStats?.lastContributionTime ?? 0,
+                  activeContributions: userStats?.activeContributions ?? [],
+                }}
+              />
+            </Suspense>
           </div>
         )}
 

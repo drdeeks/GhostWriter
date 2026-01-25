@@ -7,12 +7,12 @@ import { AlertCircle, DollarSign, Loader2, PlusCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useAccount } from 'wagmi';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Card, CardContent } from './ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
-import { Label } from './ui/label';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Label } from '../ui/label';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 type StorySuggestion = {
   storyId: string;
@@ -214,7 +214,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
             <Label className="text-base font-semibold mb-4 block">Choose Story Category:</Label>
             <RadioGroup
               value={selectedCategory}
-              onValueChange={(value) => {
+              onValueChange={(value: string) => {
                 setSelectedCategory(value);
                 resetSuggestions();
               }}

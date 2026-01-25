@@ -13,9 +13,6 @@ import FarcasterWrapper from '@/components/FarcasterWrapper';
 import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID, isOnchainKitConfigured } from './config/onchainkit';
 
 export function ClientProviders({ children }: { children: ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-  const [wagmiConfig, setWagmiConfig] = useState<ReturnType<typeof createConfig> | null>(null);
-
   const queryClient = useMemo(() => new QueryClient({
     defaultOptions: {
       queries: {
@@ -32,37 +29,31 @@ export function ClientProviders({ children }: { children: ReactNode }) {
     },
   }), []);
 
-  useEffect(() => {
-    const config = createConfig({
-      chains: [base, baseSepolia],
-      connectors: [
-        farcasterMiniAppConnector(),
-        injected(),
-        coinbaseWallet({
-          appName: 'Ghost Writer',
-          appLogoUrl: 'https://ghostwriter.meme/icon.png',
-        }),
-        walletConnect({
-          projectId: ONCHAINKIT_PROJECT_ID,
-        }),
-      ],
-      transports: {
-        [base.id]: http(),
-        [baseSepolia.id]: http(),
-      },
-      ssr: false,
-    });
-    setWagmiConfig(config);
-    setMounted(true);
+  const wagmiConfig = createConfig({
+    chains: [base, baseSepolia],
+    connectors: [
+      farcasterMiniAppConnector(),
+      injected(),
+      coinbaseWallet({
+        appName: 'Ghost Writer',
+        appLogoUrl: 'https://ghostwriter.meme/icon.png',
+      }),
+      walletConnect({
+        projectId: ONCHAINKIT_PROJECT_ID,
+      }),
+    ],
+    transports: {
+      [base.id]: http(),
+      [baseSepolia.id]: http(),
+    },
+    ssr: false,
+  });
 
+  useEffect(() => {
     import('@/lib/performance').then(({ PerformanceMonitor }) => {
       PerformanceMonitor.getInstance().initialize();
     });
   }, []);
-
-  if (!mounted || !wagmiConfig) {
-    return <>{children}</>;
-  }
 
   const chain = Number(process.env.NEXT_PUBLIC_CHAIN_ID) === base.id ? base : baseSepolia;
 
