@@ -4,12 +4,13 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'sonner';
 import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownLink, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
+import { Avatar, Name, Identity, Address, EthBalance } from '@coinbase/onchainkit/identity';
 
 // ── Enhanced Hooks ───────────────────────────────────────
 import { useHaptic } from '@/lib/haptic';
 import { useFarcasterEnhanced } from '@/lib/farcaster-enhanced';
 import { usePerformanceMonitor } from '@/lib/performance';
-import { useAllStories, useUserStats } from '@/hooks/useContract';
+import { useAllStories, useUserStats, useIsOwner } from '@/hooks/useContract';
 import { useStories } from '@/hooks/useStories';
 
 // ── Lazy Components ──────────────────────────────────────
@@ -59,6 +60,7 @@ import {
   Trophy,
   Smartphone,
   Zap,
+  Shield,
 } from 'lucide-react';
 
 import { areContractsDeployed } from '@/lib/contracts';
@@ -86,6 +88,7 @@ export default function Home() {
   const { storyIds, isLoading: storyIdsLoading, refetch: refetchStories } = useAllStories();
   const { stories, isLoading: storiesLoading, refetchAll } = useStories(storyIds);
   const { stats: userStats, refetch: refetchStats } = useUserStats(address);
+  const { isOwner } = useIsOwner(address);
 
   // Enhanced Farcaster initialization with guaranteed completion
   useEffect(() => {
@@ -297,25 +300,37 @@ export default function Home() {
             </div>
           )}
 
-          {/* Mobile-optimized address display */}
-          {address ? (
-            <div className="flex items-center justify-center gap-2 mt-2">
-              <Wallet>
-                <ConnectWallet>
-                  <WalletDropdown>
-                    <WalletDropdownLink icon="wallet" href="https://keys.coinbase.com">
-                      Wallet
-                    </WalletDropdownLink>
-                    <WalletDropdownDisconnect />
-                  </WalletDropdown>
-                </ConnectWallet>
-              </Wallet>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center mt-4">
-              <ConnectWallet className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200" />
-            </div>
-          )}
+          {/* Wallet display with proper styling */}
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <Wallet>
+              <ConnectWallet className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white font-semibold px-4 py-2 rounded-xl transition-all duration-200">
+                <Avatar className="h-6 w-6" />
+                <Name />
+              </ConnectWallet>
+              <WalletDropdown>
+                <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                  <Avatar />
+                  <Name />
+                  <Address />
+                  <EthBalance />
+                </Identity>
+                <WalletDropdownLink icon="wallet" href="https://keys.coinbase.com">
+                  Wallet Dashboard
+                </WalletDropdownLink>
+                <WalletDropdownDisconnect />
+              </WalletDropdown>
+            </Wallet>
+
+            {/* Admin Dashboard button - only visible to contract owner */}
+            {isOwner && (
+              <a href="/admin">
+                <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-4 py-2 rounded-xl transition-all duration-200 flex items-center gap-2 h-10">
+                  <Shield className="h-4 w-4" />
+                  Admin Dashboard
+                </Button>
+              </a>
+            )}
+          </div>
 
           {/* Mini-app indicator */}
           {farcaster.isInMiniApp() && (
