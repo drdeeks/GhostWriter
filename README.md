@@ -2,8 +2,6 @@
 
 AI-powered collaborative storytelling NFT game on Base Chain. Players contribute words to community-created stories, minting unique NFTs for each contribution.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Built on Base](https://img.shields.io/badge/Built%20on-Base-blue)](https://base.org)
 
 ---
 
