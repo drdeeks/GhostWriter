@@ -139,6 +139,10 @@ export function useStory(storyId: string | undefined) {
     args: storyId ? [storyId] : undefined,
     query: {
       enabled: !!storyId,
+      staleTime: 1000 * 30, // 30 seconds
+      gcTime: 1000 * 60 * 5, // 5 minutes
+      retry: 2,
+      retryDelay: 1000,
     },
   });
 
@@ -158,6 +162,12 @@ export function useAllStories() {
     address: CONTRACTS.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getAllStoryIds',
+    query: {
+      staleTime: 1000 * 60, // 1 minute
+      gcTime: 1000 * 60 * 5, // 5 minutes
+      retry: 2,
+      retryDelay: 1000,
+    },
   });
 
   return {
@@ -179,6 +189,10 @@ export function useUserStats(address: `0x${string}` | undefined) {
     args: address ? [address] : undefined,
     query: {
       enabled: !!address,
+      staleTime: 1000 * 30, // 30 seconds
+      gcTime: 1000 * 60 * 5, // 5 minutes
+      retry: 2,
+      retryDelay: 1000,
     },
   });
 
