@@ -20,6 +20,9 @@ contract StoryManager is Ownable, ReentrancyGuard, EIP712 {
     GhostWriterNFT public nftContract;
     LiquidityPool public liquidityPool;
     PriceOracle public priceOracle;
+    
+    // GHOST token address (set by owner after deployment)
+    address public ghostToken;
 
     // Fee amounts in USD cents (5 cents and 10 cents)
     uint256 public constant CONTRIBUTION_FEE_USD_CENTS = 5;
@@ -210,6 +213,7 @@ contract StoryManager is Ownable, ReentrancyGuard, EIP712 {
     event EmergencyWithdrawal(address indexed owner, uint256 amount);
     event StoryTemplateSignerUpdated(address indexed newSigner);
     event StoryFinalized(string indexed storyId, uint256 indexed creatorTokenId);
+    event GhostTokenUpdated(address indexed newToken);
 
     constructor(
         address _nftContract,
@@ -232,6 +236,15 @@ contract StoryManager is Ownable, ReentrancyGuard, EIP712 {
         require(signer != address(0));
         storyTemplateSigner = signer;
         emit StoryTemplateSignerUpdated(signer);
+    }
+
+    /**
+     * @dev Set the GHOST token address (only owner)
+     */
+    function setGhostToken(address _ghostToken) external onlyOwner {
+        require(_ghostToken != address(0));
+        ghostToken = _ghostToken;
+        emit GhostTokenUpdated(_ghostToken);
     }
 
     /**
