@@ -231,6 +231,14 @@ export default function Home() {
     );
   }
 
+  if (!contractsDeployed) {
+    return (
+      <Suspense fallback={null}>
+        <LoadingScreen isLoading={true} message="Smart contracts not yet deployed. Please deploy and update .env" />
+      </Suspense>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 relative overflow-hidden">
       {/* Enhanced ambient effects for mobile */}
@@ -291,17 +299,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Contract warning */}
-        {!contractsDeployed && (
-          <Alert className="mb-8 border-2 border-orange-500/50 bg-orange-950/30 backdrop-blur-sm">
-            <AlertCircle className="h-4 w-4 text-orange-400" />
-            <AlertDescription className="text-orange-200">
-              Smart contracts not yet deployed. Please deploy contracts and update .env with addresses.
-              <br />
-              <code className="text-xs mt-2 block text-orange-300">npm run deploy:baseSepolia</code>
-            </AlertDescription>
-          </Alert>
-        )}
+
 
         {/* Refund Banner */}
         {address && <RefundBanner />}
@@ -551,15 +549,15 @@ export default function Home() {
                   <CardContent className="space-y-3 md:space-y-4">
                     <div className="space-y-2 md:space-y-3">
                       <div className="border-l-4 border-cyan-500 pl-3 md:pl-4">
-                        <p className="font-semibold text-cyan-400 text-fluid-sm md:text-fluid-base">Mini (10 slots)</p>
+                        <p className="font-semibold text-cyan-400 text-fluid-sm md:text-fluid-base">Mini (5-10 slots)</p>
                         <p className="text-fluid-xs md:text-fluid-sm text-gray-400 break-words">Quick fun stories</p>
                       </div>
                       <div className="border-l-4 border-purple-500 pl-3 md:pl-4">
-                        <p className="font-semibold text-purple-400 text-fluid-sm md:text-fluid-base">Normal (20 slots)</p>
+                        <p className="font-semibold text-purple-400 text-fluid-sm md:text-fluid-base">Normal (10-15 slots)</p>
                         <p className="text-fluid-xs md:text-fluid-sm text-gray-400 break-words">Balanced length</p>
                       </div>
                       <div className="border-l-4 border-orange-500 pl-3 md:pl-4">
-                        <p className="font-semibold text-orange-400 text-fluid-sm md:text-fluid-base">Epic (200 slots)</p>
+                        <p className="font-semibold text-orange-400 text-fluid-sm md:text-fluid-base">Epic (15-25 slots)</p>
                         <p className="text-fluid-xs md:text-fluid-sm text-gray-400 break-words">Massive collaboration</p>
                       </div>
                     </div>

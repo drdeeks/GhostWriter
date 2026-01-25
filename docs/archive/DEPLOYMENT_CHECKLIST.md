@@ -291,8 +291,8 @@ NEXT_PUBLIC_BASE_URL=https://yourapp.com
 
 ---
 
-**Status**: 🟡 Ready for Testnet Deployment  
-**Next Milestone**: Complete testnet testing  
+**Status**: 🟡 Ready for Testnet Deployment
+**Next Milestone**: Complete testnet testing
 **Target Mainnet**: After successful testnet + audit
 
 ---
