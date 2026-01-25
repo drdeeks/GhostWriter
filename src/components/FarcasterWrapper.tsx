@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import { sdk } from '@farcaster/miniapp-sdk';
 
 interface FarcasterContextType {
     isMiniApp: boolean;
@@ -31,54 +32,62 @@ export default function FarcasterWrapper({ children }: FarcasterWrapperProps) {
         // Add timeout to prevent infinite loading
         const readyTimeout = setTimeout(() => {
             setIsReady(true);
-        }, 1000); // Force ready after 1 second max
+        }, 2000); // Force ready after 2 seconds max
 
-        const checkMiniAppContext = async () => {
+        const initializeFarcaster = async () => {
             try {
                 // Check for Farcaster miniapp environment
                 const isInMiniApp = typeof window !== 'undefined' &&
                     (window.location.search.includes('miniapp=true') ||
                         window.parent !== window ||
-                        document.referrer.includes('farcaster') ||
-                        // Check for Farcaster SDK
-                        !!(window as any).farcasterMiniApp);
+                        document.referrer.includes('farcaster'));
 
                 setIsMiniApp(isInMiniApp);
 
-                // If in miniapp context, try to initialize Farcaster SDK
-                if (isInMiniApp && (window as any).farcasterMiniApp) {
+                // If in miniapp context, initialize SDK
+                if (isInMiniApp) {
                     try {
-                        const sdk = (window as any).farcasterMiniApp;
-                        // Don't wait indefinitely for SDK ready
-                        const readyPromise = Promise.race([
-                            sdk.ready?.() || Promise.resolve(),
-                            new Promise(resolve => setTimeout(resolve, 500))
-                        ]);
-                        
-                        await readyPromise;
-                        
-                        // Try to get user context
-                        const context = await sdk.context?.();
+                        // Get user context
+                        const context = await sdk.context;
                         if (context?.user) {
                             setFarcasterUser(context.user);
                         }
+
+                        // CRITICAL: Tell Farcaster the app is ready to display
+                        // This dismisses the splash screen
+                        await sdk.actions.ready();
+                        
+                        console.log('Farcaster SDK initialized and ready called');
                     } catch (sdkError) {
-                        console.warn('Farcaster SDK initialization error:', sdkError);
-                        // Continue anyway - don't block the app
+                        console.warn('Farcaster SDK error:', sdkError);
+                        // Still try to call ready even if there's an error
+                        try {
+                            await sdk.actions.ready();
+                        } catch (e) {
+                            console.warn('Failed to call sdk.actions.ready:', e);
+                        }
+                    }
+                } else {
+                    // Not in miniapp, still try to call ready as a fallback
+                    try {
+                        await sdk.actions.ready();
+                    } catch (e) {
+                        // Ignore error if not in Farcaster context
+                        console.log('Not in Farcaster miniapp context');
                     }
                 }
                 
                 setIsReady(true);
                 clearTimeout(readyTimeout);
             } catch (error) {
-                console.warn('Error checking miniapp context:', error);
+                console.warn('Error initializing Farcaster:', error);
                 setIsMiniApp(false);
                 setIsReady(true);
                 clearTimeout(readyTimeout);
             }
         };
 
-        checkMiniAppContext();
+        initializeFarcaster();
 
         return () => clearTimeout(readyTimeout);
     }, []);
@@ -89,7 +98,7 @@ export default function FarcasterWrapper({ children }: FarcasterWrapperProps) {
         isReady,
     };
 
-    // Don't render children until ready to prevent splash hang
+    // Don't render children until ready
     if (!isReady) {
         return null;
     }
