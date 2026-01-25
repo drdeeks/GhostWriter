@@ -9,8 +9,6 @@
     "name": "Ghost Writer",
     "iconUrl": "https://ghost-writer-three.vercel.app/icon.png",
     "homeUrl": "https://ghost-writer-three.vercel.app",
-    "imageUrl": "https://ghost-writer-three.vercel.app/hero.png",
-    "buttonTitle": "Start Writing",
     "splashImageUrl": "https://ghost-writer-three.vercel.app/splash.png",
     "splashBackgroundColor": "#0f172a",
     "webhookUrl": "https://ghost-writer-three.vercel.app/api/webhook"
@@ -26,13 +24,7 @@
     "subtitle": "Storytelling NFT Game",
     "description": "Collaborative storytelling where contributions mint hidden NFTs that reveal when stories complete. Each word earns creation credits on Base Chain.",
     "primaryCategory": "games",
-    "tags": [
-      "nft",
-      "storytelling",
-      "collaborative",
-      "community",
-      "rewards"
-    ],
+    "tags": ["nft", "storytelling", "collaborative", "community", "rewards"],
     "heroImageUrl": "https://ghost-writer-three.vercel.app/hero.png",
     "tagline": "Build stories together",
     "ogTitle": "Ghost Writer - NFT Game",
@@ -76,25 +68,6 @@
       "label": "Ghost Writer main interface"
     }
   ],
-  "farcaster": {
-    "miniapp": {
-      "version": "2.0",
-      "frame_url": "/",
-      "splash_image_url": "/splash.png",
-      "background_color": "#0f172a",
-      "theme_color": "#06b6d4",
-      "supports_haptic": true,
-      "supports_notifications": true,
-      "optimized_for_mobile": true,
-      "features": [
-        "collaborative_storytelling",
-        "nft_rewards",
-        "ai_generation",
-        "haptic_feedback",
-        "real_time_updates"
-      ]
-    }
-  },
   "shortcuts": [
     {
       "name": "Create Story",
