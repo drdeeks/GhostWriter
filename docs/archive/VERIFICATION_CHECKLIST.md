@@ -31,7 +31,7 @@ Run these commands and verify:
 npm test
 # Expected: 6/6 passing
 
-# Frontend tests  
+# Frontend tests
 npm run test:frontend
 # Expected: 3/3 passing
 

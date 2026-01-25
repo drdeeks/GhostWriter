@@ -39,7 +39,7 @@
   - "How to Play" → "Guide"
   - "My NFTs" → "NFTs"
 
-- **Responsive Layout**: 
+- **Responsive Layout**:
   - Vertical stack on mobile (icon + text + count)
   - Horizontal on desktop
   - Smaller text on mobile (xs) vs desktop (base)

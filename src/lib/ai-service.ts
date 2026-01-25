@@ -7,6 +7,10 @@ interface AIConfig {
   timeout: number;
   fallbackEnabled: boolean;
   cacheEnabled: boolean;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  systemPromptAppend: string;
 }
 
 interface GeneratedStory {
@@ -37,9 +41,13 @@ export class AIService {
   constructor(config: Partial<AIConfig> = {}) {
     this.config = {
       maxRetries: 3,
-      timeout: 10000,
+      timeout: parseInt(process.env.OPENAI_TIMEOUT_MS || '10000', 10),
       fallbackEnabled: true,
       cacheEnabled: true,
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      temperature: parseFloat(process.env.OPENAI_TEMPERATURE || '0.9'),
+      maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS || '700', 10),
+      systemPromptAppend: process.env.AI_STORY_SYSTEM_PROMPT_APPEND || '',
       ...config,
     };
     
@@ -180,9 +188,16 @@ export class AIService {
   }
 
   private expectedSlots(storyType: StoryTypeName): number {
-    if (storyType === 'mini') return 10;
-    if (storyType === 'normal') return 20;
-    return 35;
+    if (storyType === 'mini') {
+      // 5-10 slots
+      return Math.floor(Math.random() * (10 - 5 + 1) + 5);
+    }
+    if (storyType === 'normal') {
+      // 10-15 slots
+      return Math.floor(Math.random() * (15 - 10 + 1) + 10);
+    }
+    // 15-25 slots for epic
+    return Math.floor(Math.random() * (25 - 15 + 1) + 15);
   }
 
   private async generateWithAI(
@@ -192,7 +207,7 @@ export class AIService {
     if (!this.openai) throw new Error('OpenAI not initialized');
 
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: this.config.model,
       messages: [
         {
           role: 'system',
@@ -206,15 +221,16 @@ Requirements:
 - Use valid word types: adjective, noun, verb, adverb, plural_noun, past_tense_verb, verb_ing, persons_name, place, number, color, body_part, food, animal, exclamation, emotion
 - Make it fun, creative, and appropriate for all ages
 - Provide a catchy title
-- Format: Title on first line, story on subsequent lines`,
+- Format: Title on first line, story on subsequent lines
+${this.config.systemPromptAppend}`,
         },
         {
           role: 'user',
           content: `Generate a ${categoryObj.name.toLowerCase()} story with exactly ${expectedSlots} placeholders.`,
         },
       ],
-      temperature: 0.9,
-      max_tokens: 700,
+      temperature: this.config.temperature,
+      max_tokens: this.config.maxTokens,
     });
 
     const generatedText = completion.choices[0]?.message?.content || '';
