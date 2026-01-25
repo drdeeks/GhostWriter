@@ -19,7 +19,7 @@ export const CONTRACTS = {
 
 // Chain configuration
 export const CHAIN_CONFIG = {
-  chainId: parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "84532"), // Default to Base Sepolia
+  chainId: parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "8453"), // Default to Base mainnet
   baseSepolia: 84532,
   base: 8453,
   modeSepolia: 919,
