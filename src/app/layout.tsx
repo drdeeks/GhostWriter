@@ -1,14 +1,8 @@
-import FarcasterWrapper from "@/components/FarcasterWrapper";
-import '@coinbase/onchainkit/styles.css';
 import type { Metadata } from 'next';
 import './globals.css';
-import { Providers } from './providers';
-import { PerformanceMonitor } from '@/lib/performance';
+import { ClientProviders } from './client-providers';
 
-// Initialize performance monitoring
-if (typeof window !== 'undefined') {
-  PerformanceMonitor.getInstance().initialize();
-}
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Ghost Writer",
@@ -53,11 +47,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
       </head>
       <body>
-        <Providers>
-          <FarcasterWrapper>
-            {children}
-          </FarcasterWrapper>
-        </Providers>
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );

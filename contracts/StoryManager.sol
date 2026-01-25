@@ -3,6 +3,8 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "./GhostWriterNFT.sol";
 import "./LiquidityPool.sol";
 import "./PriceOracle.sol";
@@ -12,14 +14,27 @@ import "./PriceOracle.sol";
  * @dev Core game logic contract for Ghost Writer
  * Manages story creation, word contributions, and completion
  */
-contract StoryManager is Ownable, ReentrancyGuard {
+contract StoryManager is Ownable, ReentrancyGuard, EIP712 {
+    using ECDSA for bytes32;
+
     GhostWriterNFT public nftContract;
     LiquidityPool public liquidityPool;
     PriceOracle public priceOracle;
+    
+    // GHOST token address (set by owner after deployment)
+    address public ghostToken;
 
     // Fee amounts in USD cents (5 cents and 10 cents)
     uint256 public constant CONTRIBUTION_FEE_USD_CENTS = 5;
     uint256 public constant CREATION_FEE_USD_CENTS = 10;
+
+    // Slot count ranges (enterprise constraints)
+    uint256 public constant MINI_SLOTS_MIN = 5;
+    uint256 public constant MINI_SLOTS_MAX = 10;
+    uint256 public constant NORMAL_SLOTS_MIN = 10;
+    uint256 public constant NORMAL_SLOTS_MAX = 15;
+    uint256 public constant EPIC_SLOTS_MIN = 15;
+    uint256 public constant EPIC_SLOTS_MAX = 25;
 
     // Story types
     enum StoryType {
@@ -28,18 +43,57 @@ contract StoryManager is Ownable, ReentrancyGuard {
         EPIC
     }
 
-    // Story categories
+    // Story categories (must stay in sync with frontend + story generator)
     enum StoryCategory {
-        FANTASY,
-        SCIFI,
-        COMEDY,
-        HORROR,
         ADVENTURE,
+        FANTASY,
+        COMEDY,
         MYSTERY,
+        SCIFI,
+        HORROR,
         ROMANCE,
         CRYPTO,
+        SPORTS,
+        ANIMALS,
+        SCHOOL,
+        SUPERHEROES,
+        FRIENDSHIP,
+        HOLIDAYS,
+        FOOD,
+        NATURE,
+        HISTORY,
         RANDOM
     }
+
+    // Server-authorized signer for story template approvals (EIP-712)
+    address public storyTemplateSigner;
+
+    // Prevents multiple creator NFTs for a single story
+    mapping(string => bool) public creatorNFTMinted;
+
+    // EIP-712 typehash
+    bytes32 private constant CREATE_STORY_TYPEHASH =
+        keccak256(
+            "CreateStory(address creator,string storyId,string title,string template,uint8 storyType,uint8 category,bytes32 wordTypesHash,uint256 expiresAt)"
+        );
+
+    // Valid word types (must match frontend)
+    bytes32 private constant WT_ADJECTIVE = keccak256("adjective");
+    bytes32 private constant WT_NOUN = keccak256("noun");
+    bytes32 private constant WT_VERB = keccak256("verb");
+    bytes32 private constant WT_ADVERB = keccak256("adverb");
+    bytes32 private constant WT_PLURAL_NOUN = keccak256("plural_noun");
+    bytes32 private constant WT_PAST_TENSE_VERB = keccak256("past_tense_verb");
+    bytes32 private constant WT_VERB_ING = keccak256("verb_ing");
+    bytes32 private constant WT_PERSONS_NAME = keccak256("persons_name");
+    bytes32 private constant WT_PLACE = keccak256("place");
+    bytes32 private constant WT_NUMBER = keccak256("number");
+    bytes32 private constant WT_COLOR = keccak256("color");
+    bytes32 private constant WT_BODY_PART = keccak256("body_part");
+    bytes32 private constant WT_FOOD = keccak256("food");
+    bytes32 private constant WT_ANIMAL = keccak256("animal");
+    bytes32 private constant WT_EXCLAMATION = keccak256("exclamation");
+    bytes32 private constant WT_EMOTION = keccak256("emotion");
 
     // Story status
     enum StoryStatus {
@@ -157,19 +211,40 @@ contract StoryManager is Ownable, ReentrancyGuard {
     event StoryShared(string indexed storyId, address indexed sharer);
     event LeaderboardUpdated(address indexed user, uint256 newRank);
     event EmergencyWithdrawal(address indexed owner, uint256 amount);
+    event StoryTemplateSignerUpdated(address indexed newSigner);
+    event StoryFinalized(string indexed storyId, uint256 indexed creatorTokenId);
+    event GhostTokenUpdated(address indexed newToken);
 
     constructor(
         address _nftContract,
         address payable _liquidityPool,
         address _priceOracle
-    ) Ownable(msg.sender) {
-        require(_nftContract != address(0), "Invalid NFT contract");
-        require(_liquidityPool != address(0), "Invalid pool");
-        require(_priceOracle != address(0), "Invalid oracle");
+    ) Ownable(msg.sender) EIP712("GhostWriterStoryManager", "1") {
+        require(_nftContract != address(0));
+        require(_liquidityPool != address(0));
+        require(_priceOracle != address(0));
         nftContract = GhostWriterNFT(_nftContract);
         liquidityPool = LiquidityPool(_liquidityPool);
         priceOracle = PriceOracle(_priceOracle);
         _initializeAchievements();
+    }
+
+    /**
+     * @dev Set the server-authorized signer for story template approvals
+     */
+    function setStoryTemplateSigner(address signer) external onlyOwner {
+        require(signer != address(0));
+        storyTemplateSigner = signer;
+        emit StoryTemplateSignerUpdated(signer);
+    }
+
+    /**
+     * @dev Set the GHOST token address (only owner)
+     */
+    function setGhostToken(address _ghostToken) external onlyOwner {
+        require(_ghostToken != address(0));
+        ghostToken = _ghostToken;
+        emit GhostTokenUpdated(_ghostToken);
     }
 
     /**
@@ -198,41 +273,120 @@ contract StoryManager is Ownable, ReentrancyGuard {
         achievementIds.push("night_owl");
     }
 
-    /**
-     * @dev Create a new story
-     * Requires creation fee and at least 1 creation credit
-     */
-    function createStory(
+    function _requireLiquidityPoolInitialized() internal view {
+        require(liquidityPool.storyManager() == address(this));
+    }
+
+    function _isValidWordType(string memory wordType) internal pure returns (bool) {
+        bytes32 h = keccak256(bytes(wordType));
+        return
+            h == WT_ADJECTIVE ||
+            h == WT_NOUN ||
+            h == WT_VERB ||
+            h == WT_ADVERB ||
+            h == WT_PLURAL_NOUN ||
+            h == WT_PAST_TENSE_VERB ||
+            h == WT_VERB_ING ||
+            h == WT_PERSONS_NAME ||
+            h == WT_PLACE ||
+            h == WT_NUMBER ||
+            h == WT_COLOR ||
+            h == WT_BODY_PART ||
+            h == WT_FOOD ||
+            h == WT_ANIMAL ||
+            h == WT_EXCLAMATION ||
+            h == WT_EMOTION;
+    }
+
+    function _hashWordTypes(string[] memory wordTypes) internal pure returns (bytes32) {
+        bytes32 acc = bytes32(0);
+        for (uint256 i = 0; i < wordTypes.length; i++) {
+            acc = keccak256(abi.encodePacked(acc, keccak256(bytes(wordTypes[i]))));
+        }
+        return acc;
+    }
+
+    function _verifyCreateStorySignature(
+        address creator,
+        string memory storyId,
+        string memory title,
+        string memory template,
+        StoryType storyType,
+        StoryCategory category,
+        string[] memory wordTypes,
+        uint256 expiresAt,
+        bytes calldata signature
+    ) internal view {
+        require(storyTemplateSigner != address(0));
+        require(block.timestamp <= expiresAt);
+
+        bytes32 wordTypesHash = _hashWordTypes(wordTypes);
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                CREATE_STORY_TYPEHASH,
+                creator,
+                keccak256(bytes(storyId)),
+                keccak256(bytes(title)),
+                keccak256(bytes(template)),
+                uint8(storyType),
+                uint8(category),
+                wordTypesHash,
+                expiresAt
+            )
+        );
+
+        bytes32 digest = _hashTypedDataV4(structHash);
+        address recovered = digest.recover(signature);
+        require(recovered == storyTemplateSigner);
+    }
+
+    function _createStoryInternal(
         string memory storyId,
         string memory title,
         string memory template,
         StoryType storyType,
         StoryCategory category,
         string[] memory wordTypes
-    ) external payable nonReentrant {
+    ) internal {
+        _requireLiquidityPoolInitialized();
+
         uint256 requiredFee = getCreationFee();
-        require(msg.value >= requiredFee, "Insufficient creation fee");
-        require(bytes(storyId).length > 0, "Invalid storyId");
-        require(!storyExists[storyId], "Story already exists");
-        require(
-            userStats[msg.sender].creationCredits > 0,
-            "Need creation credits"
-        );
+        require(msg.value >= requiredFee);
+
+        require(bytes(storyId).length > 0);
+        require(!storyExists[storyId]);
+
+        require(bytes(title).length > 0);
+        require(bytes(title).length <= 100);
+
+        require(bytes(template).length > 0);
+        require(bytes(template).length <= 5000);
+
+        require(userStats[msg.sender].creationCredits > 0);
 
         // Enforce a maximum of 15 active stories
-        require(getActiveStoriesCount() < 15, "Max 15 active stories allowed");
+        require(getActiveStoriesCount() < 15);
 
         uint256 totalSlots = wordTypes.length;
-        require(totalSlots > 0, "Need at least one slot");
+        if (storyType == StoryType.MINI) {
+            require(totalSlots >= MINI_SLOTS_MIN && totalSlots <= MINI_SLOTS_MAX);
+        } else if (storyType == StoryType.NORMAL) {
+            require(totalSlots >= NORMAL_SLOTS_MIN && totalSlots <= NORMAL_SLOTS_MAX);
+        } else {
+            require(totalSlots >= EPIC_SLOTS_MIN && totalSlots <= EPIC_SLOTS_MAX);
+        }
 
         // Validate story type
-        if (storyType == StoryType.MINI) {
-            require(totalSlots <= 10, "Mini stories max 10 slots");
-        } else if (storyType == StoryType.NORMAL) {
-            require(totalSlots <= 25, "Normal stories max 25 slots");
-        } else if (storyType == StoryType.EPIC) {
-            require(totalSlots <= 35, "Epic stories max 35 slots");
-            require(msg.sender == owner(), "Only owner can create epic stories");
+        if (storyType == StoryType.EPIC) {
+            require(msg.sender == owner());
+        }
+
+        // Validate word types
+        for (uint256 i = 0; i < totalSlots; i++) {
+            require(bytes(wordTypes[i]).length > 0);
+            require(bytes(wordTypes[i]).length <= 32);
+            require(_isValidWordType(wordTypes[i]));
         }
 
         // Create story
@@ -285,16 +439,59 @@ contract StoryManager is Ownable, ReentrancyGuard {
 
         // Forward fee to liquidity pool
         liquidityPool.deposit{value: requiredFee}();
-        
+
         // Store refund for pull withdrawal
         uint256 refundAmount = msg.value - requiredFee;
         if (refundAmount > 0) {
             pendingRefunds[msg.sender] += refundAmount;
         }
-        
-        emit FeesCollected(requiredFee, address(liquidityPool));
 
+        emit FeesCollected(requiredFee, address(liquidityPool));
         emit StoryCreated(storyId, msg.sender, storyType, totalSlots);
+    }
+
+    /**
+     * @dev Owner-only backdoor for story creation (custom templates)
+     * Enterprise enforcement: normal users must use `createStoryApproved`.
+     */
+    function createStory(
+        string memory storyId,
+        string memory title,
+        string memory template,
+        StoryType storyType,
+        StoryCategory category,
+        string[] memory wordTypes
+    ) external payable nonReentrant onlyOwner {
+        _createStoryInternal(storyId, title, template, storyType, category, wordTypes);
+    }
+
+    /**
+     * @dev Create a story using a server-signed (EIP-712) approval.
+     * Prevents custom user stories by enforcing an allowlisted signer.
+     */
+    function createStoryApproved(
+        string memory storyId,
+        string memory title,
+        string memory template,
+        StoryType storyType,
+        StoryCategory category,
+        string[] memory wordTypes,
+        uint256 expiresAt,
+        bytes calldata signature
+    ) external payable nonReentrant {
+        _verifyCreateStorySignature(
+            msg.sender,
+            storyId,
+            title,
+            template,
+            storyType,
+            category,
+            wordTypes,
+            expiresAt,
+            signature
+        );
+
+        _createStoryInternal(storyId, title, template, storyType, category, wordTypes);
     }
 
     /**
@@ -320,26 +517,20 @@ contract StoryManager is Ownable, ReentrancyGuard {
         string memory word
     ) external payable nonReentrant {
         uint256 requiredFee = getContributionFee();
-        require(msg.value >= requiredFee, "Insufficient contribution fee");
-        require(storyExists[storyId], "Story does not exist");
+        require(msg.value >= requiredFee);
+        require(storyExists[storyId]);
 
         Story storage story = stories[storyId];
-        require(story.status == StoryStatus.ACTIVE, "Story not active");
-        require(
-            position > 0 && position <= story.totalSlots,
-            "Invalid position"
-        );
+        require(story.status == StoryStatus.ACTIVE);
+        require(position > 0 && position <= story.totalSlots);
 
         SlotDetail storage slot = storySlots[storyId][position];
-        require(!slot.filled, "Slot already filled");
-        require(bytes(word).length >= 3, "Word too short");
-        require(bytes(word).length <= 30, "Word too long");
+        require(!slot.filled);
+        require(bytes(word).length >= 3);
+        require(bytes(word).length <= 30);
 
         // Check if user already contributed to this position
-        require(
-            !nftContract.checkContribution(storyId, position, msg.sender),
-            "Already contributed to this position"
-        );
+        require(!nftContract.checkContribution(storyId, position, msg.sender));
 
         // Mint hidden NFT
         uint256 nftId = nftContract.mintHiddenNFT(
@@ -412,15 +603,17 @@ contract StoryManager is Ownable, ReentrancyGuard {
             );
         }
 
+        _requireLiquidityPoolInitialized();
+
         // Forward fee to liquidity pool
         liquidityPool.deposit{value: requiredFee}();
-        
+
         // Store refund for pull withdrawal
         uint256 refundAmount = msg.value - requiredFee;
         if (refundAmount > 0) {
             pendingRefunds[msg.sender] += refundAmount;
         }
-        
+
         emit FeesCollected(requiredFee, address(liquidityPool));
 
         emit WordContributed(storyId, position, msg.sender, nftId);
@@ -441,7 +634,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
      */
     function _completeStory(string memory storyId) internal {
         Story storage story = stories[storyId];
-        require(story.status == StoryStatus.ACTIVE, "Story not active");
+        require(story.status == StoryStatus.ACTIVE);
         story.status = StoryStatus.COMPLETE;
         story.completedAt = block.timestamp;
 
@@ -459,6 +652,9 @@ contract StoryManager is Ownable, ReentrancyGuard {
             );
         }
 
+        // Auto-reveal contributor NFTs immediately when the story completes
+        nftContract.revealStoryNFTs(storyId);
+
         emit StoryCompleted(storyId, block.timestamp);
     }
 
@@ -472,10 +668,10 @@ contract StoryManager is Ownable, ReentrancyGuard {
         uint256 endPosition
     ) external nonReentrant {
         Story storage story = stories[storyId];
-        require(story.status == StoryStatus.COMPLETE, "Story not complete");
-        require(startPosition > 0 && startPosition <= story.totalSlots, "Invalid start");
-        require(endPosition >= startPosition && endPosition <= story.totalSlots, "Invalid end");
-        require(endPosition - startPosition < 50, "Batch too large");
+        require(story.status == StoryStatus.COMPLETE);
+        require(startPosition > 0 && startPosition <= story.totalSlots);
+        require(endPosition >= startPosition && endPosition <= story.totalSlots);
+        require(endPosition - startPosition < 50);
 
         for (uint256 i = startPosition; i <= endPosition; i++) {
             address contributor = storySlots[storyId][i].contributor;
@@ -512,18 +708,22 @@ contract StoryManager is Ownable, ReentrancyGuard {
      */
     function finalizeStory(string memory storyId) external nonReentrant {
         Story storage story = stories[storyId];
-        require(story.status == StoryStatus.COMPLETE, "Story not complete");
+        require(story.status == StoryStatus.COMPLETE);
+        require(!creatorNFTMinted[storyId]);
 
-        // Reveal all contributor NFTs
+        // Reveal all contributor NFTs (safe/idempotent)
         nftContract.revealStoryNFTs(storyId);
 
-        // Mint creator NFT
-        nftContract.mintCreatorNFT(
+        // Mint creator NFT (single-shot)
+        uint256 creatorTokenId = nftContract.mintCreatorNFT(
             story.creator,
             storyId,
             story.title,
             story.template
         );
+
+        creatorNFTMinted[storyId] = true;
+        emit StoryFinalized(storyId, creatorTokenId);
     }
 
     /**
@@ -592,12 +792,9 @@ contract StoryManager is Ownable, ReentrancyGuard {
      * @dev Share a story (tracks social sharing)
      */
     function shareStory(string memory storyId) external {
-        require(storyExists[storyId], "Story does not exist");
+        require(storyExists[storyId]);
         Story storage story = stories[storyId];
-        require(
-            story.status == StoryStatus.COMPLETE,
-            "Can only share completed stories"
-        );
+        require(story.status == StoryStatus.COMPLETE);
 
         story.shareCount++;
         userStats[msg.sender].shareCount++;
@@ -611,7 +808,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
     function getStory(
         string memory storyId
     ) external view returns (Story memory) {
-        require(storyExists[storyId], "Story does not exist");
+        require(storyExists[storyId]);
         return stories[storyId];
     }
 
@@ -622,7 +819,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
         string memory storyId,
         uint256 position
     ) external view returns (SlotDetail memory) {
-        require(storyExists[storyId], "Story does not exist");
+        require(storyExists[storyId]);
         return storySlots[storyId][position];
     }
 
@@ -665,8 +862,8 @@ contract StoryManager is Ownable, ReentrancyGuard {
         uint256 offset,
         uint256 limit
     ) external view returns (LeaderboardEntry[] memory) {
-        require(limit <= 100, "Max 100 entries per request");
-        require(offset < leaderboard.length, "Offset out of bounds");
+        require(limit <= 100);
+        require(offset < leaderboard.length);
 
         uint256 end = offset + limit;
         if (end > leaderboard.length) {
@@ -730,7 +927,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
         address[] calldata users,
         uint256[] calldata amounts
     ) external onlyOwner {
-        require(users.length == amounts.length, "Mismatched arrays");
+        require(users.length == amounts.length);
         for (uint256 i = 0; i < users.length; i++) {
             userStats[users[i]].creationCredits += amounts[i];
             emit CreationCreditEarned(
@@ -744,7 +941,7 @@ contract StoryManager is Ownable, ReentrancyGuard {
      * @dev Owner can update price oracle
      */
     function updatePriceOracle(address _priceOracle) external onlyOwner {
-        require(_priceOracle != address(0), "Invalid price oracle");
+        require(_priceOracle != address(0));
         priceOracle = PriceOracle(_priceOracle);
         emit PriceOracleUpdated(_priceOracle);
     }
@@ -756,12 +953,12 @@ contract StoryManager is Ownable, ReentrancyGuard {
      */
     function withdrawRefund() external nonReentrant {
         uint256 amount = pendingRefunds[msg.sender];
-        require(amount > 0, "No refund available");
+        require(amount > 0);
         
         pendingRefunds[msg.sender] = 0;
         
         (bool success, ) = payable(msg.sender).call{value: amount}("");
-        require(success, "Refund transfer failed");
+        require(success);
         
         emit RefundWithdrawn(msg.sender, amount);
     }
@@ -773,11 +970,11 @@ contract StoryManager is Ownable, ReentrancyGuard {
      */
     function emergencyWithdraw() external onlyOwner {
         uint256 balance = address(this).balance;
-        require(balance > 0, "No balance");
+        require(balance > 0);
         
         // Bug #34 fix: Use call instead of transfer
         (bool success, ) = payable(owner()).call{value: balance}("");
-        require(success, "Transfer failed");
+        require(success);
         
         emit EmergencyWithdrawal(owner(), balance);
     }

@@ -31,7 +31,8 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200,
+        // Lower runs reduces bytecode size (important for EIP-170 contract size limit)
+        runs: 1,
       },
     },
   },
