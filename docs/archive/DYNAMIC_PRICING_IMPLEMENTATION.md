@@ -73,7 +73,7 @@ User pays exact amount (with refund if overpaid)
    ```bash
    npm run deploy:baseSepolia
    ```
-   
+
    This will deploy:
    - LiquidityPool
    - PriceOracle (with Chainlink feed)

@@ -1,61 +1,70 @@
 'use client';
 
+import '@coinbase/onchainkit/styles.css';
+import farcasterMiniAppConnector from '@farcaster/miniapp-wagmi-connector';
 import { OnchainKitProvider } from '@coinbase/onchainkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { base, baseSepolia } from 'wagmi/chains';
+import { injected, coinbaseWallet, walletConnect } from 'wagmi/connectors';
 import { Toaster } from 'sonner';
-
+import FarcasterWrapper from '@/components/FarcasterWrapper';
 import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID, isOnchainKitConfigured } from './config/onchainkit';
 
-// Enhanced Wagmi config for Farcaster Mini Apps
-const wagmiConfig = createConfig({
-  chains: [base, baseSepolia],
-  connectors: [], // No external connectors for Farcaster Mini Apps
-  transports: {
-    [base.id]: http(),
-    [baseSepolia.id]: http(),
-  },
-  ssr: false,
-});
+export function ClientProviders({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  const [wagmiConfig, setWagmiConfig] = useState<ReturnType<typeof createConfig> | null>(null);
 
-// Enhanced query client with better defaults
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: (failureCount, error: any) => {
-        // Don't retry on 4xx errors
-        if (error?.status >= 400 && error?.status < 500) {
-          return false;
-        }
-        return failureCount < 3;
+  const queryClient = useMemo(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        retry: (failureCount, error: any) => {
+          if (error?.status >= 400 && error?.status < 500) {
+            return false;
+          }
+          return failureCount < 3;
+        },
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 30,
       },
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes
     },
-  },
-});
+  }), []);
 
-export function Providers({ children }: { children: ReactNode }) {
-  const chain = process.env.NODE_ENV === 'production' ? base : baseSepolia;
+  useEffect(() => {
+    const config = createConfig({
+      chains: [base, baseSepolia],
+      connectors: [
+        farcasterMiniAppConnector(),
+        injected(),
+        coinbaseWallet({
+          appName: 'Ghost Writer',
+          appLogoUrl: 'https://ghostwriter.meme/icon.png',
+        }),
+        walletConnect({
+          projectId: ONCHAINKIT_PROJECT_ID,
+        }),
+      ],
+      transports: {
+        [base.id]: http(),
+        [baseSepolia.id]: http(),
+      },
+      ssr: false,
+    });
+    setWagmiConfig(config);
+    setMounted(true);
 
-  console.log('🔧 Providers configuration:', {
-    nodeEnv: process.env.NODE_ENV,
-    chainId: chain.id,
-    chainName: chain.name,
-    onchainKitConfigured: isOnchainKitConfigured(),
-    contractAddresses: {
-      nft: process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS,
-      storyManager: process.env.NEXT_PUBLIC_STORY_MANAGER_ADDRESS,
-      liquidityPool: process.env.NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS,
-    },
-    onchainKitConfig: {
-      projectId: !!process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_ID,
-      apiKey: !!process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY,
-    }
-  });
+    import('@/lib/performance').then(({ PerformanceMonitor }) => {
+      PerformanceMonitor.getInstance().initialize();
+    });
+  }, []);
+
+  if (!mounted || !wagmiConfig) {
+    return <>{children}</>;
+  }
+
+  const chain = Number(process.env.NEXT_PUBLIC_CHAIN_ID) === base.id ? base : baseSepolia;
 
   return (
     <WagmiProvider config={wagmiConfig}>
@@ -77,7 +86,9 @@ export function Providers({ children }: { children: ReactNode }) {
               },
             }}
           >
-            {children}
+            <FarcasterWrapper>
+              {children}
+            </FarcasterWrapper>
             <Toaster 
               theme="dark"
               position="top-center"
@@ -96,7 +107,9 @@ export function Providers({ children }: { children: ReactNode }) {
           </OnchainKitProvider>
         ) : (
           <>
-            {children}
+            <FarcasterWrapper>
+              {children}
+            </FarcasterWrapper>
             <Toaster 
               theme="dark"
               position="top-center"

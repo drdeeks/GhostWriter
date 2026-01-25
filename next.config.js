@@ -7,6 +7,7 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
 
+
   // Modern image optimization (replaces deprecated domains)
   images: {
     remotePatterns: [

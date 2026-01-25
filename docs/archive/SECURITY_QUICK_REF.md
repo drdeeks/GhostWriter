@@ -3,7 +3,7 @@
 ## What Changed?
 
 ### 1️⃣ Refunds (Pull Pattern)
-**Before**: Immediate refund on overpayment  
+**Before**: Immediate refund on overpayment
 **After**: Users claim refunds manually
 
 ```solidity
@@ -16,7 +16,7 @@ function withdrawRefund() external
 ---
 
 ### 2️⃣ Story Completion (Batched)
-**Before**: Single transaction for all slots  
+**Before**: Single transaction for all slots
 **After**: Three-phase process
 
 ```solidity
@@ -36,7 +36,7 @@ finalizeStory(storyId)
 ---
 
 ### 3️⃣ Leaderboard (Off-Chain Sort)
-**Before**: On-chain insertion sort  
+**Before**: On-chain insertion sort
 **After**: Off-chain sorting via events
 
 ```typescript
@@ -49,7 +49,7 @@ leaderboard.sort((a, b) => b.contributions - a.contributions)
 ---
 
 ### 4️⃣ Price Oracle (Circuit Breaker)
-**Before**: 1 hour staleness, no deviation check  
+**Before**: 1 hour staleness, no deviation check
 **After**: 15 min staleness, 20% max deviation
 
 ```solidity
@@ -62,7 +62,7 @@ uint256 public maxPriceDeviation = 20; // 20%
 ---
 
 ### 5️⃣ Achievement Tracking (Optimized)
-**Before**: Nested loops for final word count  
+**Before**: Nested loops for final word count
 **After**: Storage mapping
 
 ```solidity
@@ -124,8 +124,8 @@ event MaxPriceDeviationUpdated(uint256 newDeviation);
 
 ❌ **None** - All changes are backward compatible
 
-✅ Old functions still work  
-✅ Existing stories unaffected  
+✅ Old functions still work
+✅ Existing stories unaffected
 ✅ NFTs remain unchanged
 
 ---
@@ -177,12 +177,12 @@ vercel deploy
 
 ## Support
 
-📧 drdeeks@outlook.com  
-📚 [Full Documentation](./SECURITY_FIXES.md)  
+📧 drdeeks@outlook.com
+📚 [Full Documentation](./SECURITY_FIXES.md)
 🔧 [Frontend Guide](./FRONTEND_MIGRATION.md)
 
 ---
 
-**Status**: ✅ Production Ready  
-**Audit**: Recommended before mainnet  
+**Status**: ✅ Production Ready
+**Audit**: Recommended before mainnet
 **Testnet**: Ready for deployment

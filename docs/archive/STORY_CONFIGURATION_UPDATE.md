@@ -33,8 +33,8 @@ Changed from **all user-generated words** to **narrative stories with user contr
 
 **After (Mini - 50 words, 10 user slots):**
 ```
-Once upon a time, there was a [ADJECTIVE] [NOUN] who loved to [VERB] 
-[ADVERB] through the [PLACE]. One day, they discovered a [ADJECTIVE] 
+Once upon a time, there was a [ADJECTIVE] [NOUN] who loved to [VERB]
+[ADVERB] through the [PLACE]. One day, they discovered a [ADJECTIVE]
 [NOUN] that could [VERB]. They felt [EMOTION] and shouted "[EXCLAMATION]!"
 ```
 
@@ -60,7 +60,7 @@ Once upon a time, there was a [ADJECTIVE] [NOUN] who loved to [VERB]
 
 The AI now generates stories with:
 - **Mini**: ~50 words total, 10 placeholders
-- **Normal**: ~100 words total, 15-25 placeholders  
+- **Normal**: ~100 words total, 15-25 placeholders
 - **Epic**: ~150 words total, 35 placeholders
 
 ### Benefits
