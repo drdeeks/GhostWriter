@@ -1,133 +1,264 @@
-# 👻 Ghost Writer - AI-Powered Community Storytelling NFT Game
+# 👻 Ghost Writer
 
-Ghost Writer is a collaborative storytelling game on the Base blockchain where players contribute words to AI-generated stories. Each contribution mints a unique NFT, turning every word into a collectible piece of a community-created narrative.
+AI-powered collaborative storytelling NFT game on Base Chain. Players contribute words to community-created stories, minting unique NFTs for each contribution.
 
-**Version**: 2.0.0 | **Status**: ✅ Ready for Testnet
-
----
-
-## ✨ What is This?
-
-Ghost Writer blends creative writing with blockchain technology to create a unique gamified experience.
-
-- **AI-Powered Storytelling**: At its core, Ghost Writer uses AI (specifically `gpt-4o-mini`) to dynamically generate "Mad Libs" style story templates. This ensures a constant stream of new and engaging narratives.
-- **Community-Driven Content**: Stories are not written by a single person but are completed by the community. Each player contributes a word to fill in the blanks, collectively bringing the story to life.
-- **NFTs as Contributions**: Every word contributed is minted as an NFT on the Base blockchain. This gives players true ownership of their contributions and creates a novel way to engage with and collect digital art.
-- **Gamification**: The platform includes leaderboards, achievements, and a credit system to reward active participants.
-- **Enterprise-Ready**: Built with a focus on security and performance, Ghost Writer includes features like a pull-over-push refund pattern, batch processing for large stories, and comprehensive test coverage.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Built on Base](https://img.shields.io/badge/Built%20on-Base-blue)](https://base.org)
 
 ---
 
-## 🚀 Dev Quickstart
+## Quick Start
 
-Get your local development environment up and running in a few minutes.
-
-**Prerequisites:**
-- [Node.js](https://nodejs.org/en) (v18 or higher)
-- [Foundry](https://getfoundry.sh/) for smart contract development
-- A Web3 wallet (e.g., MetaMask, Coinbase Wallet)
-
-**1. Clone & Install**
 ```bash
-git clone https://github.com/drdeeks/GhostWriter.git
-cd GhostWriter
+# Install
+git clone https://github.com/drdeeks/GhostWriter.git && cd GhostWriter
 npm install --legacy-peer-deps
-```
 
-**2. Environment Setup**
-Copy the example environment file and fill in the required variables.
-```bash
+# Configure
 cp env.example .env
-```
-You will need to provide:
-- `PRIVATE_KEY`: Your wallet's private key for deploying contracts.
-- `NEXT_PUBLIC_ONCHAINKIT_PROJECT_ID`: Your WalletConnect project ID.
-- `OPENAI_API_KEY`: (Optional) For enabling AI features.
+# Edit .env with your PRIVATE_KEY and NEXT_PUBLIC_ONCHAINKIT_PROJECT_ID
 
-**3. Deploy Contracts**
-Deploy the smart contracts to a local network or testnet.
-```bash
-# Start a local Hardhat node
-npm run node
+# Deploy contracts (testnet)
+npm run deploy:baseSepolia
 
-# In a new terminal, deploy the contracts
-npm run deploy:localhost
-```
-
-**4. Run the Application**
-```bash
+# Run app
 npm run dev
 ```
-The application will be available at `http://localhost:3000`.
+
+The app will be available at `http://localhost:3000`.
 
 ---
 
-## 🏗️ Key Files & Directories
+## Deployment
 
-Here is a high-level overview of the repository structure:
+### Contract Deployment
+
+```bash
+# Standard deployment (without GHOST token)
+npm run deploy:baseSepolia
+
+# Deploy WITH GHOST token included
+npm run deploy:baseSepolia -- --with-token
+# or use shorthand
+npm run deploy:baseSepolia -- -t
+
+# Mainnet (after security audit)
+npm run deploy:base -- --with-token
+```
+
+The deployment script automatically:
+- Deploys all contracts (LiquidityPool, PriceOracle, GhostWriterNFT, StoryManager)
+- Optionally deploys GhostWriterToken (GHOST) when `--with-token` flag is used
+- Sets up contract permissions and configurations
+- Updates `.env` with deployed addresses
+- Saves deployment info to `deployment.json`
+
+### Post-Deployment (if token deployed separately)
+
+If you deploy the GHOST token separately, configure it on existing contracts:
+
+```bash
+# Via Hardhat console or script
+storyManager.setGhostToken(tokenAddress)
+liquidityPool.setGhostToken(tokenAddress)
+```
+
+### Frontend Deployment
+
+```bash
+npm run build
+vercel --prod
+```
+
+### Contract Verification
+
+```bash
+npm run verify
+```
+
+---
+
+## NFT Assets & Customization
+
+### NFT Image Generation
+
+NFT images are dynamically generated as SVGs via `/api/nft/[tokenId]/image`. Each NFT displays:
+- Story title and category
+- The contributor's word (highlighted)
+- Word position in the story
+- Contributor address or Farcaster username
+
+### Background Customization
+
+NFT backgrounds can be customized per story category using local or remote images.
+
+#### Local Backgrounds
+
+1. Add images to `public/nft-backgrounds/`:
+   ```
+   public/nft-backgrounds/
+   ├── adventure.png
+   ├── fantasy.jpg
+   ├── comedy.png
+   └── default.png
+   ```
+
+2. Configure in `.env`:
+   ```env
+   NFT_BACKGROUND_BASE_URL_LOCAL=/nft-backgrounds
+   NFT_BACKGROUND_CATEGORY_MAP='{"adventure":"adventure.png","fantasy":"fantasy.jpg","comedy":"comedy.png"}'
+   NFT_BACKGROUND_DEFAULT=default.png
+   ```
+
+#### Remote Backgrounds (IPFS/CDN)
+
+```env
+NFT_BACKGROUND_BASE_URL_REMOTE=https://your-cdn.com/nft-backgrounds
+NFT_BACKGROUND_CATEGORY_MAP='{"adventure":"adventure.png","scifi":"scifi.jpg"}'
+```
+
+#### Fallback Order
+
+1. Local background (if configured and file exists)
+2. Remote background (if configured)
+3. Procedurally generated gradient (default)
+
+### App Icons & Branding
+
+Replace these files in `public/` for custom branding:
+- `icon.png` - App icon (512x512 recommended)
+- `favicon.ico` - Browser favicon
+- `hero.png` - Landing page hero image
+- `splash.png` - PWA splash screen
+
+---
+
+## Environment Variables
+
+### Required
+
+```env
+PRIVATE_KEY=                              # Deployer wallet private key
+NEXT_PUBLIC_CHAIN_ID=84532                # 84532 (Sepolia) or 8453 (Mainnet)
+NEXT_PUBLIC_ONCHAINKIT_PROJECT_ID=        # WalletConnect Cloud project ID
+```
+
+### Contract Addresses (set after deployment)
+
+```env
+NEXT_PUBLIC_NFT_CONTRACT_ADDRESS=0x...
+NEXT_PUBLIC_STORY_MANAGER_ADDRESS=0x...
+NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS=0x...
+NEXT_PUBLIC_PRICE_ORACLE_ADDRESS=0x...
+NEXT_PUBLIC_TOKEN_ADDRESS=0x...           # GHOST token (if deployed)
+```
+
+### Optional - AI Features
+
+```env
+OPENAI_API_KEY=sk-...                     # Enables AI story generation
+OPENAI_MODEL=gpt-4o-mini                  # Model selection
+OPENAI_TEMPERATURE=0.9                    # Creativity level (0-1)
+OPENAI_MAX_TOKENS=700                     # Max response length
+```
+
+### Optional - NFT Customization
+
+```env
+NFT_BACKGROUND_BASE_URL_LOCAL=/nft-backgrounds
+NFT_BACKGROUND_BASE_URL_REMOTE=https://cdn.example.com/backgrounds
+NFT_BACKGROUND_CATEGORY_MAP='{"adventure":"adventure.png"}'
+NFT_BACKGROUND_DEFAULT=default.png
+```
+
+See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) for the complete list.
+
+---
+
+## Architecture
 
 ```
-/
-├── contracts/          # Solidity smart contracts
-│   ├── StoryManager.sol  # Core game logic
-│   └── GhostWriterNFT.sol # NFT contract
+├── contracts/                 # Solidity smart contracts
+│   ├── StoryManager.sol       # Core game logic, stories, contributions
+│   ├── GhostWriterNFT.sol     # ERC-721 with hidden/revealed states
+│   ├── GhostWriterToken.sol   # GHOST ERC-20 token
+│   ├── LiquidityPool.sol      # Fee collection
+│   └── PriceOracle.sol        # Chainlink USD/ETH pricing
 ├── src/
-│   ├── app/              # Next.js application
-│   │   ├── api/          # API routes (AI, NFT metadata)
-│   │   └── page.tsx      # Main application page
-│   ├── components/       # React components
-│   └── lib/              # Core libraries (AI service, utils)
-├── scripts/            # Deployment and utility scripts
-├── test/               # Smart contract tests
-└── hardhat.config.js   # Hardhat configuration
+│   ├── app/                   # Next.js App Router
+│   │   ├── api/               # API routes
+│   │   │   ├── generate-story/  # AI story generation
+│   │   │   ├── moderate-word/   # Content moderation
+│   │   │   └── nft/[tokenId]/   # NFT metadata & images
+│   │   └── page.tsx           # Main app page
+│   ├── components/            # React components
+│   ├── hooks/                 # Contract interaction hooks
+│   └── lib/                   # Utilities, ABIs, config
+├── scripts/                   # Deployment scripts
+├── test/                      # Contract tests
+└── public/                    # Static assets
 ```
 
 ---
 
-## 🚢 Deployment
+## Story Types
 
-### Required Services
-- **RPC Provider**: An RPC URL for interacting with the blockchain (e.g., Infura, Alchemy).
-- **AI Provider**: An OpenAI API key is required for dynamic story generation and word moderation.
-- **WalletConnect**: A Project ID from [WalletConnect Cloud](https://cloud.walletconnect.com/) is needed for wallet connections.
-
-### Testnet (Base Sepolia)
-1.  Configure your `.env` file with Base Sepolia RPC URLs and your private key.
-2.  Deploy the contracts: `npm run deploy:baseSepolia`
-3.  Update your `.env` file with the deployed contract addresses.
-4.  Deploy the frontend to a provider like Vercel.
-
-### Mainnet (Base)
-The process is the same as for testnet, but using the `npm run deploy:base` command. A security audit is highly recommended before deploying to mainnet.
-
-For a more detailed guide, see [docs/SETUP.md](docs/SETUP.md).
+| Type | Word Count | Slots | Creation |
+|------|-----------|-------|----------|
+| Mini | ~50 words | 5-10 | Anyone |
+| Normal | ~100 words | 10-15 | Anyone |
+| Epic | ~150 words | 15-25 | Owner only |
 
 ---
 
-## 📖 Deeper Docs
+## Commands
 
-- **[SETUP.md](docs/SETUP.md)**: Detailed instructions for local development and deployment.
-- **[ENVIRONMENT.md](docs/ENVIRONMENT.md)**: An explanation of all environment variables.
-- **[AI.md](docs/AI.md)**: Information on AI tuning and style control.
-- **[MODERATION.md](docs/MODERATION.md)**: Details on word moderation behavior.
-- **[NFT_MEDIA.md](docs/NFT_MEDIA.md)**: How NFT metadata and images are generated.
-- **[ADMIN.md](docs/ADMIN.md)**: A guide to the admin dashboard and its features.
+```bash
+# Development
+npm run dev                    # Start dev server
+npm run build                  # Production build
+npm run ts-check               # TypeScript validation
+
+# Smart Contracts
+npm run compile                # Compile Solidity
+npm test                       # Contract tests
+npm run test:gas               # Tests with gas report
+
+# Deployment
+npm run deploy:baseSepolia     # Deploy to testnet
+npm run deploy:base            # Deploy to mainnet
+npm run verify                 # Verify on Basescan
+```
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [docs/SETUP.md](docs/SETUP.md) | Local development setup |
+| [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) | Environment variables |
+| [docs/AI.md](docs/AI.md) | AI configuration & tuning |
+| [docs/NFT_MEDIA.md](docs/NFT_MEDIA.md) | NFT metadata & images |
+| [docs/SECURITY.md](docs/SECURITY.md) | Security features |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
 
 ---
 
-## ⚠️ Common Pitfalls
+## Security
 
-- **Signer Mismatch**: Ensure the `PRIVATE_KEY` in your `.env` file corresponds to the wallet you are using in your browser.
-- **Missing Contract Addresses**: After deploying your contracts, make sure to update the relevant `NEXT_PUBLIC_*` addresses in your `.env` file.
-- **Incorrect `chainId` or RPC**: Double-check that your `NEXT_PUBLIC_CHAIN_ID` and RPC URLs in your `.env` file match the network you are targeting.
+- **ReentrancyGuard** on all state-changing functions
+- **Pull-over-push** refund pattern (prevents gas griefing)
+- **Batch processing** for large stories (prevents DoS)
+- **Price oracle circuit breaker** (20% deviation limit)
+- **EIP-712 signatures** for story template approval
+
+---
+
+## License
+
+MIT License - see [LICENSE](LICENSE)
 
 ---
 
-## 🎮 Story Specifications
-
-- **Mini**: ~50 total words in the final story; requires 5–10 user-contributed words.
-- **Normal**: ~100 total words; requires 10–15 user-contributed words.
-- **Epic**: ~150 total words; requires 15–25 user-contributed words. (Owner-only creation)
-
----
-**Built with 💜 by DrDeeks | Powered by Base 🟪 | Secured by OpenZeppelin 🛡️ | Enhanced by AI 🤖**
+**Built with 💜 by DrDeeks | Powered by Base 🔵 | Secured by OpenZeppelin 🛡️**
