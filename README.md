@@ -1,476 +1,262 @@
-# 👻 Ghost Writer - AI-Powered Community Storytelling NFT Game
+# 👻 Ghost Writer
 
-A collaborative storytelling game on Base Chain where users contribute words to AI-generated story templates. Each contribution mints a unique NFT, and story creators receive auto-minted creator NFTs when stories complete.
+AI-powered collaborative storytelling NFT game on Base Chain. Players contribute words to community-created stories, minting unique NFTs for each contribution.
 
-**Version**: 2.0.0 | **Status**: ✅ Ready for Testnet | **Security**: 40 bugs fixed
-
----
-
-## 🎯 Quick Links
-
-- **[User Guide](docs/USER_GUIDE.md)** - How to play
-- **[Deployment](docs/DEPLOYMENT.md)** - Setup & deploy
-- **[Security](docs/SECURITY.md)** - Security features
-- **[Architecture](docs/ARCHITECTURE.md)** - Technical details
-- **[Changelog](CHANGELOG.md)** - Version history
 
 ---
 
-## ✨ Features
+## Quick Start
 
-### 🤖 AI-Powered
-- Dynamic story generation (OpenAI GPT-4o-mini)
-- Intelligent word moderation
-- Fallback mechanisms for reliability
-
-### 🎨 Dual NFT System
-- **Contributor NFTs**: Hidden until story completion
-- **Creator NFTs**: Auto-minted for story creators
-- Dynamic SVG generation
-
-### 🔒 Enterprise Security
-- 40 bugs fixed (9 HIGH, 18 MEDIUM, 13 LOW)
-- Pull-over-push refund pattern
-- Batch processing for large stories
-- Safe transfer patterns
-
-### 📱 Mobile-First
-- Haptic feedback
-- 44px touch targets
-- Responsive design
-- Farcaster Mini App support
-
-### 🏆 Gamification
-- Achievements & badges
-- Leaderboards (top 1000)
-- Social sharing
-- Credit system
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 18+
-- MetaMask or Coinbase Wallet
-- Base Sepolia ETH ([faucet](https://www.base.org/faucet))
-
-### Install & Run
 ```bash
-git clone <repository>
-cd GhostWriter
-npm install
+# Install
+git clone https://github.com/drdeeks/GhostWriter.git && cd GhostWriter
+npm install --legacy-peer-deps
+
+# Configure
 cp env.example .env
-# Configure .env
+# Edit .env with your PRIVATE_KEY and NEXT_PUBLIC_ONCHAINKIT_PROJECT_ID
+
+# Deploy contracts (testnet)
+npm run deploy:baseSepolia
+
+# Run app
 npm run dev
 ```
 
-**📚 Full Setup**: See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+The app will be available at `http://localhost:3000`.
 
 ---
 
-## 🎮 How to Play
+## Deployment
 
-1. **Connect Wallet** - Link your Web3 wallet
-2. **Earn Credits** - Contribute words (1 word = 1 credit + 1 NFT)
-3. **Create Stories** - Use credits to generate AI templates
-4. **Complete Stories** - Fill all slots to reveal NFTs
-5. **Collect NFTs** - Build your unique collection
-
-**💰 Economics**: Contribute $0.00005 ETH | Create $0.0001 ETH | All fees → Liquidity pool
-
----
-
-## 📊 Smart Contracts
-
-### Architecture
-- **GhostWriterNFT.sol** - ERC-721 with hidden/revealed states
-- **StoryManager.sol** - Game logic & rewards
-- **LiquidityPool.sol** - Fee collection
-- **PriceOracle.sol** - USD to ETH conversion
-
-### Security
-- ✅ OpenZeppelin contracts
-- ✅ ReentrancyGuard
-- ✅ Pull-over-push pattern
-- ✅ Batch processing
-- ✅ Input validation
-
-**🔒 Details**: See [docs/SECURITY.md](docs/SECURITY.md)
-
----
-
-## 🧪 Testing
+### Contract Deployment
 
 ```bash
-npm test                 # Smart contracts (6/6 passing)
-npm run test:frontend    # Frontend (3/3 passing)
-npm run ts-check         # TypeScript (0 errors)
-npm run build            # Production build
-```
-
-**Coverage**: 100% | **Build Time**: ~45s | **Lighthouse**: 95+
-
----
-
-## 🚀 Deployment
-
-### Testnet (Base Sepolia)
-```bash
+# Standard deployment (without GHOST token)
 npm run deploy:baseSepolia
-# Update .env with contract addresses
+
+# Deploy WITH GHOST token included
+npm run deploy:baseSepolia -- --with-token
+# or use shorthand
+npm run deploy:baseSepolia -- -t
+
+# Mainnet (after security audit)
+npm run deploy:base -- --with-token
+```
+
+The deployment script automatically:
+- Deploys all contracts (LiquidityPool, PriceOracle, GhostWriterNFT, StoryManager)
+- Optionally deploys GhostWriterToken (GHOST) when `--with-token` flag is used
+- Sets up contract permissions and configurations
+- Updates `.env` with deployed addresses
+- Saves deployment info to `deployment.json`
+
+### Post-Deployment (if token deployed separately)
+
+If you deploy the GHOST token separately, configure it on existing contracts:
+
+```bash
+# Via Hardhat console or script
+storyManager.setGhostToken(tokenAddress)
+liquidityPool.setGhostToken(tokenAddress)
+```
+
+### Frontend Deployment
+
+```bash
+npm run build
 vercel --prod
 ```
 
-### Mainnet (Base)
+### Contract Verification
+
 ```bash
-npm run deploy:base
-npm run verify
-vercel --prod
-```
-
-**⚠️ Before Mainnet**: Security audit required
-
-**📋 Full Guide**: See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
-
----
-
-## 📚 Documentation
-
-### Core Docs
-- [User Guide](docs/USER_GUIDE.md) - How to play
-- [Deployment](docs/DEPLOYMENT.md) - Setup & deploy
-- [Security](docs/SECURITY.md) - Security features
-- [Architecture](docs/ARCHITECTURE.md) - Technical details
-
-### Additional
-- [Complete Setup](docs/COMPLETE_SETUP_GUIDE.md) - Detailed setup
-- [AI Integration](docs/AI_INTEGRATION.md) - AI features
-- [Changelog](CHANGELOG.md) - Version history
-
-### Archive
-- [docs/archive/](docs/archive/) - Historical documentation
-
----
-
-## 🏆 Version 2.0.0 Highlights
-
-### Security (40 Bugs Fixed)
-- Pull-over-push refund pattern
-- Safe transfer with call()
-- Batch processing for DoS prevention
-- Comprehensive input validation
-
-### Frontend Migration
-- Refund system with haptic feedback
-- Story completion with progress tracking
-- Performance monitoring (LCP, FID, CLS)
-- Memory leak fixes
-
-### Quality
-- 100% test coverage
-- 0 TypeScript errors
-- Production-ready build
-- Comprehensive documentation
-
-**📖 Full Release Notes**: See [CHANGELOG.md](CHANGELOG.md)
-
----
-
-## 🤝 Contributing
-
-1. Fork repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Open Pull Request
-
----
-
-## 📄 License
-
-Fair Source License (5 users) - Free for up to 5 users. Contact for commercial licensing.
-
----
-
-## 👥 Team & Support
-
-**Developer**: DrDeeks  
-**Email**: drdeeks@outlook.com  
-**GitHub**: https://github.com/drdeeks
-
----
-
-## 🙏 Acknowledgments
-
-- [Base](https://base.org) - L2 blockchain
-- [Farcaster](https://farcaster.xyz) - Social protocol
-- [OnchainKit](https://onchainkit.com) - Blockchain toolkit
-- [OpenZeppelin](https://openzeppelin.com) - Security libraries
-- [OpenAI](https://openai.com) - AI features
-
----
-
-**Built with 💜 by DrDeeks | Powered by Base 🟪 | Secured by OpenZeppelin 🛡️ | Enhanced by AI 🤖**
-
----
-
-## ✨ Key Features
-
-### 🤖 AI-Powered Features
-- **Story Generation**: OpenAI creates unique Mad Libs templates
-- **Word Moderation**: AI filters inappropriate content
-- **Intelligent Fallbacks**: Works without API keys using templates
-- **Performance Caching**: 1-hour story cache, 30-min moderation cache
-
-### 🎨 Dual NFT System
-- **Contributor NFTs**: Hidden until story completion, then revealed with context
-- **Creator NFTs**: Auto-minted when stories complete (minimal metadata only)
-- **Dynamic Images**: SVG generation with story context and user highlights
-
-### 📱 Mobile & Farcaster Excellence
-- **Haptic Feedback**: Premium tactile responses on every interaction
-- **Mobile-First Design**: 44px touch targets, responsive breakpoints
-- **Farcaster Mini-App**: Native integration with lifecycle management
-- **Performance Optimized**: <2.5s LCP, <100ms FID, <0.1 CLS
-
-### 🏢 Enterprise Architecture
-- **Performance Monitoring**: Core Web Vitals tracking
-- **Error Resilience**: Graceful degradation for all services
-- **Scalable Caching**: Intelligent cache management
-- **Type Safety**: Complete TypeScript coverage
-
----
-
-## 🎮 How to Play
-
-1. **Connect Wallet** - Link your Web3 wallet
-2. **Earn Credits** - Contribute words to stories (1 word = 1 credit)
-3. **Create Stories** - Use credits to generate AI-powered story templates
-4. **Collect NFTs** - Each contribution mints a unique NFT
-5. **Complete Stories** - Fill all slots to reveal NFTs and earn creator rewards
-
-### Story Types
-- **Mini Stories** (10 slots) - Quick, fun gameplay
-- **Normal Stories** (20 slots) - Balanced storytelling
-- **Epic Stories** (200 slots) - Massive collaborative narratives
-
-### Economics
-- **Contribute Word**: $0.00005 ETH → Mint NFT + 1 credit
-- **Create Story**: $0.0001 ETH + 1 credit → AI-generated template
-- **All fees** → Liquidity pool (100%)
-
----
-
-## 🛠️ Development
-
-### Build & Test
-```bash
-npm run compile          # Compile smart contracts
-npm test                # Run contract tests
-npm run build           # Production build
-npm run ts-check        # TypeScript validation
-```
-
-### Deployment
-```bash
-# Deploy contracts
-npm run deploy:baseSepolia    # Testnet
-npm run deploy:base          # Mainnet
-
-# Verify contracts
 npm run verify
 ```
 
-### Environment Setup
+---
+
+## NFT Assets & Customization
+
+### NFT Image Generation
+
+NFT images are dynamically generated as SVGs via `/api/nft/[tokenId]/image`. Each NFT displays:
+- Story title and category
+- The contributor's word (highlighted)
+- Word position in the story
+- Contributor address or Farcaster username
+
+### Background Customization
+
+NFT backgrounds can be customized per story category using local or remote images.
+
+#### Local Backgrounds
+
+1. Add images to `public/nft-backgrounds/`:
+   ```
+   public/nft-backgrounds/
+   ├── adventure.png
+   ├── fantasy.jpg
+   ├── comedy.png
+   └── default.png
+   ```
+
+2. Configure in `.env`:
+   ```env
+   NFT_BACKGROUND_BASE_URL_LOCAL=/nft-backgrounds
+   NFT_BACKGROUND_CATEGORY_MAP='{"adventure":"adventure.png","fantasy":"fantasy.jpg","comedy":"comedy.png"}'
+   NFT_BACKGROUND_DEFAULT=default.png
+   ```
+
+#### Remote Backgrounds (IPFS/CDN)
+
 ```env
-# Required
-PRIVATE_KEY=your_private_key_here
-NEXT_PUBLIC_CHAIN_ID=84532
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
+NFT_BACKGROUND_BASE_URL_REMOTE=https://your-cdn.com/nft-backgrounds
+NFT_BACKGROUND_CATEGORY_MAP='{"adventure":"adventure.png","scifi":"scifi.jpg"}'
+```
 
-# Optional (enables AI features)
-OPENAI_API_KEY=sk-your_key_here
+#### Fallback Order
 
-# After deployment
+1. Local background (if configured and file exists)
+2. Remote background (if configured)
+3. Procedurally generated gradient (default)
+
+### App Icons & Branding
+
+Replace these files in `public/` for custom branding:
+- `icon.png` - App icon (512x512 recommended)
+- `favicon.ico` - Browser favicon
+- `hero.png` - Landing page hero image
+- `splash.png` - PWA splash screen
+
+---
+
+## Environment Variables
+
+### Required
+
+```env
+PRIVATE_KEY=                              # Deployer wallet private key
+NEXT_PUBLIC_CHAIN_ID=84532                # 84532 (Sepolia) or 8453 (Mainnet)
+NEXT_PUBLIC_ONCHAINKIT_PROJECT_ID=        # WalletConnect Cloud project ID
+```
+
+### Contract Addresses (set after deployment)
+
+```env
 NEXT_PUBLIC_NFT_CONTRACT_ADDRESS=0x...
 NEXT_PUBLIC_STORY_MANAGER_ADDRESS=0x...
 NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS=0x...
+NEXT_PUBLIC_PRICE_ORACLE_ADDRESS=0x...
+NEXT_PUBLIC_TOKEN_ADDRESS=0x...           # GHOST token (if deployed)
+```
+
+### Optional - AI Features
+
+```env
+OPENAI_API_KEY=sk-...                     # Enables AI story generation
+OPENAI_MODEL=gpt-4o-mini                  # Model selection
+OPENAI_TEMPERATURE=0.9                    # Creativity level (0-1)
+OPENAI_MAX_TOKENS=700                     # Max response length
+```
+
+### Optional - NFT Customization
+
+```env
+NFT_BACKGROUND_BASE_URL_LOCAL=/nft-backgrounds
+NFT_BACKGROUND_BASE_URL_REMOTE=https://cdn.example.com/backgrounds
+NFT_BACKGROUND_CATEGORY_MAP='{"adventure":"adventure.png"}'
+NFT_BACKGROUND_DEFAULT=default.png
+```
+
+See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) for the complete list.
+
+---
+
+## Architecture
+
+```
+├── contracts/                 # Solidity smart contracts
+│   ├── StoryManager.sol       # Core game logic, stories, contributions
+│   ├── GhostWriterNFT.sol     # ERC-721 with hidden/revealed states
+│   ├── GhostWriterToken.sol   # GHOST ERC-20 token
+│   ├── LiquidityPool.sol      # Fee collection
+│   └── PriceOracle.sol        # Chainlink USD/ETH pricing
+├── src/
+│   ├── app/                   # Next.js App Router
+│   │   ├── api/               # API routes
+│   │   │   ├── generate-story/  # AI story generation
+│   │   │   ├── moderate-word/   # Content moderation
+│   │   │   └── nft/[tokenId]/   # NFT metadata & images
+│   │   └── page.tsx           # Main app page
+│   ├── components/            # React components
+│   ├── hooks/                 # Contract interaction hooks
+│   └── lib/                   # Utilities, ABIs, config
+├── scripts/                   # Deployment scripts
+├── test/                      # Contract tests
+└── public/                    # Static assets
 ```
 
 ---
 
-## 📊 Smart Contracts
+## Story Types
 
-### Architecture
-- **GhostWriterNFT.sol** - ERC-721 with hidden/revealed states
-- **StoryManager.sol** - Game logic, contributions, and rewards
-- **LiquidityPool.sol** - Fee collection and management
-- **PriceOracle.sol** - USD to ETH conversion with Chainlink
-
-### Security Features
-- ✅ OpenZeppelin contracts (ReentrancyGuard, Ownable)
-- ✅ Access control (only StoryManager can mint/reveal)
-- ✅ Input validation and duplicate prevention
-- ✅ Gas optimized storage patterns
-- ✅ Pull-over-push refund pattern (prevents gas griefing)
-- ✅ Batch processing for large operations (prevents DoS)
-- ✅ Price oracle circuit breaker (prevents manipulation)
-- ✅ Off-chain leaderboard sorting (gas optimization)
-
-**📋 Security Audit**: See [SECURITY_FIXES.md](./SECURITY_FIXES.md) for detailed security improvements.
-
-### Deployment Status
-- **Base Sepolia**: Ready for testnet deployment
-- **Base Mainnet**: Production ready (audit recommended)
+| Type | Word Count | Slots | Creation |
+|------|-----------|-------|----------|
+| Mini | ~50 words | 5-10 | Anyone |
+| Normal | ~100 words | 10-15 | Anyone |
+| Epic | ~150 words | 15-25 | Owner only |
 
 ---
 
-## 🎨 NFT System
+## Commands
 
-### Contributor NFTs
-- **Hidden State**: Shows position, word type, mystery theme
-- **Revealed State**: Shows complete story with highlighted contribution
-- **Dynamic Images**: SVG generation at `/api/nft/[tokenId]/image`
-
-### Creator NFTs (Auto-minted)
-- **Trigger**: Automatically minted when story completes
-- **Metadata**: Creator info, story title, category, date created
-- **Content**: NO story template or content included (minimal metadata)
-
----
-
-## 📱 Mobile & Farcaster
-
-### Mobile Optimization
-- **Touch Targets**: 44px minimum (iOS standard)
-- **Haptic Feedback**: Context-aware vibration patterns
-- **Responsive Design**: 320px → 1280px+ breakpoints
-- **Performance**: 95+ Lighthouse score
-
-### Farcaster Integration
-- **Mini-App Ready**: Complete manifest and lifecycle management
-- **User Context**: Seamless integration with Farcaster user data
-- **Share Features**: Native story sharing capabilities
-- **Notifications**: Framework ready for future implementation
-
----
-
-## 📚 Documentation
-
-- **[Complete Setup Guide](./docs/COMPLETE_SETUP_GUIDE.md)** - Full deployment instructions
-- **[Enterprise Optimization Report](./ENTERPRISE_OPTIMIZATION_REPORT.md)** - Performance & architecture details
-- **[Build Optimization Report](./BUILD_OPTIMIZATION_REPORT.md)** - Development workflow
-
----
-
-## 🧪 Testing
-
-### Contract Tests
 ```bash
-npm test                    # Full test suite
-npm run test:gas           # Gas usage analysis
+# Development
+npm run dev                    # Start dev server
+npm run build                  # Production build
+npm run ts-check               # TypeScript validation
+
+# Smart Contracts
+npm run compile                # Compile Solidity
+npm test                       # Contract tests
+npm run test:gas               # Tests with gas report
+
+# Deployment
+npm run deploy:baseSepolia     # Deploy to testnet
+npm run deploy:base            # Deploy to mainnet
+npm run verify                 # Verify on Basescan
 ```
 
-### Frontend Tests
-```bash
-npm run test:frontend      # React component tests
-npm run test:frontend:coverage  # Coverage report
-```
+---
 
-### Performance
-- **Build Time**: 45 seconds (optimized)
-- **Core Web Vitals**: LCP <2.5s, FID <100ms, CLS <0.1
-- **Mobile Score**: 95+ Lighthouse performance
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [docs/SETUP.md](docs/SETUP.md) | Local development setup |
+| [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) | Environment variables |
+| [docs/AI.md](docs/AI.md) | AI configuration & tuning |
+| [docs/NFT_MEDIA.md](docs/NFT_MEDIA.md) | NFT metadata & images |
+| [docs/SECURITY.md](docs/SECURITY.md) | Security features |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
 
 ---
 
-## 🚀 Deployment
+## Security
 
-### Testnet (Base Sepolia)
-1. Get testnet ETH from [Base faucet](https://www.base.org/faucet)
-2. Configure `.env` with testnet settings
-3. Run `npm run deploy:baseSepolia`
-4. Update contract addresses in `.env`
-5. Deploy frontend to Vercel
-
-### Mainnet (Base)
-1. Configure production environment variables
-2. Run `npm run deploy:base`
-3. Verify contracts with `npm run verify`
-4. Deploy to production domain
-
-### Vercel Deployment
-1. Connect GitHub repository
-2. Add all environment variables
-3. Deploy automatically on push
+- **ReentrancyGuard** on all state-changing functions
+- **Pull-over-push** refund pattern (prevents gas griefing)
+- **Batch processing** for large stories (prevents DoS)
+- **Price oracle circuit breaker** (20% deviation limit)
+- **EIP-712 signatures** for story template approval
 
 ---
 
-## 🏆 Achievements
+## License
 
-### Phase 1: MVP ✅ (Completed)
-- [x] Smart contracts with dual NFT system
-- [x] AI-powered story generation and moderation
-- [x] Frontend with Base integration
-- [x] Creator NFT auto-minting
-- [x] Farcaster Mini App support
-- [x] Comprehensive test suite
-- [x] Achievement badges and leaderboards
-- [x] Enterprise-grade optimization
-
-### Phase 2: Launch 🚧 (Current)
-- [x] AI integration with caching and fallbacks
-- [x] Mobile-first design with haptic feedback
-- [x] Performance monitoring and optimization
-- [ ] Deploy to Base Sepolia testnet
-- [ ] Beta testing with community
-- [ ] Deploy to Base mainnet
-
-### Phase 3: Enhancement 📅 (Next)
-- [ ] IPFS metadata storage
-- [ ] Advanced analytics dashboard
-- [ ] Cross-chain deployment
-- [ ] Mobile app (React Native)
+MIT License - see [LICENSE](LICENSE)
 
 ---
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
-
----
-
-## 📄 License
-
-This project is licensed under the Fair Source License (5 users) - see the [LICENSE](LICENSE) file for details.
-
-**Free for up to 5 users.** Need more? Contact for commercial licensing.
-
----
-
-## 👥 Team & Support
-
-Built with ❤️ by the Ghost Writer team.
-
-- **GitHub**: https://github.com/drdeeks
-- **Email**: drdeeks@outlook.com
-
----
-
-## 🙏 Acknowledgments
-
-- [Base](https://base.org) - L2 blockchain platform
-- [Farcaster](https://farcaster.xyz) - Decentralized social protocol
-- [OnchainKit](https://onchainkit.com) - Base blockchain toolkit
-- [OpenZeppelin](https://openzeppelin.com) - Smart contract libraries
-- [OpenAI](https://openai.com) - AI story generation and moderation
-- [Hardhat](https://hardhat.org) - Ethereum development environment
-
----
-
-**Built with 💜 by DrDeeks | Powered by Base 🟪 | Secured by OpenZeppelin 🛡️ | Enhanced by AI 🤖**
+**Built with 💜 by DrDeeks | Powered by Base 🔵 | Secured by OpenZeppelin 🛡️**

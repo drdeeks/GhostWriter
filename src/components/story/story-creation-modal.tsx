@@ -4,32 +4,48 @@ import { useStoryManager, useIsOwner } from '@/hooks/useContract';
 import { useActiveStoriesCount } from '@/hooks/useActiveStoriesCount';
 import type { StoryType } from '@/types/ghostwriter';
 import { AlertCircle, DollarSign, Loader2, PlusCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useAccount } from 'wagmi';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Label } from '../ui/label';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
-const STORY_CATEGORIES = [
-  "Adventure",
-  "Fantasy",
-  "Comedy",
-  "Mystery",
-  "Sci-Fi",
-  "Sports",
-  "Animals",
-  "School",
-  "Superheroes",
-  "Friendship",
-  "Holidays",
-  "Food",
-  "Nature",
-  "History",
+type StorySuggestion = {
+  storyId: string;
+  title: string;
+  template: string;
+  wordTypes: string[];
+  expiresAt: string | number;
+  signature: `0x${string}`;
+  generatedBy?: 'AI' | 'Template' | 'Cache';
+};
+
+type CategoryOption = { value: string; label: string };
+
+const STORY_CATEGORIES: CategoryOption[] = [
+  { value: 'adventure', label: 'Adventure' },
+  { value: 'fantasy', label: 'Fantasy' },
+  { value: 'comedy', label: 'Comedy' },
+  { value: 'mystery', label: 'Mystery' },
+  { value: 'scifi', label: 'Sci-Fi' },
+  { value: 'horror', label: 'Horror' },
+  { value: 'romance', label: 'Romance' },
+  { value: 'crypto', label: 'Crypto' },
+  { value: 'sports', label: 'Sports' },
+  { value: 'animals', label: 'Animals' },
+  { value: 'school', label: 'School' },
+  { value: 'superheroes', label: 'Superheroes' },
+  { value: 'friendship', label: 'Friendship' },
+  { value: 'holidays', label: 'Holidays' },
+  { value: 'food', label: 'Food' },
+  { value: 'nature', label: 'Nature' },
+  { value: 'history', label: 'History' },
+  { value: 'random', label: 'Random' },
 ];
-import { Card, CardContent } from './ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
-import { Label } from './ui/label';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 
 interface StoryCreationModalProps {
   open: boolean;
@@ -40,18 +56,36 @@ interface StoryCreationModalProps {
 
 export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }: StoryCreationModalProps) {
   const [selectedType, setSelectedType] = useState<StoryType>('normal');
-  const [selectedCategory, setSelectedCategory] = useState<string>(STORY_CATEGORIES[0]);
-  const { createStory, isPending } = useStoryManager();
+  const [selectedCategory, setSelectedCategory] = useState<string>(STORY_CATEGORIES[0]!.value);
+  const { createStoryApproved, isPending } = useStoryManager();
   const { activeStories, isLoading: isActiveStoriesLoading } = useActiveStoriesCount();
   const { address } = useAccount();
   const { isOwner } = useIsOwner(address);
+
+  const [suggestions, setSuggestions] = useState<StorySuggestion[] | null>(null);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState<number>(0);
+
+  const selectedSuggestion = useMemo(() => {
+    if (!suggestions || suggestions.length === 0) return null;
+    return suggestions[selectedSuggestionIndex] ?? suggestions[0];
+  }, [suggestions, selectedSuggestionIndex]);
+
+  const resetSuggestions = () => {
+    setSuggestions(null);
+    setSelectedSuggestionIndex(0);
+  };
+
+  const handleClose = () => {
+    resetSuggestions();
+    onClose();
+  };
 
   const storyTypes = [
     {
       type: 'mini' as StoryType,
       title: 'Mini Story',
       words: '~50 words',
-      slots: '10 slots',
+      slots: '5-10 slots',
       duration: 'Quick & fun!',
       icon: '⚡',
       color: 'from-green-500 to-emerald-500',
@@ -62,7 +96,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
       type: 'normal' as StoryType,
       title: 'Normal Story',
       words: '~100 words',
-      slots: '20 slots',
+      slots: '10-15 slots',
       duration: 'Classic length',
       icon: '📖',
       color: 'from-blue-500 to-indigo-500',
@@ -72,8 +106,8 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
     {
       type: 'epic' as StoryType,
       title: 'Epic Story',
-      words: '~500 words',
-      slots: '50 slots',
+      words: '~150 words',
+      slots: '15-25 slots',
       duration: 'A grand saga!',
       icon: '🔥',
       color: 'from-red-500 to-orange-500',
@@ -103,27 +137,58 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
       return;
     }
 
-    const storyId = `story_${Date.now()}`;
+    // Step 1: generate suggestions (server-signed approvals)
+    if (!suggestions) {
+      const response = await fetch('/api/generate-story', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: selectedCategory,
+          storyType: selectedType,
+          userAddress: address,
+        }),
+      });
 
-    // Generate story template via API
-    const response = await fetch('/api/generate-story', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category: selectedCategory }),
-    });
+      if (!response.ok) {
+        toast.error('Failed to generate story suggestions');
+        return;
+      }
 
-    if (!response.ok) {
-      toast.error('Failed to generate story template');
+      const data = await response.json();
+      const nextSuggestions = (data?.suggestions || []) as StorySuggestion[];
+
+      if (!Array.isArray(nextSuggestions) || nextSuggestions.length !== 5) {
+        toast.error('Story suggestion service error', {
+          description: 'Expected 5 suggestions',
+        });
+        return;
+      }
+
+      setSuggestions(nextSuggestions);
+      setSelectedSuggestionIndex(0);
       return;
     }
 
-    const { title, template, wordTypes } = await response.json();
+    // Step 2: pick one suggestion and create onchain
+    if (!selectedSuggestion) {
+      toast.error('No suggestion selected');
+      return;
+    }
 
-    const result = await createStory(storyId, title, template, selectedType, selectedCategory, wordTypes);
+    const result = await createStoryApproved(
+      selectedSuggestion.storyId,
+      selectedSuggestion.title,
+      selectedSuggestion.template,
+      selectedType,
+      selectedCategory,
+      selectedSuggestion.wordTypes,
+      BigInt(selectedSuggestion.expiresAt),
+      selectedSuggestion.signature
+    );
 
     if (result.success) {
       onSubmit(selectedType);
-      onClose();
+      handleClose();
     } else {
       toast.error('Story creation failed', {
         description: result.error || 'Please try again',
@@ -132,7 +197,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-2xl bg-gradient-to-br from-white to-blue-50 dark:from-gray-900 dark:to-blue-900/20">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -147,14 +212,51 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
           {/* Category Selection */}
           <div>
             <Label className="text-base font-semibold mb-4 block">Choose Story Category:</Label>
-            <RadioGroup value={selectedCategory} onValueChange={setSelectedCategory} className="flex flex-wrap gap-2">
+            <RadioGroup
+              value={selectedCategory}
+              onValueChange={(value: string) => {
+                setSelectedCategory(value);
+                resetSuggestions();
+              }}
+              className="flex flex-wrap gap-2"
+            >
               {STORY_CATEGORIES.map((cat) => (
-                <RadioGroupItem key={cat} value={cat} id={cat} />
+                <RadioGroupItem key={cat.value} value={cat.value} id={cat.value} />
               ))}
               {STORY_CATEGORIES.map((cat) => (
-                <Label key={cat} htmlFor={cat} className={`px-3 py-1 rounded cursor-pointer border ${selectedCategory === cat ? 'bg-blue-200 border-blue-500' : 'bg-gray-100 border-gray-300'}`}>{cat}</Label>
+                <Label
+                  key={cat.value}
+                  htmlFor={cat.value}
+                  className={`px-3 py-1 rounded cursor-pointer border ${selectedCategory === cat.value ? 'bg-blue-200 border-blue-500' : 'bg-gray-100 border-gray-300'}`}
+                >
+                  {cat.label}
+                </Label>
               ))}
             </RadioGroup>
+
+            {suggestions && (
+              <div className="mt-4 space-y-2">
+                <Label className="text-base font-semibold block">Pick 1 of 5 suggestions:</Label>
+                <div className="grid grid-cols-1 gap-2">
+                  {suggestions.map((s, idx) => (
+                    <button
+                      key={s.storyId}
+                      type="button"
+                      onClick={() => setSelectedSuggestionIndex(idx)}
+                      className={`text-left p-3 rounded border ${idx === selectedSuggestionIndex ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white'} hover:border-blue-400 transition`}
+                    >
+                      <div className="font-semibold">{s.title}</div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        {s.generatedBy ? `Source: ${s.generatedBy}` : ''} • Slots: {s.wordTypes?.length ?? 0}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+                        {s.template.slice(0, 160)}...
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           {/* Credits Info */}
           <div className={`rounded-lg p-4 border-2 ${creationCredits > 0 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'}`}>
@@ -184,7 +286,13 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
           {/* Story Type Selection */}
           <div>
             <Label className="text-base font-semibold mb-4 block">Choose Story Length:</Label>
-            <RadioGroup value={selectedType} onValueChange={(value: string) => setSelectedType(value as StoryType)}>
+            <RadioGroup
+              value={selectedType}
+              onValueChange={(value: string) => {
+                setSelectedType(value as StoryType);
+                resetSuggestions();
+              }}
+            >
               <div className="space-y-3">
                 {storyTypes.map((story) => (
                   <Card
@@ -193,7 +301,11 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
                       ? `ring-4 ring-offset-2 ring-blue-500 ${story.borderColor} border-2`
                       : `${story.borderColor} border-2 hover:border-blue-400`
                       } ${story.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    onClick={() => !story.disabled && setSelectedType(story.type)}
+                    onClick={() => {
+                      if (story.disabled) return;
+                      setSelectedType(story.type);
+                      resetSuggestions();
+                    }}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center gap-4">
@@ -238,7 +350,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
 
         <DialogFooter className="flex gap-2">
           <Button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isPending}
             className="flex-1 border border-gray-300 hover:bg-gray-50"
           >
@@ -252,12 +364,16 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
             {isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
+                {suggestions ? 'Creating...' : 'Generating...'}
               </>
             ) : (
               <>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                {(!isActiveStoriesLoading && activeStories >= 15) ? 'Limit Reached' : 'Create Story'}
+                {(!isActiveStoriesLoading && activeStories >= 15)
+                  ? 'Limit Reached'
+                  : suggestions
+                    ? 'Create Story'
+                    : 'Generate 5 Suggestions'}
               </>
             )}
           </Button>

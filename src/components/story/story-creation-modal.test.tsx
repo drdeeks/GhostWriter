@@ -3,15 +3,14 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock all external dependencies
-jest.mock('../hooks/useContract', () => ({
+jest.mock('../../hooks/useContract', () => ({
   useStoryManager: () => ({
     createStory: jest.fn().mockResolvedValue({ success: true, hash: '0x123' }),
     isPending: false,
   }),
-  useIsOwner: () => ({ isOwner: false }),
 }));
 
-jest.mock('../hooks/useActiveStoriesCount', () => ({
+jest.mock('../../hooks/useActiveStoriesCount', () => ({
   useActiveStoriesCount: () => ({
     activeStories: 0,
     isLoading: false,

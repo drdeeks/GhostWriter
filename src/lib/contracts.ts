@@ -13,6 +13,8 @@ export const CONTRACTS = {
     "0x0000000000000000000000000000000000000000") as `0x${string}`,
   priceOracle: (process.env.NEXT_PUBLIC_PRICE_ORACLE_ADDRESS ||
     "0x0000000000000000000000000000000000000000") as `0x${string}`,
+  token: (process.env.NEXT_PUBLIC_TOKEN_ADDRESS ||
+    "0x0000000000000000000000000000000000000000") as `0x${string}`,
 };
 
 // Chain configuration
@@ -47,6 +49,20 @@ export const STORY_MANAGER_ABI = [
     type: "function",
   },
   {
+    inputs: [],
+    name: "storyTemplateSigner",
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "signer", type: "address" }],
+    name: "setStoryTemplateSigner",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [
       { name: "storyId", type: "string" },
       { name: "title", type: "string" },
@@ -56,6 +72,22 @@ export const STORY_MANAGER_ABI = [
       { name: "wordTypes", type: "string[]" },
     ],
     name: "createStory",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "storyId", type: "string" },
+      { name: "title", type: "string" },
+      { name: "template", type: "string" },
+      { name: "storyType", type: "uint8" },
+      { name: "category", type: "uint8" },
+      { name: "wordTypes", type: "string[]" },
+      { name: "expiresAt", type: "uint256" },
+      { name: "signature", type: "bytes" },
+    ],
+    name: "createStoryApproved",
     outputs: [],
     stateMutability: "payable",
     type: "function",
@@ -88,12 +120,14 @@ export const STORY_MANAGER_ABI = [
           { name: "title", type: "string" },
           { name: "template", type: "string" },
           { name: "storyType", type: "uint8" },
+          { name: "category", type: "uint8" },
           { name: "totalSlots", type: "uint256" },
           { name: "filledSlots", type: "uint256" },
           { name: "creator", type: "address" },
           { name: "createdAt", type: "uint256" },
           { name: "completedAt", type: "uint256" },
           { name: "status", type: "uint8" },
+          { name: "shareCount", type: "uint256" },
         ],
         name: "",
         type: "tuple",
@@ -151,20 +185,6 @@ export const STORY_MANAGER_ABI = [
         type: "tuple",
       },
     ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "CONTRIBUTION_FEE",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "CREATION_FEE",
-    outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
   },
@@ -260,7 +280,27 @@ export const STORY_MANAGER_ABI = [
     type: "event",
   },
   {
-    inputs: [{ name: "user", type: "address" }],
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "storyId", type: "string" },
+      { indexed: true, name: "creatorTokenId", type: "uint256" },
+    ],
+    name: "StoryFinalized",
+    type: "event",
+  },
+  {
+    inputs: [
+      { name: "users", type: "address[]" },
+      { name: "amounts", type: "uint256[]" },
+    ],
+    name: "airdropCredits",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "user", type: "address" }],
     name: "pendingRefunds",
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
@@ -376,6 +416,98 @@ export const NFT_ABI = [
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
+  },
+] as const;
+
+export const LIQUIDITY_POOL_ABI = [
+  {
+    inputs: [],
+    name: 'getBalance',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'storyManager',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'amount', type: 'uint256' }],
+    name: 'withdraw',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'withdrawAll',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+] as const;
+
+export const TOKEN_ABI = [
+  {
+    inputs: [],
+    name: 'name',
+    outputs: [{ name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'symbol',
+    outputs: [{ name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'account', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { name: 'recipients', type: 'address[]' },
+      { name: 'amounts', type: 'uint256[]' },
+    ],
+    name: 'airdrop',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    name: 'mint',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'from', type: 'address' },
+      { indexed: true, name: 'to', type: 'address' },
+      { indexed: false, name: 'value', type: 'uint256' },
+    ],
+    name: 'Transfer',
+    type: 'event',
   },
 ] as const;
 

@@ -7,6 +7,10 @@ interface AIConfig {
   timeout: number;
   fallbackEnabled: boolean;
   cacheEnabled: boolean;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  systemPromptAppend: string;
 }
 
 interface GeneratedStory {
@@ -17,6 +21,8 @@ interface GeneratedStory {
   confidence?: number;
   processingTime?: number;
 }
+
+export type StoryTypeName = 'mini' | 'normal' | 'epic';
 
 interface ModerationResult {
   isAppropriate: boolean;
@@ -35,9 +41,13 @@ export class AIService {
   constructor(config: Partial<AIConfig> = {}) {
     this.config = {
       maxRetries: 3,
-      timeout: 10000,
+      timeout: parseInt(process.env.OPENAI_TIMEOUT_MS || '10000', 10),
       fallbackEnabled: true,
       cacheEnabled: true,
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      temperature: parseFloat(process.env.OPENAI_TEMPERATURE || '0.9'),
+      maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS || '700', 10),
+      systemPromptAppend: process.env.AI_STORY_SYSTEM_PROMPT_APPEND || '',
       ...config,
     };
     
@@ -88,106 +98,201 @@ export class AIService {
   }
 
   async generateStory(category: string): Promise<GeneratedStory> {
+    // Backwards-compatible default
+    return (await this.generateStorySuggestions(category, 'normal', 1))[0];
+  }
+
+  async generateStorySuggestions(
+    category: string,
+    storyType: StoryTypeName,
+    count: number
+  ): Promise<GeneratedStory[]> {
     const startTime = performance.now();
-    const cacheKey = this.getCacheKey('story', category);
-    
+    const cacheKey = this.getCacheKey('story', `${category}:${storyType}:${count}`);
+
     // Check cache first
-    const cached = this.getFromCache<GeneratedStory>(cacheKey);
+    const cached = this.getFromCache<GeneratedStory[]>(cacheKey);
     if (cached) {
-      return { ...cached, generatedBy: 'Cache' };
+      return cached.map((s) => ({ ...s, generatedBy: 'Cache' }));
     }
 
     // Validate category
     const categoryObj = STORY_CATEGORIES.find(
-      cat => cat.name.toLowerCase() === category.toLowerCase()
+      (cat) => cat.name.toLowerCase() === category.toLowerCase()
     );
 
     if (!categoryObj) {
       throw new Error(`Invalid category: ${category}`);
     }
 
+    const expectedSlots = this.expectedSlots(storyType);
+
     // Try AI generation with retries
     if (this.openai) {
-      for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
-        try {
-          const result = await this.generateWithAI(categoryObj);
-          const processingTime = performance.now() - startTime;
-          
-          const story: GeneratedStory = {
-            ...result,
-            generatedBy: 'AI',
-            processingTime,
-          };
-          
-          this.setCache(cacheKey, story);
-          return story;
-        } catch (error) {
-          console.warn(`AI generation attempt ${attempt} failed:`, error);
-          
-          if (attempt === this.config.maxRetries) {
-            if (this.config.fallbackEnabled) {
-              console.log('Falling back to template generation');
-              break;
-            } else {
-              throw error;
+      const results: GeneratedStory[] = [];
+
+      for (let i = 0; i < count; i++) {
+        let generated: Omit<GeneratedStory, 'generatedBy' | 'processingTime'> | null = null;
+
+        for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
+          try {
+            const raw = await this.generateWithAI(categoryObj, expectedSlots);
+            if (raw.wordTypes.length !== expectedSlots) {
+              throw new Error(`AI returned ${raw.wordTypes.length} slots; expected ${expectedSlots}`);
+            }
+            generated = raw;
+            break;
+          } catch (error) {
+            console.warn(`AI generation attempt ${attempt} failed:`, error);
+            if (attempt !== this.config.maxRetries) {
+              await new Promise((resolve) =>
+                setTimeout(resolve, Math.pow(2, attempt) * 500)
+              );
             }
           }
-          
-          // Exponential backoff
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+        }
+
+        if (generated) {
+          const processingTime = performance.now() - startTime;
+          results.push({
+            ...generated,
+            generatedBy: 'AI',
+            processingTime,
+          });
+        } else {
+          // Fallback if AI fails for this suggestion
+          const fallback = this.generateDeterministicMadLib(categoryObj, expectedSlots);
+          const processingTime = performance.now() - startTime;
+          results.push({
+            ...fallback,
+            generatedBy: 'Template',
+            processingTime,
+          });
         }
       }
+
+      this.setCache(cacheKey, results);
+      return results;
     }
 
-    // Fallback to template generation
-    const result = this.generateFromTemplate(categoryObj);
+    // Fallback to deterministic Mad Lib generation
     const processingTime = performance.now() - startTime;
-    
-    const story: GeneratedStory = {
-      ...result,
-      generatedBy: 'Template',
+    const results = Array.from({ length: count }).map(() => ({
+      ...this.generateDeterministicMadLib(categoryObj, expectedSlots),
+      generatedBy: 'Template' as const,
       processingTime,
-    };
-    
-    this.setCache(cacheKey, story);
-    return story;
+    }));
+
+    this.setCache(cacheKey, results);
+    return results;
   }
 
-  private async generateWithAI(categoryObj: typeof STORY_CATEGORIES[0]): Promise<Omit<GeneratedStory, 'generatedBy' | 'processingTime'>> {
+  private expectedSlots(storyType: StoryTypeName): number {
+    if (storyType === 'mini') {
+      // 5-10 slots
+      return Math.floor(Math.random() * (10 - 5 + 1) + 5);
+    }
+    if (storyType === 'normal') {
+      // 10-15 slots
+      return Math.floor(Math.random() * (15 - 10 + 1) + 10);
+    }
+    // 15-25 slots for epic
+    return Math.floor(Math.random() * (25 - 15 + 1) + 15);
+  }
+
+  private async generateWithAI(
+    categoryObj: typeof STORY_CATEGORIES[0],
+    expectedSlots: number
+  ): Promise<Omit<GeneratedStory, 'generatedBy' | 'processingTime'>> {
     if (!this.openai) throw new Error('OpenAI not initialized');
 
     const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: this.config.model,
       messages: [
         {
           role: 'system',
-          content: `You are a creative story generator for a Mad Libs-style game. Generate family-friendly, fun stories with word placeholders.
+          content: `You are a creative story generator for a Mad Libs-style game.
 
 Category: ${categoryObj.name}
 Description: ${categoryObj.description}
 
 Requirements:
-- Story should be 50-150 words total (narrative + placeholders)
-- Include 10-35 word placeholders using [WORD_TYPE] format
-- Mini stories: ~50 words total, 10 placeholders
-- Normal stories: ~100 words total, 15-25 placeholders
-- Epic stories: ~150 words total, 35 placeholders
+- Include exactly ${expectedSlots} word placeholders using [WORD_TYPE] format
 - Use valid word types: adjective, noun, verb, adverb, plural_noun, past_tense_verb, verb_ing, persons_name, place, number, color, body_part, food, animal, exclamation, emotion
 - Make it fun, creative, and appropriate for all ages
 - Provide a catchy title
-- Format: Title on first line, story on subsequent lines`,
+- Format: Title on first line, story on subsequent lines
+${this.config.systemPromptAppend}`,
         },
         {
           role: 'user',
-          content: `Generate a ${categoryObj.name.toLowerCase()} story with word placeholders.`,
+          content: `Generate a ${categoryObj.name.toLowerCase()} story with exactly ${expectedSlots} placeholders.`,
         },
       ],
-      temperature: 0.9,
-      max_tokens: 500,
+      temperature: this.config.temperature,
+      max_tokens: this.config.maxTokens,
     });
 
     const generatedText = completion.choices[0]?.message?.content || '';
     return this.parseGeneratedStory(generatedText);
+  }
+
+  private generateDeterministicMadLib(
+    categoryObj: typeof STORY_CATEGORIES[0],
+    expectedSlots: number
+  ): Omit<GeneratedStory, 'generatedBy' | 'processingTime'> {
+    const validTypes = [
+      'adjective',
+      'noun',
+      'verb',
+      'adverb',
+      'plural_noun',
+      'past_tense_verb',
+      'verb_ing',
+      'persons_name',
+      'place',
+      'number',
+      'color',
+      'body_part',
+      'food',
+      'animal',
+      'exclamation',
+      'emotion',
+    ] as const;
+
+    // Pick a title seed from the category templates (they are short prompts).
+    const seed = categoryObj.templates[Math.floor(Math.random() * categoryObj.templates.length)];
+    const title = (seed.split('.')[0] || `${categoryObj.name} Story`).slice(0, 100);
+
+    const wordTypes: string[] = [];
+    for (let i = 0; i < expectedSlots; i++) {
+      wordTypes.push(validTypes[i % validTypes.length]);
+    }
+
+    // Ensure exact placeholder count in template by rebuilding from the wordTypes list.
+    const template = this.buildTemplateFromWordTypes(wordTypes, categoryObj.name);
+
+    return {
+      title,
+      template,
+      wordTypes,
+      confidence: 0.7,
+    };
+  }
+
+  private buildTemplateFromWordTypes(wordTypes: string[], categoryName: string): string {
+    const placeholders = wordTypes.map((t) => `[${t.toUpperCase()}]`);
+
+    // Deterministic, exact consumption: each placeholder appears once.
+    const intro = `Welcome to this ${categoryName.toLowerCase()} tale:`;
+    const sentences: string[] = [intro];
+
+    for (let i = 0; i < placeholders.length; i += 5) {
+      const chunk = placeholders.slice(i, i + 5);
+      sentences.push(`It was ${chunk.join(' ')}.`);
+    }
+
+    return sentences.join(' ');
   }
 
   private parseGeneratedStory(text: string): Omit<GeneratedStory, 'generatedBy' | 'processingTime'> {
