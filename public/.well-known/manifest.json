@@ -6,13 +6,114 @@
   },
   "frame": {
     "version": "1",
-    "name": "Example Frame",
+    "name": "Ghost Writer",
     "iconUrl": "https://ghost-writer-three.vercel.app/icon.png",
     "homeUrl": "https://ghost-writer-three.vercel.app",
     "imageUrl": "https://ghost-writer-three.vercel.app/image.png",
-    "buttonTitle": "Check this out",
+    "buttonTitle": "Start Writing",
     "splashImageUrl": "https://ghost-writer-three.vercel.app/splash.png",
-    "splashBackgroundColor": "#eeccff",
+    "splashBackgroundColor": "#0f172a",
     "webhookUrl": "https://ghost-writer-three.vercel.app/api/webhook"
+  },
+  "name": "Ghost Writer",
+  "short_name": "GhostWriter",
+  "description": "AI-powered collaborative storytelling NFT game on Base Chain",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#06b6d4",
+  "orientation": "portrait-primary",
+  "categories": ["games", "social", "entertainment"],
+  "lang": "en-US",
+  "scope": "/",
+  "id": "ghost-writer-farcaster",
+  
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/splash.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "splash"
+    }
+  ],
+
+  "screenshots": [
+    {
+      "src": "/hero.png",
+      "sizes": "1200x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Ghost Writer main interface"
+    }
+  ],
+
+  "farcaster": {
+    "miniapp": {
+      "version": "2.0",
+      "frame_url": "/",
+      "splash_image_url": "/splash.png",
+      "background_color": "#0f172a",
+      "theme_color": "#06b6d4",
+      "supports_haptic": true,
+      "supports_notifications": true,
+      "optimized_for_mobile": true,
+      "features": [
+        "collaborative_storytelling",
+        "nft_rewards", 
+        "ai_generation",
+        "haptic_feedback",
+        "real_time_updates"
+      ]
+    }
+  },
+
+  "shortcuts": [
+    {
+      "name": "Create Story",
+      "short_name": "Create",
+      "description": "Start a new collaborative story",
+      "url": "/?action=create",
+      "icons": [
+        {
+          "src": "/icon.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Browse Stories",
+      "short_name": "Browse",
+      "description": "Explore active stories",
+      "url": "/?tab=stories",
+      "icons": [
+        {
+          "src": "/icon.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+
+  "related_applications": [
+    {
+      "platform": "web",
+      "url": "https://ghostwriter.app"
+    }
+  ],
+
+  "prefer_related_applications": false,
+  
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+
+  "launch_handler": {
+    "client_mode": "focus-existing"
   }
 }
