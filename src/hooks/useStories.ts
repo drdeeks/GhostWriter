@@ -14,7 +14,13 @@ export function useStories(storyIds: string[] | undefined) {
 
   const { data, isLoading, error, refetch } = useReadContracts({
     contracts,
-    query: { enabled: contracts.length > 0 },
+    query: { 
+      enabled: contracts.length > 0,
+      staleTime: 1000 * 60, // 1 minute
+      gcTime: 1000 * 60 * 5, // 5 minutes
+      retry: 2,
+      retryDelay: 1000,
+    },
   });
 
   const stories = (data || [])

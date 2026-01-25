@@ -78,20 +78,43 @@ export default function Home() {
   const [farcasterUser, setFarcasterUser] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Max loading timeout to prevent indefinite hanging
+  const MAX_LOADING_TIME = 10000;
 
   // Contract data with performance monitoring
   const { storyIds, isLoading: storyIdsLoading, refetch: refetchStories } = useAllStories();
   const { stories, isLoading: storiesLoading, refetchAll } = useStories(storyIds);
   const { stats: userStats, refetch: refetchStats } = useUserStats(address);
 
-  // Enhanced Farcaster initialization
+  // Enhanced Farcaster initialization with guaranteed completion
   useEffect(() => {
+    let mounted = true;
+    let initTimeoutId: NodeJS.Timeout | null = null;
+    let maxLoadingTimeoutId: NodeJS.Timeout | null = null;
+    
+    const cleanup = () => {
+      if (initTimeoutId) clearTimeout(initTimeoutId);
+      if (maxLoadingTimeoutId) clearTimeout(maxLoadingTimeoutId);
+    };
+    
+    const finishLoading = () => {
+      if (!mounted) return;
+      cleanup();
+      setIsInitialized(true);
+      setTimeout(() => {
+        if (mounted) setIsLoading(false);
+      }, 500);
+    };
+    
+    // Absolute max loading time - guarantees no hanging
+    maxLoadingTimeoutId = setTimeout(() => {
+      console.warn('Max loading time reached, forcing completion');
+      finishLoading();
+    }, MAX_LOADING_TIME);
+    
     const init = async () => {
-      let timeoutId: NodeJS.Timeout | null = null;
-      
       try {
-        setIsLoading(true);
-        
         const initPromise = performance.measureAsync('farcaster-init', async () => {
           await farcaster.initialize();
           const context = farcaster.getContext();
@@ -103,26 +126,25 @@ export default function Home() {
           }
         });
         
-        // Bug #38 fix: Clear timeout on success
         const timeoutPromise = new Promise((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error('Initialization timeout')), 5000);
+          initTimeoutId = setTimeout(() => reject(new Error('Initialization timeout')), 5000);
         });
         
         await Promise.race([initPromise, timeoutPromise]);
-        
-        // Clear timeout if init succeeded
-        if (timeoutId) clearTimeout(timeoutId);
       } catch (error) {
         console.error('Initialization failed:', error);
-        if (timeoutId) clearTimeout(timeoutId);
       } finally {
-        setIsInitialized(true);
-        setTimeout(() => setIsLoading(false), 500);
+        finishLoading();
       }
     };
 
     init();
-  }, [farcaster, haptic, performance]);
+    
+    return () => {
+      mounted = false;
+      cleanup();
+    };
+  }, [farcaster, haptic, performance, MAX_LOADING_TIME]);
 
   const contractsDeployed = areContractsDeployed();
 
