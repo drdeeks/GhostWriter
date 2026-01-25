@@ -13,6 +13,8 @@ import FarcasterWrapper from '@/components/FarcasterWrapper';
 import { ONCHAINKIT_API_KEY, ONCHAINKIT_PROJECT_ID, isOnchainKitConfigured } from './config/onchainkit';
 
 export function ClientProviders({ children }: { children: ReactNode }) {
+  const [isMounted, setIsMounted] = useState(false);
+
   const queryClient = useMemo(() => new QueryClient({
     defaultOptions: {
       queries: {
@@ -29,33 +31,62 @@ export function ClientProviders({ children }: { children: ReactNode }) {
     },
   }), []);
 
-  const wagmiConfig = createConfig({
-    chains: [base, baseSepolia],
-    connectors: [
-      farcasterMiniAppConnector(),
+  const wagmiConfig = useMemo(() => {
+    // Safely initialize connectors with fallback
+    const connectors = [];
+    
+    try {
+      connectors.push(farcasterMiniAppConnector());
+    } catch (e) {
+      console.warn('Farcaster connector failed to initialize:', e);
+    }
+    
+    connectors.push(
       injected(),
       coinbaseWallet({
         appName: 'Ghost Writer',
-        appLogoUrl: 'https://ghostwriter.meme/icon.png',
+        appLogoUrl: 'https://ghost-writer-three.vercel.app/icon.png',
       }),
       walletConnect({
         projectId: ONCHAINKIT_PROJECT_ID,
-      }),
-    ],
-    transports: {
-      [base.id]: http(),
-      [baseSepolia.id]: http(),
-    },
-    ssr: false,
-  });
+      })
+    );
 
-  useEffect(() => {
-    import('@/lib/performance').then(({ PerformanceMonitor }) => {
-      PerformanceMonitor.getInstance().initialize();
+    return createConfig({
+      chains: [base, baseSepolia],
+      connectors,
+      transports: {
+        [base.id]: http(),
+        [baseSepolia.id]: http(),
+      },
+      ssr: false,
     });
   }, []);
 
+  useEffect(() => {
+    // Force mount after a short delay to prevent splash screen hang
+    const mountTimer = setTimeout(() => {
+      setIsMounted(true);
+    }, 100);
+
+    // Load performance monitor async
+    import('@/lib/performance')
+      .then(({ PerformanceMonitor }) => {
+        PerformanceMonitor.getInstance().initialize();
+      })
+      .catch((err) => {
+        console.warn('Performance monitor failed to load:', err);
+      });
+
+    return () => clearTimeout(mountTimer);
+  }, []);
+
   const chain = Number(process.env.NEXT_PUBLIC_CHAIN_ID) === base.id ? base : baseSepolia;
+
+  // Prevent rendering until mounted to avoid splash hang
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <WagmiProvider config={wagmiConfig}>
