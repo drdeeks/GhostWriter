@@ -5,20 +5,28 @@ const fs = require("fs");
 const args = process.argv.slice(2);
 const DEPLOY_TOKEN = args.includes("--with-token") || args.includes("-t");
 
+// Helper function to add delays between transactions
+async function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // Helper function to deploy with proper gas settings
 async function deployWithGas(factory, args = []) {
   const feeData = await ethers.provider.getFeeData();
   
-  // Add 50% buffer to gas prices to avoid replacement issues
+  // Increase buffer to 200% (2x) to ensure replacement
   const deploymentOptions = {
-    maxFeePerGas: feeData.maxFeePerGas * 150n / 100n,
-    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas * 150n / 100n,
+    maxFeePerGas: feeData.maxFeePerGas * 200n / 100n,
+    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas * 200n / 100n,
   };
   
   console.log(`   Gas settings: maxFee=${ethers.formatUnits(deploymentOptions.maxFeePerGas, 'gwei')} gwei, maxPriorityFee=${ethers.formatUnits(deploymentOptions.maxPriorityFeePerGas, 'gwei')} gwei`);
   
   const contract = await factory.deploy(...args, deploymentOptions);
   await contract.waitForDeployment();
+  
+  // Wait 3 seconds between deployments to ensure transactions are processed
+  await sleep(3000);
   
   return contract;
 }
@@ -28,11 +36,16 @@ async function sendTxWithGas(tx) {
   const feeData = await ethers.provider.getFeeData();
   
   const txOptions = {
-    maxFeePerGas: feeData.maxFeePerGas * 150n / 100n,
-    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas * 150n / 100n,
+    maxFeePerGas: feeData.maxFeePerGas * 200n / 100n,
+    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas * 200n / 100n,
   };
   
-  return tx(txOptions);
+  const result = await tx(txOptions);
+  
+  // Wait 3 seconds between transactions
+  await sleep(3000);
+  
+  return result;
 }
 
 async function main() {
