@@ -2,7 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - 2026-01-19 14:18:23Z
+## [Unreleased] - 2026-01-21
+
+### Fixed
+- **Critical Build Fix:** Resolved persistent `<Html> should not be imported outside of pages/_document` error during static page generation.
+  - **Root cause:** `NODE_ENV=development` during production builds caused Next.js to incorrectly bundle Pages Router internal error pages with App Router, triggering the Html import error.
+  - **Solution:** Build must use `NODE_ENV=production` (Next.js sets this automatically; do not override).
+- **Force dynamic rendering:** Added `export const dynamic = 'force-dynamic'` to root layout and page-specific layouts (`/admin`, `/leaderboard`) to prevent static prerendering of pages that use wagmi hooks requiring `WagmiProvider` context.
+- **App Router error pages:** Created `src/app/not-found.tsx` for 404 handling in App Router.
+
+### Added
+- **Leaderboard layout:** Added `src/app/leaderboard/layout.tsx` with `force-dynamic` export.
+- **Admin layout:** Added `src/app/admin/layout.tsx` with `force-dynamic` export.
+
+### Validated
+- `npm run build` ✅ (with `NODE_ENV=production`)
+- `npm run lint` ✅
+- `npm run ts-check` ✅
+- `npm test` ✅ (10 tests passing)
+
+---
+
+## [Previous Unreleased] - 2026-01-19 14:18:23Z
+
+### Added
+- **New documentation files:** Created comprehensive documentation under `docs/` covering setup, environment variables, AI, moderation, NFT media, and admin features.
+- **AI config API endpoint:** Added `/api/admin/ai-config` to expose current AI configuration from environment variables for the admin dashboard.
+
+### Changed
+- **Wallet Connect button:** Configured Wallet Connect to default to Farcaster wallet with injected, Coinbase Wallet, and WalletConnect as fallbacks.
+- **README.md rewrite:** Rewritten and de-duplicated `README.md` with a new structure, updated quickstart, and story specifications.
+- **`env.example` update:** Updated `env.example` with missing required and optional variables, including AI tuning and NFT background options, and a quick start comment block.
+- **StoryManager slot ranges:** Modified `StoryManager.sol` to enforce story slot count ranges (Mini: 5-10, Normal: 10-15, Epic: 15-25) instead of fixed values.
+- **Frontend story slot display:** Updated `src/components/story-creation-modal.tsx` and `src/app/page.tsx` to reflect story slot ranges instead of fixed counts.
+- **AI service configuration:** Made `src/lib/ai-service.ts` environment-driven for AI model, temperature, max tokens, timeout, and system prompt append.
+- **AI story slot generation:** Updated `src/lib/ai-service.ts` to generate a random number of slots within the defined range for each story type.
+- **Admin dashboard AI config:** Added display of current AI configuration in `src/components/admin-dashboard.tsx` from environment variables.
+- **Admin dashboard story slot validation:** Updated `src/components/admin-dashboard.tsx` to validate story template slot counts against the new ranges.
+- **Word moderation logic:** Consolidated `src/app/api/moderate-word/route.ts` to route through `aiService.moderateWord()` for consistent fallback and caching.
+- **NFT background image support:** Implemented dynamic background images for NFTs in `src/app/api/nft/[tokenId]/image/route.ts` based on category and environment variables (local, remote, and gradient fallbacks).
+- **Chain selection consistency:** Fixed `src/app/providers.tsx` to use `NEXT_PUBLIC_CHAIN_ID` for chain selection, aligning client with server routes.
+- **Production logging:** Gated noisy `console.log` statements in `src/app/providers.tsx` to only run in development environments.
+- **UI clarity for unconfigured contracts:** Enhanced UI clarity in `src/app/page.tsx` when contracts are not deployed by using a full-screen `LoadingScreen` with a custom message.
+
+### Fixed
+- **npm install:** Adjusted `npm install` instructions to include `--legacy-peer-deps` for dependency conflicts.
+
+### Build Process & Troubleshooting
+- **Frontend build failure (SSR useContext error):** Encountered a persistent `TypeError: Cannot read properties of null (reading 'useContext')` during prerendering of the `/_global-error` page (`digest: '791205151'`).
+  - **Attempts to fix:**
+    - Corrected TypeScript errors related to SVG template literals and variable scoping in `src/app/api/nft/[tokenId]/image/route.ts`.
+    - Corrected `farcasterMiniAppConnector` import and usage in `src/app/providers.tsx`.
+    - Moved `wagmiConfig` and `queryClient` initialization to client-side only within `src/app/providers.tsx` using `useState` and `useEffect`.
+    - Ensured React hooks `useState`, `useEffect`, `useMemo` were imported in `src/app/providers.tsx`.
+    - Created a custom, minimal `src/app/_global-error.tsx` marked as `'use client'` to prevent server-side context access.
+    - Implemented an explicit `typeof window === 'undefined'` check in `src/app/providers.tsx` to conditionally render content only on the client side during SSR.
+  - **Outcome:** Despite multiple attempts and common workarounds, the build continues to fail with the same `useContext` error during the prerendering of `/_global-error`. This indicates a deeper incompatibility or configuration issue between Next.js App Router's prerendering, React's context system, and `wagmi`'s setup that could not be resolved with available tools and information.
 
 ### Completed
 - **Story creation UX updated for enterprise enforcement:** `StoryCreationModal` now requests **exactly 5** server-signed suggestions from `/api/generate-story`, requires user selection of 1/5, and then calls `createStoryApproved` (removes broken `createStory` usage).

@@ -1,18 +1,18 @@
 # 🐛 Bug Report - 10 MORE Bugs Found
 
-**Date**: 2026-01-16  
+**Date**: 2026-01-16
 **Status**: All bugs identified and documented
 
 ---
 
 ## Bug #31: revealStoryNFTs Reverts if Any NFT Already Revealed
-**Severity**: HIGH  
-**File**: `contracts/GhostWriterNFT.sol`  
+**Severity**: HIGH
+**File**: `contracts/GhostWriterNFT.sol`
 **Line**: 189
 
 **Issue**: The loop checks `require(!data.revealed, "Story already revealed")` for EACH token. If even one NFT is already revealed, the entire transaction reverts, preventing all other NFTs from being revealed.
 
-**Impact**: 
+**Impact**:
 - Story completion can be permanently blocked
 - If one NFT is revealed early (bug/admin action), entire story stuck
 - DoS attack vector
@@ -22,8 +22,8 @@
 ---
 
 ## Bug #32: No Validation for Empty storyTitle in mintHiddenNFT
-**Severity**: MEDIUM  
-**File**: `contracts/GhostWriterNFT.sol`  
+**Severity**: MEDIUM
+**File**: `contracts/GhostWriterNFT.sol`
 **Line**: 107
 
 **Issue**: Function validates `storyId` but not `storyTitle`. Empty titles can be minted.
@@ -38,8 +38,8 @@
 ---
 
 ## Bug #33: No Validation for Empty wordType in mintHiddenNFT
-**Severity**: MEDIUM  
-**File**: `contracts/GhostWriterNFT.sol`  
+**Severity**: MEDIUM
+**File**: `contracts/GhostWriterNFT.sol`
 **Line**: 107
 
 **Issue**: `wordType` parameter is not validated. Empty word types can be stored.
@@ -54,8 +54,8 @@
 ---
 
 ## Bug #34: emergencyWithdraw Uses transfer() Instead of call()
-**Severity**: HIGH  
-**File**: `contracts/StoryManager.sol`  
+**Severity**: HIGH
+**File**: `contracts/StoryManager.sol`
 **Line**: 748
 
 **Issue**: Uses `transfer()` which has 2300 gas limit. If owner is a contract with expensive fallback, withdrawal fails permanently.
@@ -70,8 +70,8 @@
 ---
 
 ## Bug #35: LiquidityPool withdraw() Uses transfer() Instead of call()
-**Severity**: HIGH  
-**File**: `contracts/LiquidityPool.sol`  
+**Severity**: HIGH
+**File**: `contracts/LiquidityPool.sol`
 **Line**: 51
 
 **Issue**: Same as Bug #34. Uses `transfer()` which can fail if owner is a contract.
@@ -86,8 +86,8 @@
 ---
 
 ## Bug #36: No Maximum Limit on Achievement Count
-**Severity**: LOW  
-**File**: `contracts/StoryManager.sol`  
+**Severity**: LOW
+**File**: `contracts/StoryManager.sol`
 **Line**: 537-548
 
 **Issue**: `achievementIds` array can grow unbounded. `getUserAchievements()` returns entire array which can cause out-of-gas.
@@ -102,8 +102,8 @@
 ---
 
 ## Bug #37: Race Condition in contributeWord
-**Severity**: MEDIUM  
-**File**: `contracts/StoryManager.sol`  
+**Severity**: MEDIUM
+**File**: `contracts/StoryManager.sol`
 **Line**: 315-430
 
 **Issue**: Two users can submit transactions for the same slot simultaneously. Both pass the `!slot.filled` check, but only one succeeds. The other wastes gas and gets reverted.
@@ -118,8 +118,8 @@
 ---
 
 ## Bug #38: Frontend Timeout Promise Never Resolves
-**Severity**: MEDIUM  
-**File**: `src/app/page.tsx`  
+**Severity**: MEDIUM
+**File**: `src/app/page.tsx`
 **Line**: 95-96
 
 **Issue**: `timeoutPromise` only rejects, never resolves. If `initPromise` succeeds, the timeout timer keeps running unnecessarily.
@@ -134,8 +134,8 @@
 ---
 
 ## Bug #39: No Validation for Duplicate Achievement IDs
-**Severity**: LOW  
-**File**: `contracts/StoryManager.sol`  
+**Severity**: LOW
+**File**: `contracts/StoryManager.sol`
 **Line**: 183-189
 
 **Issue**: `_initializeAchievements()` pushes achievement IDs but doesn't check for duplicates. If called multiple times or IDs repeated, duplicates exist.
@@ -150,8 +150,8 @@
 ---
 
 ## Bug #40: getLeaderboard Can Return Empty Array Without Error
-**Severity**: LOW  
-**File**: `contracts/StoryManager.sol`  
+**Severity**: LOW
+**File**: `contracts/StoryManager.sol`
 **Line**: 665-688
 
 **Issue**: If `offset >= leaderboard.length`, function returns empty array. Frontend doesn't know if it's end of list or error.

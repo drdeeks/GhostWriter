@@ -33,7 +33,7 @@ export function useRefunds(userAddress: `0x${string}`) {
 
   const handleWithdraw = async () => {
     if (!pendingRefund || pendingRefund === 0n) return;
-    
+
     await withdrawRefund({
       address: process.env.NEXT_PUBLIC_STORY_MANAGER_ADDRESS as `0x${string}`,
       abi: STORY_MANAGER_ABI,
@@ -147,11 +147,11 @@ export function useStoryCompletion() {
   const completeStoryFull = async (storyId: string, totalSlots: number) => {
     // Process in batches of 50
     const batchSize = 50;
-    
+
     for (let i = 1; i <= totalSlots; i += batchSize) {
       const end = Math.min(i + batchSize - 1, totalSlots);
       await processCompletionBatch(storyId, i, end);
-      
+
       // Wait for confirmation before next batch
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
@@ -201,7 +201,7 @@ export function StoryCompletionModal({ storyId, totalSlots, onComplete }: Props)
     <div className="modal">
       <h2>Story Complete! 🎉</h2>
       <p>Processing {totalSlots} contributions...</p>
-      
+
       {isProcessing && (
         <div className="progress-bar">
           <div style={{ width: `${progress}%` }} />
@@ -266,7 +266,7 @@ export function useLeaderboard() {
     if (!rawLeaderboard) return;
 
     // Sort by contributions (descending)
-    const sorted = [...rawLeaderboard].sort((a, b) => 
+    const sorted = [...rawLeaderboard].sort((a, b) =>
       Number(b.contributions - a.contributions)
     );
 
@@ -308,7 +308,7 @@ Add these new functions to your ABIs:
 // contracts/abis/StoryManager.ts
 export const STORY_MANAGER_ABI = [
   // ... existing functions
-  
+
   // New functions
   {
     name: 'pendingRefunds',
@@ -349,7 +349,7 @@ export const STORY_MANAGER_ABI = [
     inputs: [{ name: 'user', type: 'address' }],
     outputs: [{ name: '', type: 'uint256' }],
   },
-  
+
   // New events
   {
     name: 'RefundWithdrawn',

@@ -6,9 +6,10 @@ import { Loader2 } from 'lucide-react';
 interface LoadingScreenProps {
   isLoading: boolean;
   minDisplayTime?: number;
+  message?: string; // New prop for custom messages
 }
 
-export function LoadingScreen({ isLoading, minDisplayTime = 800 }: LoadingScreenProps) {
+export function LoadingScreen({ isLoading, minDisplayTime = 800, message }: LoadingScreenProps) {
   const [shouldShow, setShouldShow] = useState(isLoading);
   const startTimeRef = useRef<number | null>(null);
 
@@ -58,7 +59,7 @@ export function LoadingScreen({ isLoading, minDisplayTime = 800 }: LoadingScreen
 
         {/* Loading text */}
         <p className="text-gray-400 text-sm md:text-base animate-pulse">
-          Initializing your storytelling experience...
+          {message || 'Initializing your storytelling experience...'}
         </p>
       </div>
     </div>

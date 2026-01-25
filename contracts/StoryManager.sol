@@ -25,10 +25,13 @@ contract StoryManager is Ownable, ReentrancyGuard, EIP712 {
     uint256 public constant CONTRIBUTION_FEE_USD_CENTS = 5;
     uint256 public constant CREATION_FEE_USD_CENTS = 10;
 
-    // Fixed slot counts (enterprise constraints)
-    uint256 public constant MINI_SLOTS = 10;
-    uint256 public constant NORMAL_SLOTS = 20;
-    uint256 public constant EPIC_SLOTS = 35;
+    // Slot count ranges (enterprise constraints)
+    uint256 public constant MINI_SLOTS_MIN = 5;
+    uint256 public constant MINI_SLOTS_MAX = 10;
+    uint256 public constant NORMAL_SLOTS_MIN = 10;
+    uint256 public constant NORMAL_SLOTS_MAX = 15;
+    uint256 public constant EPIC_SLOTS_MIN = 15;
+    uint256 public constant EPIC_SLOTS_MAX = 25;
 
     // Story types
     enum StoryType {
@@ -261,12 +264,6 @@ contract StoryManager is Ownable, ReentrancyGuard, EIP712 {
         require(liquidityPool.storyManager() == address(this));
     }
 
-    function _expectedSlots(StoryType storyType) internal pure returns (uint256) {
-        if (storyType == StoryType.MINI) return MINI_SLOTS;
-        if (storyType == StoryType.NORMAL) return NORMAL_SLOTS;
-        return EPIC_SLOTS;
-    }
-
     function _isValidWordType(string memory wordType) internal pure returns (bool) {
         bytes32 h = keccak256(bytes(wordType));
         return
@@ -359,7 +356,13 @@ contract StoryManager is Ownable, ReentrancyGuard, EIP712 {
         require(getActiveStoriesCount() < 15);
 
         uint256 totalSlots = wordTypes.length;
-        require(totalSlots == _expectedSlots(storyType));
+        if (storyType == StoryType.MINI) {
+            require(totalSlots >= MINI_SLOTS_MIN && totalSlots <= MINI_SLOTS_MAX);
+        } else if (storyType == StoryType.NORMAL) {
+            require(totalSlots >= NORMAL_SLOTS_MIN && totalSlots <= NORMAL_SLOTS_MAX);
+        } else {
+            require(totalSlots >= EPIC_SLOTS_MIN && totalSlots <= EPIC_SLOTS_MAX);
+        }
 
         // Validate story type
         if (storyType == StoryType.EPIC) {

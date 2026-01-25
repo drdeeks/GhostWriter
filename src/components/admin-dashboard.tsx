@@ -50,12 +50,6 @@ function getStoryTypeEnum(storyType: StoryType): number {
   return 2;
 }
 
-function expectedSlots(storyType: StoryType): number {
-  if (storyType === 'mini') return 10;
-  if (storyType === 'normal') return 20;
-  return 35;
-}
-
 function extractWordTypes(template: string): string[] {
   const out: string[] = [];
   const regex = /\[([A-Z_]+)\]/g;
@@ -129,6 +123,22 @@ function AdminDashboardComponent() {
   const [metrics, setMetrics] = useState<AdminMetricsResponse | null>(null);
   const [metricsError, setMetricsError] = useState<string | null>(null);
   const [isRefreshingMetrics, setIsRefreshingMetrics] = useState(false);
+  const [aiConfig, setAiConfig] = useState<any>(null);
+
+  useEffect(() => {
+    async function fetchAiConfig() {
+      try {
+        const res = await fetch('/api/admin/ai-config');
+        if (res.ok) {
+          const config = await res.json();
+          setAiConfig(config);
+        }
+      } catch (error) {
+        console.error('Failed to fetch AI config', error);
+      }
+    }
+    fetchAiConfig();
+  }, []);
 
   const refreshMetrics = async () => {
     setIsRefreshingMetrics(true);
@@ -160,13 +170,22 @@ function AdminDashboardComponent() {
     return parsedWordTypes.filter((t) => !(t in WORD_TYPE_DEFINITIONS));
   }, [parsedWordTypes]);
 
+  const slotConfig = useMemo(() => {
+    switch (storyType) {
+      case 'mini': return { min: 5, max: 10, label: '5-10' };
+      case 'normal': return { min: 10, max: 15, label: '10-15' };
+      case 'epic': return { min: 15, max: 25, label: '15-25' };
+      default: return { min: 10, max: 15, label: '10-15' };
+    }
+  }, [storyType]);
+
   const isStoryFormValid = useMemo(() => {
     if (!storyTitle.trim()) return false;
     if (!storyTemplate.trim()) return false;
     if (invalidWordTypes.length > 0) return false;
-    if (parsedWordTypes.length !== expectedSlots(storyType)) return false;
+    if (parsedWordTypes.length < slotConfig.min || parsedWordTypes.length > slotConfig.max) return false;
     return true;
-  }, [storyTitle, storyTemplate, invalidWordTypes.length, parsedWordTypes.length, storyType]);
+  }, [storyTitle, storyTemplate, invalidWordTypes.length, parsedWordTypes.length, slotConfig]);
 
   const isAdmin = !!address && !ownerLoading && isOwner;
 
@@ -174,7 +193,7 @@ function AdminDashboardComponent() {
     try {
       if (!isStoryFormValid) {
         toast.error('Story template invalid', {
-          description: `Expected ${expectedSlots(storyType)} placeholders; found ${parsedWordTypes.length}.`,
+          description: `Expected ${slotConfig.label} placeholders; found ${parsedWordTypes.length}.`,
         });
         return;
       }
@@ -621,9 +640,9 @@ function AdminDashboardComponent() {
 
                   <div className="mt-3 text-xs text-gray-300 space-y-1">
                     <div>
-                      Placeholders: {parsedWordTypes.length}/{expectedSlots(storyType)}
-                      {parsedWordTypes.length !== expectedSlots(storyType) && (
-                        <span className="text-red-300"> (must match exactly)</span>
+                      Placeholders: {parsedWordTypes.length}/{slotConfig.label}
+                      {(parsedWordTypes.length < slotConfig.min || parsedWordTypes.length > slotConfig.max) && (
+                        <span className="text-red-300"> (must be within range)</span>
                       )}
                     </div>
                     {invalidWordTypes.length > 0 && (
@@ -791,24 +810,59 @@ function AdminDashboardComponent() {
           </TabsContent>
 
           <TabsContent value="settings">
-            <Card className="border-2 border-gray-200 dark:border-gray-700">
-              <CardHeader>
-                <CardTitle>Protocol Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <Label>Story template signer (EIP-712)</Label>
-                  <div className="text-xs text-gray-400 mt-1">Current: {storyTemplateSigner ? String(storyTemplateSigner) : '0x0'}</div>
-                  <div className="flex gap-2 mt-2">
-                    <Input value={templateSigner} onChange={(e) => setTemplateSigner(e.target.value)} placeholder="0x..." className="font-mono" />
-                    <Button onClick={handleSetSigner}>Update</Button>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="border-2 border-gray-200 dark:border-gray-700">
+                <CardHeader>
+                  <CardTitle>Protocol Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div>
+                    <Label>Story template signer (EIP-712)</Label>
+                    <div className="text-xs text-gray-400 mt-1">Current: {storyTemplateSigner ? String(storyTemplateSigner) : '0x0'}</div>
+                    <div className="flex gap-2 mt-2">
+                      <Input value={templateSigner} onChange={(e) => setTemplateSigner(e.target.value)} placeholder="0x..." className="font-mono" />
+                      <Button onClick={handleSetSigner}>Update</Button>
+                    </div>
                   </div>
-                </div>
-                <div className="text-xs text-gray-400">
-                  Contract addresses: StoryManager {CONTRACTS.storyManager}, NFT {CONTRACTS.nft}, Token {CONTRACTS.token}, Pool {CONTRACTS.liquidityPool}
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="text-xs text-gray-400">
+                    Contract addresses: StoryManager {CONTRACTS.storyManager}, NFT {CONTRACTS.nft}, Token {CONTRACTS.token}, Pool {CONTRACTS.liquidityPool}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-2 border-gray-200 dark:border-gray-700">
+                <CardHeader>
+                  <CardTitle>AI Configuration (from Environment)</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {aiConfig ? (
+                    <>
+                      <div>
+                        <Label>Model</Label>
+                        <p className="text-sm text-gray-300">{aiConfig.model}</p>
+                      </div>
+                      <div>
+                        <Label>Temperature</Label>
+                        <p className="text-sm text-gray-300">{aiConfig.temperature}</p>
+                      </div>
+                      <div>
+                        <Label>Max Tokens</Label>
+                        <p className="text-sm text-gray-300">{aiConfig.maxTokens}</p>
+                      </div>
+                      <div>
+                        <Label>Timeout (ms)</Label>
+                        <p className="text-sm text-gray-300">{aiConfig.timeout}</p>
+                      </div>
+                      <div>
+                        <Label>System Prompt Append</Label>
+                        <p className="text-sm text-gray-300">{aiConfig.systemPromptAppend || '(not set)'}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-400">Loading AI configuration...</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
