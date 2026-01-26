@@ -12,11 +12,11 @@ import { useFees } from '@/hooks/useFees';
 import { useIsOwner, useUserStats } from '@/hooks/useContract';
 import { CATEGORY_INFO, WORD_TYPE_DEFINITIONS } from '@/types/ghostwriter';
 import type { StoryCategory, StoryType } from '@/types/ghostwriter';
-import { BookOpen, Coins, Settings, Shield, Users, Wrench } from 'lucide-react';
+import { BookOpen, Coins, Settings, Shield, Users, Wrench, Sparkles, RefreshCw } from 'lucide-react';
 import { parseEther, parseUnits } from 'viem';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { useAccount, useReadContract, useWriteContract } from 'wagmi';
+import { useAccount, useChainId, useReadContract, useWriteContract } from 'wagmi';
 
 function getCategoryEnum(category: string): number {
   const categories = [
@@ -64,10 +64,11 @@ function extractWordTypes(template: string): string[] {
 
 function AdminDashboardComponent() {
   const { address } = useAccount();
+  const chainId = useChainId();
   const { writeContractAsync } = useWriteContract();
   const { isOwner, isLoading: ownerLoading } = useIsOwner(address);
   const { creationFee } = useFees();
-  const { stats: ownerStats } = useUserStats(address);
+  const { stats: ownerStats, refetch: refetchOwnerStats } = useUserStats(address);
 
   const [selectedCategory, setSelectedCategory] = useState<StoryCategory>('random');
   const [storyTitle, setStoryTitle] = useState<string>('');
@@ -88,6 +89,12 @@ function AdminDashboardComponent() {
   const [batchStoryId, setBatchStoryId] = useState('');
   const [batchStart, setBatchStart] = useState('1');
   const [batchEnd, setBatchEnd] = useState('50');
+
+  // AI Story Generation
+  const [aiSuggestions, setAiSuggestions] = useState<any[] | null>(null);
+  const [selectedAiSuggestion, setSelectedAiSuggestion] = useState<number>(0);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [storyCreationMode, setStoryCreationMode] = useState<'manual' | 'ai'>('ai');
 
   const { data: storyTemplateSigner } = useReadContract({
     address: CONTRACTS.storyManager,
@@ -408,6 +415,76 @@ function AdminDashboardComponent() {
     }
   };
 
+  const handleGenerateAiStories = async () => {
+    if (!address) return;
+    setIsGeneratingAi(true);
+    setAiSuggestions(null);
+    try {
+      const response = await fetch('/api/generate-story', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: selectedCategory,
+          storyType,
+          userAddress: address,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err?.error || err?.details || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.suggestions && data.suggestions.length > 0) {
+        setAiSuggestions(data.suggestions);
+        setSelectedAiSuggestion(0);
+        toast.success(`Generated ${data.suggestions.length} AI suggestions`);
+      } else {
+        toast.error('No suggestions returned');
+      }
+    } catch (e: any) {
+      toast.error('AI generation failed', { description: e.message });
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
+  const handleCreateAiStory = async () => {
+    if (!aiSuggestions || !aiSuggestions[selectedAiSuggestion]) {
+      toast.error('No suggestion selected');
+      return;
+    }
+
+    const suggestion = aiSuggestions[selectedAiSuggestion];
+
+    try {
+      const hash = await writeContractAsync({
+        address: CONTRACTS.storyManager,
+        abi: STORY_MANAGER_ABI,
+        functionName: 'createStoryApproved',
+        args: [
+          suggestion.storyId,
+          suggestion.title,
+          suggestion.template,
+          getStoryTypeEnum(storyType),
+          getCategoryEnum(selectedCategory),
+          suggestion.wordTypes,
+          BigInt(suggestion.expiresAt),
+          suggestion.signature,
+        ],
+        value: creationFee,
+      } as any);
+
+      toast.success('AI Story created!', { description: `Tx: ${hash}` });
+      setAiSuggestions(null);
+      setSelectedAiSuggestion(0);
+      await refreshMetrics();
+    } catch (e: any) {
+      toast.error('Story creation failed', { description: e?.shortMessage || e?.message || 'Unknown error' });
+    }
+  };
+
   if (!isAdmin) {
     return (
       <Card className="border-2 border-red-300 dark:border-red-700">
@@ -582,38 +659,50 @@ function AdminDashboardComponent() {
           <TabsContent value="stories">
             <Card className="border-2 border-purple-200 dark:border-purple-800">
               <CardHeader>
-                <CardTitle>Owner: Create Initial Story</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Create Story</span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={storyCreationMode === 'ai' ? 'default' : 'outline'}
+                      onClick={() => { setStoryCreationMode('ai'); setAiSuggestions(null); }}
+                      className={storyCreationMode === 'ai' ? 'bg-gradient-to-r from-purple-500 to-pink-500' : ''}
+                      size="sm"
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      AI Generate
+                    </Button>
+                    <Button
+                      variant={storyCreationMode === 'manual' ? 'default' : 'outline'}
+                      onClick={() => setStoryCreationMode('manual')}
+                      className={storyCreationMode === 'manual' ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : ''}
+                      size="sm"
+                    >
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      Manual
+                    </Button>
+                  </div>
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Common: Story Type & Category */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="story-title">Story Title</Label>
-                    <Input
-                      id="story-title"
-                      placeholder="The Wicked Witch That Lived in the Trashcan"
-                      value={storyTitle}
-                      onChange={(e) => setStoryTitle(e.target.value)}
-                      className="mt-2"
-                    />
-                  </div>
-
-                  <div>
                     <Label htmlFor="story-type">Story Type</Label>
-                    <Select value={storyType} onValueChange={(value) => setStoryType(value as StoryType)}>
+                    <Select value={storyType} onValueChange={(value) => { setStoryType(value as StoryType); setAiSuggestions(null); }}>
                       <SelectTrigger className="mt-2">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="mini">Mini (10 slots)</SelectItem>
-                        <SelectItem value="normal">Normal (20 slots)</SelectItem>
-                        <SelectItem value="epic">Epic (35 slots)</SelectItem>
+                        <SelectItem value="mini">Mini (5-10 slots)</SelectItem>
+                        <SelectItem value="normal">Normal (10-15 slots)</SelectItem>
+                        <SelectItem value="epic">Epic (15-25 slots)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
                     <Label htmlFor="category">Category</Label>
-                    <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as StoryCategory)}>
+                    <Select value={selectedCategory} onValueChange={(value) => { setSelectedCategory(value as StoryCategory); setAiSuggestions(null); }}>
                       <SelectTrigger className="mt-2">
                         <SelectValue />
                       </SelectTrigger>
@@ -628,41 +717,118 @@ function AdminDashboardComponent() {
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="template">Story Template</Label>
-                  <textarea
-                    id="template"
-                    placeholder="Once upon a time, there was a [ADJECTIVE] witch who lived in a [NOUN]..."
-                    value={storyTemplate}
-                    onChange={(e) => setStoryTemplate(e.target.value)}
-                    className="w-full mt-2 min-h-[200px] p-3 rounded-xl border-2 border-gray-600/50 bg-gray-800/80 backdrop-blur-sm text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
-                  />
-
-                  <div className="mt-3 text-xs text-gray-300 space-y-1">
-                    <div>
-                      Placeholders: {parsedWordTypes.length}/{slotConfig.label}
-                      {(parsedWordTypes.length < slotConfig.min || parsedWordTypes.length > slotConfig.max) && (
-                        <span className="text-red-300"> (must be within range)</span>
+                {/* AI Mode */}
+                {storyCreationMode === 'ai' && (
+                  <div className="space-y-4">
+                    <Button
+                      onClick={handleGenerateAiStories}
+                      disabled={isGeneratingAi}
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                    >
+                      {isGeneratingAi ? (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Generate 5 AI Suggestions
+                        </>
                       )}
-                    </div>
-                    {invalidWordTypes.length > 0 && (
-                      <div className="text-red-300">
-                        Unsupported types: {invalidWordTypes.join(', ')}
+                    </Button>
+
+                    {aiSuggestions && aiSuggestions.length > 0 && (
+                      <div className="space-y-3">
+                        <Label className="text-base font-semibold">Select a suggestion:</Label>
+                        <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto">
+                          {aiSuggestions.map((s, idx) => (
+                            <button
+                              key={s.storyId}
+                              type="button"
+                              onClick={() => setSelectedAiSuggestion(idx)}
+                              className={`text-left p-4 rounded-xl border-2 transition ${
+                                idx === selectedAiSuggestion
+                                  ? 'border-purple-500 bg-purple-900/30'
+                                  : 'border-gray-600 bg-gray-800/50 hover:border-purple-400'
+                              }`}
+                            >
+                              <div className="font-semibold text-gray-100">{s.title}</div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {s.generatedBy ? `Source: ${s.generatedBy}` : ''} • Slots: {s.wordTypes?.length ?? 0}
+                              </div>
+                              <div className="text-sm text-gray-300 mt-2 line-clamp-3">
+                                {s.template}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+
+                        <Button
+                          onClick={handleCreateAiStory}
+                          className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                        >
+                          Create Selected Story (onchain)
+                        </Button>
                       </div>
                     )}
                   </div>
-                </div>
+                )}
 
-                <Button
-                  onClick={handleCreateStory}
-                  disabled={!isStoryFormValid}
-                  className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 disabled:opacity-50"
-                >
-                  Create Story (onchain)
-                </Button>
+                {/* Manual Mode */}
+                {storyCreationMode === 'manual' && (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="story-title">Story Title</Label>
+                      <Input
+                        id="story-title"
+                        placeholder="The Wicked Witch That Lived in the Trashcan"
+                        value={storyTitle}
+                        onChange={(e) => setStoryTitle(e.target.value)}
+                        className="mt-2"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="template">Story Template</Label>
+                      <textarea
+                        id="template"
+                        placeholder="Once upon a time, there was a [ADJECTIVE] witch who lived in a [NOUN]..."
+                        value={storyTemplate}
+                        onChange={(e) => setStoryTemplate(e.target.value)}
+                        className="w-full mt-2 min-h-[200px] p-3 rounded-xl border-2 border-gray-600/50 bg-gray-800/80 backdrop-blur-sm text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
+                      />
+
+                      <div className="mt-3 text-xs text-gray-300 space-y-1">
+                        <div>
+                          Placeholders: {parsedWordTypes.length}/{slotConfig.label}
+                          {(parsedWordTypes.length < slotConfig.min || parsedWordTypes.length > slotConfig.max) && (
+                            <span className="text-red-300"> (must be within range)</span>
+                          )}
+                        </div>
+                        {invalidWordTypes.length > 0 && (
+                          <div className="text-red-300">
+                            Unsupported types: {invalidWordTypes.join(', ')}
+                          </div>
+                        )}
+                        <div className="text-gray-400">
+                          Valid types: [NOUN], [VERB], [ADJECTIVE], [ADVERB], [NAME], [PLACE], [ANIMAL], [FOOD], [COLOR], [NUMBER], [EMOTION], [BODY_PART], [EXCLAMATION]
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleCreateStory}
+                      disabled={!isStoryFormValid}
+                      className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50"
+                    >
+                      Create Story (onchain)
+                    </Button>
+                  </div>
+                )}
 
                 <p className="text-xs text-gray-400">
-                  Note: this consumes 1 creation credit and requires the LiquidityPool to be configured with this StoryManager.
+                  Note: Creating a story requires the creation fee ({creationFee ? (Number(creationFee) / 1e18).toFixed(6) : '~0.0001'} ETH) + gas.
                 </p>
               </CardContent>
             </Card>
@@ -827,6 +993,77 @@ function AdminDashboardComponent() {
                   <div className="text-xs text-gray-400">
                     Contract addresses: StoryManager {CONTRACTS.storyManager}, NFT {CONTRACTS.nft}, Token {CONTRACTS.token}, Pool {CONTRACTS.liquidityPool}
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-2 border-yellow-500/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>🔍 Debug Info</span>
+                    <Button onClick={() => refetchOwnerStats()} size="sm" variant="outline">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refresh Stats
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 font-mono text-sm">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-yellow-400">Wallet Chain ID</Label>
+                      <p className="text-gray-300">{chainId} {chainId === 8453 ? '(Base)' : chainId === 84532 ? '(Base Sepolia)' : ''}</p>
+                    </div>
+                    <div>
+                      <Label className="text-yellow-400">Expected Chain ID</Label>
+                      <p className="text-gray-300">{process.env.NEXT_PUBLIC_CHAIN_ID || '8453'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-yellow-400">Connected Address</Label>
+                      <p className="text-gray-300 break-all">{address}</p>
+                    </div>
+                    <div>
+                      <Label className="text-yellow-400">StoryManager</Label>
+                      <p className="text-gray-300 break-all">{CONTRACTS.storyManager}</p>
+                    </div>
+                  </div>
+                  <div className="border-t border-gray-700 pt-4">
+                    <Label className="text-yellow-400 block mb-2">On-Chain User Stats</Label>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="bg-gray-800 p-2 rounded">
+                        <span className="text-gray-400">Contributions:</span>
+                        <span className="text-white ml-2">{ownerStats?.contributionsCount ?? 'N/A'}</span>
+                      </div>
+                      <div className="bg-gray-800 p-2 rounded">
+                        <span className="text-gray-400">Credits:</span>
+                        <span className="text-white ml-2">{ownerStats?.creationCredits ?? 'N/A'}</span>
+                      </div>
+                      <div className="bg-gray-800 p-2 rounded">
+                        <span className="text-gray-400">Stories Created:</span>
+                        <span className="text-white ml-2">{ownerStats?.storiesCreated ?? 'N/A'}</span>
+                      </div>
+                      <div className="bg-gray-800 p-2 rounded">
+                        <span className="text-gray-400">NFTs Owned:</span>
+                        <span className="text-white ml-2">{ownerStats?.nftsOwned ?? 'N/A'}</span>
+                      </div>
+                      <div className="bg-gray-800 p-2 rounded">
+                        <span className="text-gray-400">Completed:</span>
+                        <span className="text-white ml-2">{ownerStats?.completedStories ?? 'N/A'}</span>
+                      </div>
+                      <div className="bg-gray-800 p-2 rounded">
+                        <span className="text-gray-400">Share Count:</span>
+                        <span className="text-white ml-2">{ownerStats?.shareCount ?? 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {chainId !== 8453 && chainId !== 84532 && (
+                    <div className="bg-red-900/30 border border-red-500 rounded-lg p-3 text-red-300">
+                      ⚠️ Connected to unsupported chain. Switch to Base (8453) or Base Sepolia (84532).
+                    </div>
+                  )}
+                  {chainId === 84532 && (
+                    <div className="bg-yellow-900/30 border border-yellow-500 rounded-lg p-3 text-yellow-300">
+                      ⚠️ Connected to Base Sepolia (testnet). Your mainnet contracts are on chain 8453.
+                    </div>
+                  )}
                 </CardContent>
               </Card>
               <Card className="border-2 border-gray-200 dark:border-gray-700">
