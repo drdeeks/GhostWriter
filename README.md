@@ -19,6 +19,9 @@ cp env.example .env
 npm run deploy:base              # Mainnet
 npm run deploy:baseSepolia       # Testnet
 
+# Set story template signer (required for user story creation)
+npx hardhat run scripts/set-signer.js --network base
+
 # Run app
 npm run dev
 ```
@@ -29,49 +32,86 @@ App runs at `http://localhost:3000`
 
 ## Environment Variables
 
-### Required
+### Required for Deployment
 
-```env
-PRIVATE_KEY=                              # Deployer wallet private key
-NEXT_PUBLIC_CHAIN_ID=8453                 # 8453 (Base) or 84532 (Sepolia)
-NEXT_PUBLIC_ONCHAINKIT_PROJECT_ID=        # WalletConnect Cloud project ID
-```
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `PRIVATE_KEY` | Deployer wallet private key | `0x...` |
+| `NEXT_PUBLIC_CHAIN_ID` | Network: `8453` (Base) or `84532` (Sepolia) | `8453` |
+| `NEXT_PUBLIC_ONCHAINKIT_PROJECT_ID` | WalletConnect Cloud project ID | Get from [CDP Portal](https://portal.cdp.coinbase.com/) |
+| `NEXT_PUBLIC_ONCHAINKIT_API_KEY` | OnchainKit API key | Get from [CDP Portal](https://portal.cdp.coinbase.com/) |
 
-### Contract Addresses (auto-set after deployment)
+### Required for User Story Creation
 
-```env
-NEXT_PUBLIC_NFT_CONTRACT_ADDRESS=0x...
-NEXT_PUBLIC_STORY_MANAGER_ADDRESS=0x...
-NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS=0x...
-NEXT_PUBLIC_PRICE_ORACLE_ADDRESS=0x...
-NEXT_PUBLIC_TOKEN_ADDRESS=0x...           # GHOST token (optional)
-```
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `STORY_TEMPLATE_SIGNER_PRIVATE_KEY` | Private key for EIP-712 signing | `0x...` |
+
+**Setup:**
+1. Generate a new private key (don't reuse your deployer key)
+2. Add to `.env` as `STORY_TEMPLATE_SIGNER_PRIVATE_KEY`
+3. Run `npx hardhat run scripts/set-signer.js --network base` to register the address on-chain
+
+### Contract Addresses (Auto-set after deployment)
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_NFT_CONTRACT_ADDRESS` | GhostWriterNFT contract |
+| `NEXT_PUBLIC_STORY_MANAGER_ADDRESS` | StoryManager contract |
+| `NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS` | LiquidityPool contract |
+| `NEXT_PUBLIC_PRICE_ORACLE_ADDRESS` | PriceOracle contract |
+| `NEXT_PUBLIC_TOKEN_ADDRESS` | GHOST token (optional) |
 
 ### Optional - AI Features
 
-```env
-OPENAI_API_KEY=sk-...                     # Enables AI story generation
-OPENAI_MODEL=gpt-4o-mini
-OPENAI_TEMPERATURE=0.9
-```
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENAI_API_KEY` | - | Enables AI story generation |
+| `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model to use |
+| `OPENAI_TEMPERATURE` | `0.9` | Creativity (0.0-2.0) |
+| `OPENAI_MAX_TOKENS` | `700` | Max response tokens |
+| `OPENAI_TIMEOUT_MS` | `10000` | API timeout |
+| `AI_STORY_SYSTEM_PROMPT_APPEND` | - | Custom prompt addition |
 
-See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) for the complete reference.
+### Optional - Other
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:3000` | App URL for NFT metadata |
+| `BASE_RPC_URL` | Public RPC | Custom Base mainnet RPC |
+| `BASE_SEPOLIA_RPC_URL` | Public RPC | Custom Base Sepolia RPC |
+| `NEXT_PUBLIC_FARCASTER_MINIAPP_ID` | `ghost-writer` | Farcaster integration |
+| `BASESCAN_API_KEY` | - | For contract verification |
+
+See [env.example](env.example) for the complete reference with detailed comments.
 
 ---
 
-## Deployment
+## Scripts
 
-### Contract Deployment
+### Deployment Scripts
 
 ```bash
-# Standard deployment
-npm run deploy:base
+# Deploy all contracts
+npm run deploy:base              # Base mainnet
+npm run deploy:baseSepolia       # Base Sepolia testnet
 
-# With GHOST token
+# Deploy with GHOST token
 npm run deploy:base -- --with-token
 
-# Verify on Basescan
+# Verify contracts on Basescan
 npm run verify
+```
+
+### Admin Scripts
+
+```bash
+# Set story template signer (run after deployment)
+# Uses PRIVATE_KEY or KEYSTORE env vars
+npx hardhat run scripts/set-signer.js --network base
+
+# Update signer address in script before running:
+# Edit scripts/set-signer.js to change the target address
 ```
 
 The deployment script automatically:
@@ -79,13 +119,6 @@ The deployment script automatically:
 - Optionally deploys GhostWriterToken when `--with-token` is used
 - Updates `.env` with deployed addresses
 - Saves deployment info to `deployment.json`
-
-### Frontend Deployment
-
-```bash
-npm run build
-vercel --prod
-```
 
 ---
 
@@ -102,12 +135,12 @@ vercel --prod
 ## Admin Dashboard
 
 Contract owners can access `/admin` for:
-- Story creation with custom templates
-- Airdrop creation credits
-- GHOST token airdrops
-- Liquidity pool management
-- Story finalization controls
-- Protocol settings
+- **Story Creation**: AI-generated or manual templates
+- **Credit Airdrops**: Grant creation credits to users
+- **Token Airdrops**: Distribute GHOST tokens
+- **Pool Management**: Withdraw from liquidity pool
+- **Story Finalization**: Process completed stories
+- **Debug Info**: Chain ID verification, on-chain stats
 
 ---
 
@@ -164,7 +197,10 @@ npm run verify                 # Verify on Basescan
 │   ├── components/            # React components
 │   ├── hooks/                 # Contract hooks
 │   └── lib/                   # Utilities
-├── scripts/                   # Deployment scripts
+├── scripts/                   # Deployment & admin scripts
+│   ├── deploy.js              # Main deployment script
+│   ├── set-signer.js          # Set story template signer
+│   └── verify.js              # Contract verification
 └── test/                      # Contract tests
 ```
 
