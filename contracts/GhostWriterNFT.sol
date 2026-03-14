@@ -65,6 +65,10 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
     event StoryManagerUpdated(address indexed newManager);
     event BaseURIUpdated(string hiddenURI, string revealedURI);
 
+    // EIP-4906 (metadata refresh)
+    event MetadataUpdate(uint256 _tokenId);
+    event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
+
     modifier onlyStoryManager() {
         require(storyManager != address(0), "StoryManager not set");
         require(msg.sender == storyManager, "Only StoryManager can call");
@@ -100,6 +104,11 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
         _hiddenBaseURI = hiddenURI;
         _revealedBaseURI = revealedURI;
         emit BaseURIUpdated(hiddenURI, revealedURI);
+
+        // Notify marketplaces/indexers to refresh all token metadata.
+        if (_tokenIdCounter > 0) {
+            emit BatchMetadataUpdate(1, _tokenIdCounter);
+        }
     }
 
     /**
@@ -214,7 +223,12 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
         string memory storyId
     ) external onlyStoryManager nonReentrant {
         uint256[] memory tokenIds = storyTokens[storyId];
-        require(tokenIds.length > 0, "No NFTs for this story");
+
+        // If nobody contributed, there are no NFTs to reveal. Still allow the story lifecycle to complete.
+        if (tokenIds.length == 0) {
+            emit StoryCompleted(storyId, tokenIds);
+            return;
+        }
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
@@ -227,9 +241,74 @@ contract GhostWriterNFT is ERC721, Ownable, ReentrancyGuard {
             data.revealed = true;
 
             emit NFTRevealed(tokenId, data.contributedWord);
+            emit MetadataUpdate(tokenId);
         }
 
         emit StoryCompleted(storyId, tokenIds);
+    }
+
+    /**
+     * @dev Owner-only: force reveal a single token.
+     * Useful for manual metadata intervention.
+     */
+    function forceRevealToken(uint256 tokenId) external onlyOwner nonReentrant {
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        NFTData storage data = nftData[tokenId];
+
+        if (!data.revealed) {
+            data.storyComplete = true;
+            data.revealed = true;
+            emit NFTRevealed(tokenId, data.contributedWord);
+        }
+
+        emit MetadataUpdate(tokenId);
+    }
+
+    /**
+     * @dev Owner-only: force reveal all tokens in a story.
+     */
+    function forceRevealStory(string memory storyId) external onlyOwner nonReentrant {
+        uint256[] memory tokenIds = storyTokens[storyId];
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            NFTData storage data = nftData[tokenId];
+            if (data.revealed) continue;
+
+            data.storyComplete = true;
+            data.revealed = true;
+            emit NFTRevealed(tokenId, data.contributedWord);
+            emit MetadataUpdate(tokenId);
+        }
+
+        if (tokenIds.length > 0) {
+            emit StoryCompleted(storyId, tokenIds);
+        }
+    }
+
+    /**
+     * @dev Owner-only: emit EIP-4906 event to refresh a token without changing state.
+     */
+    function refreshTokenMetadata(uint256 tokenId) external onlyOwner {
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        emit MetadataUpdate(tokenId);
+    }
+
+    /**
+     * @dev Owner-only: emit EIP-4906 events to refresh all tokens in a story.
+     */
+    function refreshStoryMetadata(string memory storyId) external onlyOwner {
+        uint256[] memory tokenIds = storyTokens[storyId];
+        if (tokenIds.length == 0) return;
+
+        uint256 minId = tokenIds[0];
+        uint256 maxId = tokenIds[0];
+        for (uint256 i = 1; i < tokenIds.length; i++) {
+            uint256 t = tokenIds[i];
+            if (t < minId) minId = t;
+            if (t > maxId) maxId = t;
+        }
+
+        emit BatchMetadataUpdate(minId, maxId);
     }
 
     /**

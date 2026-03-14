@@ -25,6 +25,7 @@ contract StoryManager is Ownable, ReentrancyGuard, EIP712 {
     uint256 public constant CONTRIBUTION_FEE_USD_CENTS = 5;
     uint256 public constant CREATION_FEE_USD_CENTS = 10;
 
+<<<<<<< HEAD
     // Slot count ranges (enterprise constraints)
     uint256 public constant MINI_SLOTS_MIN = 5;
     uint256 public constant MINI_SLOTS_MAX = 10;
@@ -32,6 +33,18 @@ contract StoryManager is Ownable, ReentrancyGuard, EIP712 {
     uint256 public constant NORMAL_SLOTS_MAX = 15;
     uint256 public constant EPIC_SLOTS_MIN = 15;
     uint256 public constant EPIC_SLOTS_MAX = 25;
+=======
+    // Maximum number of active stories allowed at once (configurable)
+    uint256 public maxActiveStories = 15;
+
+    event MaxActiveStoriesUpdated(uint256 newMax);
+    event StoryForceCompleted(string indexed storyId, address indexed triggeredBy);
+
+    // Fixed slot counts (enterprise constraints)
+    uint256 public constant MINI_SLOTS = 10;
+    uint256 public constant NORMAL_SLOTS = 20;
+    uint256 public constant EPIC_SLOTS = 35;
+>>>>>>> e7d611f (expanded management attributes and updated API's and back end logic)
 
     // Story types
     enum StoryType {
@@ -235,6 +248,17 @@ contract StoryManager is Ownable, ReentrancyGuard, EIP712 {
     }
 
     /**
+     * @dev Update the maximum number of active stories.
+     */
+    function setMaxActiveStories(uint256 newMax) external onlyOwner {
+        require(newMax > 0);
+        // Basic sanity cap to prevent accidental extreme gas usage in getActiveStoriesCount()
+        require(newMax <= 500);
+        maxActiveStories = newMax;
+        emit MaxActiveStoriesUpdated(newMax);
+    }
+
+    /**
      * @dev Get current contribution fee in ETH
      */
     function getContributionFee() public view returns (uint256) {
@@ -352,8 +376,8 @@ contract StoryManager is Ownable, ReentrancyGuard, EIP712 {
 
         require(userStats[msg.sender].creationCredits > 0);
 
-        // Enforce a maximum of 15 active stories
-        require(getActiveStoriesCount() < 15);
+        // Enforce a maximum number of active stories
+        require(getActiveStoriesCount() < maxActiveStories);
 
         uint256 totalSlots = wordTypes.length;
         if (storyType == StoryType.MINI) {
@@ -643,6 +667,19 @@ contract StoryManager is Ownable, ReentrancyGuard, EIP712 {
         nftContract.revealStoryNFTs(storyId);
 
         emit StoryCompleted(storyId, block.timestamp);
+    }
+
+    /**
+     * @dev Owner-only emergency operation: force an active story into COMPLETE.
+     * Does not mint any extra NFTs; it only finalizes the story state so off-chain/UI can treat it as done.
+     */
+    function forceCompleteStory(string calldata storyId) external onlyOwner nonReentrant {
+        require(storyExists[storyId]);
+        Story storage story = stories[storyId];
+        require(story.status == StoryStatus.ACTIVE);
+
+        _completeStory(storyId);
+        emit StoryForceCompleted(storyId, msg.sender);
     }
 
     /**

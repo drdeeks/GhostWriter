@@ -187,6 +187,80 @@ export class AIService {
     return results;
   }
 
+  /**
+   * Admin-only helper: same as generateStorySuggestions, but allows providing extra instructions
+   * to steer the AI output (users cannot supply these constraints on-chain).
+   */
+  async generateStorySuggestionsAdmin(
+    category: string,
+    storyType: StoryTypeName,
+    count: number,
+    extraInstructions: string
+  ): Promise<GeneratedStory[]> {
+    const startTime = performance.now();
+
+    // Validate category
+    const categoryObj = STORY_CATEGORIES.find(
+      (cat) => cat.name.toLowerCase() === category.toLowerCase()
+    );
+
+    if (!categoryObj) {
+      throw new Error(`Invalid category: ${category}`);
+    }
+
+    const expectedSlots = this.expectedSlots(storyType);
+
+    // If OpenAI is not configured, fall back to deterministic templates.
+    if (!this.openai) {
+      const processingTime = performance.now() - startTime;
+      return Array.from({ length: count }).map(() => ({
+        ...this.generateDeterministicMadLib(categoryObj, expectedSlots),
+        generatedBy: 'Template' as const,
+        processingTime,
+      }));
+    }
+
+    const results: GeneratedStory[] = [];
+    for (let i = 0; i < count; i++) {
+      let generated: Omit<GeneratedStory, 'generatedBy' | 'processingTime'> | null = null;
+
+      for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
+        try {
+          const raw = await this.generateWithAI(categoryObj, expectedSlots, extraInstructions);
+          if (raw.wordTypes.length !== expectedSlots) {
+            throw new Error(`AI returned ${raw.wordTypes.length} slots; expected ${expectedSlots}`);
+          }
+          generated = raw;
+          break;
+        } catch (error) {
+          console.warn(`Admin AI generation attempt ${attempt} failed:`, error);
+          if (attempt !== this.config.maxRetries) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.pow(2, attempt) * 500)
+            );
+          }
+        }
+      }
+
+      const processingTime = performance.now() - startTime;
+      if (generated) {
+        results.push({
+          ...generated,
+          generatedBy: 'AI',
+          processingTime,
+        });
+      } else {
+        results.push({
+          ...this.generateDeterministicMadLib(categoryObj, expectedSlots),
+          generatedBy: 'Template',
+          processingTime,
+        });
+      }
+    }
+
+    return results;
+  }
+
   private expectedSlots(storyType: StoryTypeName): number {
     if (storyType === 'mini') {
       // 5-10 slots
@@ -202,9 +276,12 @@ export class AIService {
 
   private async generateWithAI(
     categoryObj: typeof STORY_CATEGORIES[0],
-    expectedSlots: number
+    expectedSlots: number,
+    extraInstructions?: string
   ): Promise<Omit<GeneratedStory, 'generatedBy' | 'processingTime'>> {
     if (!this.openai) throw new Error('OpenAI not initialized');
+
+    const extra = extraInstructions?.trim() ? `\n\nExtra admin instructions:\n${extraInstructions.trim()}` : '';
 
     const completion = await this.openai.chat.completions.create({
       model: this.config.model,
@@ -221,8 +298,12 @@ Requirements:
 - Use valid word types: adjective, noun, verb, adverb, plural_noun, past_tense_verb, verb_ing, persons_name, place, number, color, body_part, food, animal, exclamation, emotion
 - Make it fun, creative, and appropriate for all ages
 - Provide a catchy title
+<<<<<<< HEAD
 - Format: Title on first line, story on subsequent lines
 ${this.config.systemPromptAppend}`,
+=======
+- Format: Title on first line, story on subsequent lines${extra}`,
+>>>>>>> e7d611f (expanded management attributes and updated API's and back end logic)
         },
         {
           role: 'user',

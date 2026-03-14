@@ -60,24 +60,29 @@ All notable changes to this project will be documented in this file.
   - **Outcome:** Despite multiple attempts and common workarounds, the build continues to fail with the same `useContext` error during the prerendering of `/_global-error`. This indicates a deeper incompatibility or configuration issue between Next.js App Router's prerendering, React's context system, and `wagmi`'s setup that could not be resolved with available tools and information.
 
 ### Completed
-- **Story creation UX updated for enterprise enforcement:** `StoryCreationModal` now requests **exactly 5** server-signed suggestions from `/api/generate-story`, requires user selection of 1/5, and then calls `createStoryApproved` (removes broken `createStory` usage).
+- **Story creation UX updated for enterprise enforcement:** `StoryCreationModal` now requests **exactly 5** server-signed suggestions from `/api/generate-story`, requires user selection of 1/5, and then calls `createStoryApproved`.
 - **Category normalization:** story creation categories now use canonical keys (e.g. `scifi` not `sci-fi`) to keep frontend ↔ contract enum mapping deterministic.
 - **Slot-count consistency:** Epic stories now display/expect **35 slots** to match the onchain `EPIC_SLOTS` constant.
 - **AI service TypeScript fixed:** removed duplicated/stray legacy blocks in `src/lib/ai-service.ts` that were causing TypeScript parse failures.
-- **StoryManager deployability restored:** `StoryManager.sol` was exceeding the EIP-170 contract size limit; removed revert strings (kept checks) to reduce bytecode size below the 24KB limit.
-- **Hardhat optimizer tuned for size:** `hardhat.config.js` optimizer `runs` set to `1` to bias toward smaller bytecode for large contracts.
-- **Hooks correctness fixes (lint + correctness):**
-  - `useStories` refactored from invalid hook-in-loop `useReadContract` usage to `useReadContracts` batching.
-  - `ContributionModal` refactored to avoid conditional hooks by splitting into an inner component when `story` is present.
-  - `Leaderboard` refactored to derive state directly from hook results (removed setState-in-effect).
-  - `NFTCollection` refactored to avoid conditional `useMemo` usage.
-  - Fixed a couple of JSX unescaped entity violations.
+- **Admin dashboard: on-chain stats + owner ops**
+  - New owner controls: configurable active-story cap (`maxActiveStories`), force-complete story, finalize/process batch, protocol settings.
+  - Admin AI: generate 5 suggestions with extra instructions (admin-only) and create on-chain via owner-only `createStory`.
+  - NFT admin tooling: force reveal token/story, metadata refresh (EIP-4906), base URI updates.
+- **Force-complete story UX:** forced-complete stories are marked COMPLETE on-chain and any missing slots are auto-filled off-chain for display using a local word pool (no extra NFTs, no extra AI calls).
+- **Local word pool:** added `src/lib/word-pool.ts` for deterministic word selection by `storyId + position + wordType`.
+- **Public story page:** added `/story/[storyId]` page to view a story by URL (enables share links + completed story navigation).
+- **Token: 50,000,000 hard cap + bucketed allocations**
+  - Added bucket caps/minted accounting and bucketed mint/airdrop.
+  - Admin UI shows per-bucket cap/minted/remaining.
+- **Seed credits helper (in-app creation credits):** admin can fetch active wallets (creators + contributors) via an owner-gated endpoint and populate the credits airdrop list for quick seeding.
+- **Error handling hardened:** show server-provided error details for story generation and moderation failures.
+- **StoryManager deployability restored:** reduced bytecode size under EIP-170 by removing revert strings (kept checks).
+- **Hardhat optimizer tuned for size:** `hardhat.config.js` optimizer `runs` set to `1`.
 - **Build/validation status:**
   - `npm run ts-check` ✅
   - `npm run compile` ✅
   - `npm test` ✅ (Hardhat)
-  - `npm run build` ✅ (Next.js)
-  - `npm run lint` ✅ (warnings remain)
+  - `npm run lint` ✅
 
 ### Findings (incomplete/outdated)
 - **Next.js 16.1.1 no longer ships the `next lint` command** (CLI has no `lint` subcommand). Project linting needed migration to ESLint.

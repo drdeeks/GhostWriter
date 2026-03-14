@@ -58,7 +58,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
   const [selectedType, setSelectedType] = useState<StoryType>('normal');
   const [selectedCategory, setSelectedCategory] = useState<string>(STORY_CATEGORIES[0]!.value);
   const { createStoryApproved, isPending } = useStoryManager();
-  const { activeStories, isLoading: isActiveStoriesLoading } = useActiveStoriesCount();
+  const { activeStories, maxActiveStories, isLoading: isActiveStoriesLoading } = useActiveStoriesCount();
   const { address } = useAccount();
   const { isOwner } = useIsOwner(address);
 
@@ -130,9 +130,9 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
       return;
     }
 
-    if (!isActiveStoriesLoading && activeStories >= 15) {
+    if (!isActiveStoriesLoading && activeStories >= maxActiveStories) {
       toast.error('Story limit reached', {
-        description: 'There are already 15 active stories. Please complete or wait for a story to finish before creating a new one.',
+        description: `There are already ${maxActiveStories} active stories. Please complete or wait for a story to finish before creating a new one.`,
       });
       return;
     }
@@ -150,7 +150,10 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
       });
 
       if (!response.ok) {
-        toast.error('Failed to generate story suggestions');
+        const err = await response.json().catch(() => ({}));
+        toast.error('Failed to generate story suggestions', {
+          description: err?.details || err?.error || `HTTP ${response.status}`,
+        });
         return;
       }
 
@@ -358,7 +361,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isPending || creationCredits < 1 || (!isActiveStoriesLoading && activeStories >= 15)}
+            disabled={isPending || creationCredits < 1 || (!isActiveStoriesLoading && activeStories >= maxActiveStories)}
             className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold"
           >
             {isPending ? (
@@ -369,7 +372,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
             ) : (
               <>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                {(!isActiveStoriesLoading && activeStories >= 15)
+                {(!isActiveStoriesLoading && activeStories >= maxActiveStories)
                   ? 'Limit Reached'
                   : suggestions
                     ? 'Create Story'

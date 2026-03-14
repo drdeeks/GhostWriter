@@ -139,11 +139,18 @@ export default function Home() {
 
   const handleContribute = (storyId: string) => {
     haptic.trigger('medium'); // Haptic feedback for interaction
-    
+
     const story = stories.find((s) => s.storyId === storyId);
     if (story) {
       setSelectedStory(story);
       setShowContributionModal(true);
+    }
+  };
+
+  const handleViewStory = (storyId: string) => {
+    haptic.trigger('light');
+    if (typeof window !== 'undefined') {
+      window.location.href = `/story/${storyId}`;
     }
   };
 
@@ -419,7 +426,7 @@ export default function Home() {
                     key={story.storyId}
                     story={story}
                     onContribute={handleContribute}
-                    onViewStory={() => {}}
+                    onViewStory={handleViewStory}
                   />
                 ))}
               </div>
@@ -450,7 +457,7 @@ export default function Home() {
                     key={story.storyId}
                     story={story}
                     onContribute={handleContribute}
-                    onViewStory={() => {}}
+                    onViewStory={handleViewStory}
                   />
                 ))}
               </div>

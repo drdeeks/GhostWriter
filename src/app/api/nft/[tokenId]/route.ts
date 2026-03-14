@@ -1,4 +1,5 @@
 import { CONTRACTS, NFT_ABI, STORY_MANAGER_ABI } from '@/lib/contracts';
+import { pickWordFromPool } from '@/lib/word-pool';
 import { NextRequest, NextResponse } from 'next/server';
 import { createPublicClient, http } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
@@ -62,20 +63,32 @@ interface SlotData {
 /**
  * Generate complete story text with user's word bolded
  */
-function generateRevealedStoryText(template: string, slots: SlotData[], userPosition: number): string {
-  const ordered = [...slots].sort((a, b) => a.position - b.position);
+function generateRevealedStoryText(params: {
+  storyId: string;
+  template: string;
+  slots: SlotData[];
+  userPosition: number;
+  fillMissing: boolean;
+}): string {
+  const ordered = [...params.slots].sort((a, b) => a.position - b.position);
   let i = 0;
 
   // Replace placeholders in-order so repeated word types map deterministically to positions.
-  return template.replace(/\[[A-Za-z_]+\]/g, (placeholder) => {
+  return params.template.replace(/\[[A-Za-z_]+\]/g, (placeholder) => {
     const slot = ordered[i++];
-    if (!slot || !slot.filled) return placeholder;
+    if (!slot) return placeholder;
 
-    if (slot.position === userPosition) {
-      return `**${slot.word}**`;
+    const nextWord = slot.filled
+      ? slot.word
+      : params.fillMissing
+        ? pickWordFromPool({ storyId: params.storyId, position: slot.position, wordType: slot.wordType })
+        : placeholder;
+
+    if (slot.position === params.userPosition) {
+      return `**${nextWord}**`;
     }
 
-    return slot.word;
+    return nextWord;
   });
 }
 
@@ -322,11 +335,15 @@ export async function GET(
         };
       } else {
         // Revealed state - show complete story with bolded word
-        const fullStoryText = generateRevealedStoryText(
-          storyData.template,
+        const fullStoryText = generateRevealedStoryText({
+          storyId: storyData.storyId,
+          template: storyData.template,
           slots,
-          nftData.wordPosition
-        );
+          userPosition: nftData.wordPosition,
+          // If a story was force-completed, it can be COMPLETE with unfilled slots.
+          // Fill those locally so the final story is readable without additional AI calls.
+          fillMissing: storyData.status === 1,
+        });
 
         const origin = new URL(request.url).origin;
 
