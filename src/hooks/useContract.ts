@@ -204,3 +204,24 @@ export function useTotalNFTs() {
   });
   return { totalNFTs: data ? Number(data) : 0, isLoading, error };
 }
+
+export function useLeaderboard(offset: number, limit: number) {
+  const { data, isLoading, error } = useReadContract({
+    address: CONTRACTS.storyManager,
+    abi: STORY_MANAGER_ABI,
+    functionName: 'getLeaderboard',
+    args: [BigInt(offset), BigInt(limit)],
+  });
+  return { leaderboard: data as any[] | undefined, isLoading, error };
+}
+
+export function useUserRank(address: `0x${string}` | undefined) {
+  const { data, isLoading, error } = useReadContract({
+    address: CONTRACTS.storyManager,
+    abi: STORY_MANAGER_ABI,
+    functionName: 'getUserRank',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+  return { rank: data ? Number(data) : 0, isLoading, error };
+}
