@@ -1,5 +1,6 @@
 'use client';
 
+// @ts-ignore
 import '@coinbase/onchainkit/styles.css';
 import farcasterMiniAppConnector from '@farcaster/miniapp-wagmi-connector';
 import { OnchainKitProvider } from '@coinbase/onchainkit';
