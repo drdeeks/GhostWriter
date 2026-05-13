@@ -1,16 +1,26 @@
 import { CONTRACTS, STORY_MANAGER_ABI } from '@/lib/contracts';
 import type { Story, StoryType } from '@/types/ghostwriter';
+import { useMemo } from 'react';
 import { useReadContracts } from 'wagmi';
 
+/**
+ * Performance-optimized hook for fetching multiple stories by ID.
+ * Uses useMemo to maintain stable references and minimize re-renders.
+ */
 export function useStories(storyIds: string[] | undefined) {
-  const ids = (storyIds || []).filter(Boolean);
+  // Memoize IDs to prevent unnecessary downstream computations
+  const ids = useMemo(() => (storyIds || []).filter(Boolean), [storyIds]);
 
-  const contracts = ids.map((id) => ({
-    address: CONTRACTS.storyManager,
-    abi: STORY_MANAGER_ABI,
-    functionName: 'getStory' as const,
-    args: [id] as const,
-  }));
+  // Stable contracts array for useReadContracts to prevent unnecessary effect triggers
+  const contracts = useMemo(() =>
+    ids.map((id) => ({
+      address: CONTRACTS.storyManager,
+      abi: STORY_MANAGER_ABI,
+      functionName: 'getStory' as const,
+      args: [id] as const,
+    })),
+    [ids]
+  );
 
   const { data, isLoading, error, refetch } = useReadContracts({
     contracts,
@@ -23,10 +33,19 @@ export function useStories(storyIds: string[] | undefined) {
     },
   });
 
-  const stories = (data || [])
-    .map((r) => (r.status === 'success' ? (r.result as any) : null))
-    .filter(Boolean)
-    .map((story) => mapContractStory(story)) as Story[];
+  // Optimized single-pass transformation with memoized result.
+  // This ensures that stories array reference only changes when the actual data from contract changes.
+  const stories = useMemo(() => {
+    if (!data || data.length === 0) return [] as Story[];
+
+    const mappedStories: Story[] = [];
+    for (const r of data) {
+      if (r.status === 'success' && r.result) {
+        mappedStories.push(mapContractStory(r.result));
+      }
+    }
+    return mappedStories;
+  }, [data]);
 
   return { stories, isLoading, error, refetchAll: refetch };
 }
