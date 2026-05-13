@@ -47,6 +47,7 @@ export const metadata: Metadata = {
     "fc:frame:button:1:action": "launch_frame",
     "fc:frame:button:1:target": "https://ghost-writer-three.vercel.app",
     "fc:miniapp": JSON.stringify(frame),
+    "base:app_id": "6a005e6aef4989446dc30c24",
   },
 };
 
