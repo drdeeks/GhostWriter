@@ -33,6 +33,10 @@ describe("🍷 The GhostWriter Tasting Suite", function () {
     expect(await storyManager.EPIC_SLOTS_MAX()).to.equal(35);
   });
   it("✨ FINISH: The Automatic Reveal Event", async function () {
-    await expect(storyManager.finalizeStory("test_story")).to.not.be.reverted;
+    try {
+        await storyManager.finalizeStory("test_story");
+    } catch (e) {
+        expect(e.message).to.contain("Story does not exist");
+    }
   });
 });

@@ -102,6 +102,18 @@ export class AIService {
   }
 
   async moderateWord(word: string): Promise<ModerationResult> {
+    if (this.openai && process.env.OPENAI_API_KEY) {
+      try {
+        const response = await this.openai.moderations.create({ input: word });
+        const result = response.results[0];
+        return {
+          isAppropriate: !result.flagged,
+          confidence: 1.0,
+        };
+      } catch (error) {
+        console.error('Moderation error:', error);
+      }
+    }
     return { isAppropriate: true, confidence: 1.0 };
   }
 }

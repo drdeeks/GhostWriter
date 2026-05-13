@@ -6,14 +6,14 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Ghost Writer",
-  description: "Storytelling NFT Game - Collaborative storytelling where contributions mint hidden NFTs that reveal when stories complete. Each word earns creation credits on Base Chain.",
+  description: "Community Storytelling Game - Collaborative storytelling where contributions mint hidden NFTs that reveal when stories complete. Each word earns creation credits onchain.",
   icons: {
     icon: '/icon.png',
   },
   // Open Graph / general social sharing
   openGraph: {
     title: "Ghost Writer - NFT Game",
-    description: "Collaborative stories with hidden NFTs that reveal on completion. Earn rewards on Base Chain.",
+    description: "Collaborative stories with hidden NFTs that reveal on completion. Earn rewards onchain.",
     images: [
       {
         url: "https://ghost-writer-three.vercel.app/splash.png",

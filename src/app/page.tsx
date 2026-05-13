@@ -64,7 +64,7 @@ export default function Home() {
       const nextId = activeChainId === 84532 ? 10143 : 84532;
       setChainId(nextId);
       switchChain({ chainId: nextId });
-      toast.success(`Switched to ${nextId === 10143 ? 'Monad' : 'Base'}`);
+      toast.success(`Switched network`);
   };
 
   const activeStories = useMemo(() => (stories || []).filter(s => s?.status === 'active'), [stories]);
@@ -103,7 +103,7 @@ export default function Home() {
             className="h-9 px-3 rounded-full text-[10px] uppercase font-black text-white/60 hover:text-white"
         >
             <Repeat className="h-3 w-3 mr-2 text-[#00FFFF]" />
-            {activeChainId === 10143 ? 'Monad' : 'Base'}
+            SWITCH NETWORK
         </Button>
 
         <div className="w-px h-4 bg-white/10" />
@@ -129,11 +129,11 @@ export default function Home() {
           </div>
           
           <h1 className="text-7xl md:text-9xl font-black tracking-tighter mb-8 animate-fade-in-up delay-100">
-            Write the <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#00FFFF] to-[#6A0DAD]">Ghost.</span>
+            Ghost <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#00FFFF] to-[#6A0DAD]">Writer</span>
           </h1>
           
           <p className="max-w-2xl mx-auto text-xl md:text-2xl text-slate-400 font-medium leading-relaxed mb-12 animate-fade-in-up delay-200">
-            The agnostic storytelling protocol. Build narratives in the Ether, mint your legacy as a unique artifact.
+            A community storytelling game. Build narratives onchain and mint your legacy as a unique artifact.
           </p>
 
           <div className="flex flex-wrap justify-center gap-6 animate-fade-in-up delay-300">
@@ -192,7 +192,7 @@ export default function Home() {
             <div className="p-10 h-full bg-gradient-to-br from-[#00FFFF]/10 to-transparent flex flex-col justify-center">
               <Share2 className="h-10 w-10 text-[#00FFFF] mb-6" />
               <h4 className="text-2xl font-black mb-3">Syntactic Flow</h4>
-              <p className="text-sm text-slate-500 font-medium leading-relaxed">Integrated social telemetry. Share your contributions directly to Farcaster and Base.</p>
+              <p className="text-sm text-slate-500 font-medium leading-relaxed">Integrated social telemetry. Share your contributions directly to Farcaster and across the blockchain.</p>
             </div>
           </DoubleBezel>
         </section>
@@ -232,7 +232,7 @@ export default function Home() {
         <footer className="pt-32 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-12">
           <div className="flex items-center gap-3">
               <img src="https://customer-assets.emergentagent.com/wingman/45802f0c-1827-493b-822a-b9a4a7be2894/attachments/e96392fa54474f309bee3a1179384afc_IMG_1101.jpeg" className="h-10 w-10 rounded-lg grayscale hover:grayscale-0 transition-all opacity-50 hover:opacity-100" alt="GhostWriter" />
-              <div className="text-[10px] font-black tracking-[0.4em] text-slate-600 uppercase">Agnostic Storytelling Protocol</div>
+              <div className="text-[10px] font-black tracking-[0.4em] text-slate-600 uppercase">Community Storytelling Game</div>
           </div>
           <div className="flex gap-10 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
             <a href="#" className="hover:text-[#00FFFF] transition-all">Protocol</a>
