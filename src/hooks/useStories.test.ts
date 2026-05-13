@@ -10,7 +10,7 @@ jest.mock('wagmi', () => ({
 // Mock contracts lib
 jest.mock('@/lib/contracts', () => ({
   CONTRACTS: {
-    storyManager: '0xStoryManager',
+    storyManager: '0xStoryManager' as `0x${string}`,
   },
   STORY_MANAGER_ABI: [],
 }));
@@ -88,7 +88,7 @@ describe('useStories Hook', () => {
 
   it('should memoize returned stories array', () => {
     const { result, rerender } = renderHook(
-      ({ ids }) => useStories(ids),
+      ({ ids }: { ids: string[] | undefined }) => useStories(ids),
       { initialProps: { ids: mockStoryIds } }
     );
 
@@ -102,7 +102,7 @@ describe('useStories Hook', () => {
 
   it('should update stories when data changes', () => {
     const { result, rerender } = renderHook(
-      ({ ids }) => useStories(ids),
+      ({ ids }: { ids: string[] | undefined }) => useStories(ids),
       { initialProps: { ids: mockStoryIds } }
     );
 

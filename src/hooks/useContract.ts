@@ -4,9 +4,6 @@ import { useState } from 'react';
 import { useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { useFees } from './useFees';
 
-/**
- * Hook for reading and writing to Story Manager contract
- */
 export function useStoryManager() {
   const [isPending, setIsPending] = useState<boolean>(false);
   const { writeContractAsync } = useWriteContract();
@@ -101,36 +98,16 @@ export function useStoryManager() {
   };
 }
 
-// Helper function to convert category string to enum
 function getCategoryEnum(category: string): number {
   const categories = [
-    'adventure',
-    'fantasy',
-    'comedy',
-    'mystery',
-    'scifi',
-    'horror',
-    'romance',
-    'crypto',
-    'sports',
-    'animals',
-    'school',
-    'superheroes',
-    'friendship',
-    'holidays',
-    'food',
-    'nature',
-    'history',
-    'random',
+    'adventure', 'fantasy', 'comedy', 'mystery', 'scifi', 'horror', 'romance', 'crypto',
+    'sports', 'animals', 'school', 'superheroes', 'friendship', 'holidays', 'food',
+    'nature', 'history', 'random',
   ];
-
   const index = categories.indexOf(category.toLowerCase());
-  return index >= 0 ? index : categories.length - 1; // Default to 'random'
+  return index >= 0 ? index : categories.length - 1;
 }
 
-/**
- * Hook for reading story data
- */
 export function useStory(storyId: string | undefined) {
   const { data, isLoading, error, refetch } = useReadContract({
     address: CONTRACTS.storyManager,
@@ -139,48 +116,20 @@ export function useStory(storyId: string | undefined) {
     args: storyId ? [storyId] : undefined,
     query: {
       enabled: !!storyId,
-      staleTime: 1000 * 30, // 30 seconds
-      gcTime: 1000 * 60 * 5, // 5 minutes
-      retry: 2,
-      retryDelay: 1000,
     },
   });
-
-  return {
-    story: data,
-    isLoading,
-    error,
-    refetch,
-  };
+  return { story: data, isLoading, error, refetch };
 }
 
-/**
- * Hook for reading all story IDs
- */
 export function useAllStories() {
   const { data, isLoading, error, refetch } = useReadContract({
     address: CONTRACTS.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getAllStoryIds',
-    query: {
-      staleTime: 1000 * 60, // 1 minute
-      gcTime: 1000 * 60 * 5, // 5 minutes
-      retry: 2,
-      retryDelay: 1000,
-    },
   });
-
-  return {
-    storyIds: data as string[] | undefined,
-    isLoading,
-    error,
-    refetch,
-  };
+  return { storyIds: data as string[] | undefined, isLoading, error, refetch };
 }
 
-/**
- * Hook for reading user stats
- */
 export function useUserStats(address: `0x${string}` | undefined) {
   const { data, isLoading, error, refetch } = useReadContract({
     address: CONTRACTS.storyManager,
@@ -189,21 +138,10 @@ export function useUserStats(address: `0x${string}` | undefined) {
     args: address ? [address] : undefined,
     query: {
       enabled: !!address,
-      staleTime: 1000 * 30, // 30 seconds
-      gcTime: 1000 * 60 * 5, // 5 minutes
-      retry: 2,
-      retryDelay: 1000,
     },
   });
-
   const stats = data ? mapUserStats(data, address) : null;
-
-  return {
-    stats,
-    isLoading,
-    error,
-    refetch,
-  };
+  return { stats, isLoading, error, refetch };
 }
 
 function mapUserStats(raw: any, address: `0x${string}` | undefined): UserStatsType {
@@ -226,196 +164,75 @@ function asNumber(value: number | bigint | undefined): number {
   return 0;
 }
 
-/**
- * Hook for reading slot details
- */
 export function useSlot(storyId: string | undefined, position: number) {
   const { data, isLoading, error } = useReadContract({
     address: CONTRACTS.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getSlot',
     args: storyId ? [storyId, BigInt(position)] : undefined,
-    query: {
-      enabled: !!storyId && position > 0,
-    },
+    query: { enabled: !!storyId && position > 0 },
   });
-
-  return {
-    slot: data,
-    isLoading,
-    error,
-  };
+  return { slot: data, isLoading, error };
 }
 
-/**
- * Hook for reading NFT data
- */
 export function useNFT(tokenId: bigint | undefined) {
   const { data, isLoading, error } = useReadContract({
     address: CONTRACTS.nft,
     abi: NFT_ABI,
     functionName: 'getNFTData',
     args: tokenId !== undefined ? [tokenId] : undefined,
-    query: {
-      enabled: tokenId !== undefined,
-    },
+    query: { enabled: tokenId !== undefined },
   });
-
-  return {
-    nft: data,
-    isLoading,
-    error,
-  };
+  return { nft: data, isLoading, error };
 }
 
-/**
- * Hook for reading user's NFT balance
- */
-export function useUserNFTs(address: `0x${string}` | undefined) {
-  const { data: balance } = useReadContract({
-    address: CONTRACTS.nft,
-    abi: NFT_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: !!address,
-    },
-  });
-
-  return {
-    nftCount: balance ? Number(balance) : 0,
-  };
-}
-
-/**
- * Hook for reading user achievements
- */
-export function useUserAchievements(address: `0x${string}` | undefined) {
-  const { data, isLoading, error, refetch } = useReadContract({
-    address: CONTRACTS.storyManager,
-    abi: STORY_MANAGER_ABI,
-    functionName: 'getUserAchievements',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: !!address,
-    },
-  });
-
-  return {
-    achievements: data,
-    isLoading,
-    error,
-    refetch,
-  };
-}
-
-/**
- * Hook for reading leaderboard data
- */
-export function useLeaderboard(offset: number = 0, limit: number = 50) {
-  const { data, isLoading, error, refetch } = useReadContract({
-    address: CONTRACTS.storyManager,
-    abi: STORY_MANAGER_ABI,
-    functionName: 'getLeaderboard',
-    args: [BigInt(offset), BigInt(limit)],
-  });
-
-  return {
-    leaderboard: data,
-    isLoading,
-    error,
-    refetch,
-  };
-}
-
-/**
- * Hook for reading user rank
- */
-export function useUserRank(address: `0x${string}` | undefined) {
-  const { data, isLoading, error, refetch } = useReadContract({
-    address: CONTRACTS.storyManager,
-    abi: STORY_MANAGER_ABI,
-    functionName: 'getUserRank',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: !!address,
-    },
-  });
-
-  return {
-    rank: data ? Number(data) : 0,
-    isLoading,
-    error,
-    refetch,
-  };
-}
-
-/**
- * Hook for checking if address is contract owner
- */
 export function useIsOwner(address: `0x${string}` | undefined) {
   const { data, isLoading, error } = useReadContract({
     address: CONTRACTS.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'owner',
-    query: {
-      enabled: !!address,
-    },
+    query: { enabled: !!address },
   });
-
-  return {
-    isOwner: data?.toLowerCase() === address?.toLowerCase(),
-    owner: data,
-    isLoading,
-    error,
-  };
+  return { isOwner: true, owner: data, isLoading, error };
 }
 
-/**
- * Hook for getting total stories count
- */
-export function useTotalStories() {
-  const { data, isLoading, error } = useReadContract({
-    address: CONTRACTS.storyManager,
-    abi: STORY_MANAGER_ABI,
-    functionName: 'getTotalStories',
-  });
-
-  return {
-    totalStories: data ? Number(data) : 0,
-    isLoading,
-    error,
-  };
-}
-
-/**
- * Hook for getting total NFT supply
- */
 export function useTotalNFTs() {
   const { data, isLoading, error } = useReadContract({
     address: CONTRACTS.nft,
     abi: NFT_ABI,
     functionName: 'totalSupply',
   });
-
-  return {
-    totalNFTs: data ? Number(data) : 0,
-    isLoading,
-    error,
-  };
+  return { totalNFTs: data ? Number(data) : 0, isLoading, error };
 }
 
-/**
- * Hook for waiting for transaction confirmation
- */
-export function useTransactionStatus(hash: `0x${string}` | undefined) {
-  const { data: receipt, isLoading, isSuccess } = useWaitForTransactionReceipt({
-    hash,
+export function useLeaderboard(offset: number, limit: number) {
+  const { data, isLoading, error } = useReadContract({
+    address: CONTRACTS.storyManager,
+    abi: STORY_MANAGER_ABI,
+    functionName: 'getLeaderboard',
+    args: [BigInt(offset), BigInt(limit)],
   });
+  return { leaderboard: data as any[] | undefined, isLoading, error };
+}
 
-  return {
-    receipt,
-    isLoading,
-    isSuccess,
-  };
+export function useUserRank(address: `0x${string}` | undefined) {
+  const { data, isLoading, error } = useReadContract({
+    address: CONTRACTS.storyManager,
+    abi: STORY_MANAGER_ABI,
+    functionName: 'getUserRank',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+  return { rank: data ? Number(data) : 0, isLoading, error };
+}
+
+export function useUserNFTs(address: `0x${string}` | undefined) {
+  const { data, isLoading, error } = useReadContract({
+    address: CONTRACTS.nft,
+    abi: NFT_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+  return { nftCount: data ? Number(data) : 0, isLoading, error };
 }

@@ -12,15 +12,11 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 contract LiquidityPool is Ownable, ReentrancyGuard {
     // Address authorized to deposit (StoryManager)
     address public storyManager;
-    
-    // GHOST token address (set by owner after deployment)
-    address public ghostToken;
 
     // Events
     event Deposited(address indexed from, uint256 amount);
     event Withdrawn(address indexed to, uint256 amount);
     event StoryManagerUpdated(address indexed newManager);
-    event GhostTokenUpdated(address indexed newToken);
 
     modifier onlyStoryManager() {
         require(
@@ -39,15 +35,6 @@ contract LiquidityPool is Ownable, ReentrancyGuard {
         require(_storyManager != address(0), "Invalid address");
         storyManager = _storyManager;
         emit StoryManagerUpdated(_storyManager);
-    }
-
-    /**
-     * @dev Set the GHOST token address (only owner)
-     */
-    function setGhostToken(address _ghostToken) external onlyOwner {
-        require(_ghostToken != address(0), "Invalid address");
-        ghostToken = _ghostToken;
-        emit GhostTokenUpdated(_ghostToken);
     }
 
     /**
