@@ -116,13 +116,145 @@ contract StoryManager is Ownable, ReentrancyGuard, EIP712 {
         return priceOracle.usdToEth(CONTRIBUTION_FEE_USD_CENTS);
     }
 
-    function getActiveStoriesCount() public view returns (uint256) {
-        return 0; 
-    }
 
     function getTotalStories() external view returns (uint256) { return 0; }
 
     function finalizeStory(string memory storyId) external {
+        require(storyExists[storyId], "Story does not exist");
+        require(stories[storyId].status == StoryStatus.COMPLETE, "Story not complete");
+        require(stories[storyId].completedAt > 0, "Already finalized");
+
+        stories[storyId].completedAt = 0;
         nftContract.revealStoryNFTs(storyId);
+        nftContract.mintCreatorNFT(stories[storyId].creator, storyId, stories[storyId].title, stories[storyId].template);
+    }
+
+    function setStoryTemplateSigner(address _signer) external onlyAdmin {
+        storyTemplateSigner = _signer;
+    }
+
+    function setMaxActiveStories(uint256 _max) external onlyAdmin {
+        maxActiveStories = _max;
+        emit MaxActiveStoriesUpdated(_max);
+    }
+
+    function airdropCredits(address[] calldata recipients, uint256[] calldata amounts) external onlyAdmin {
+        require(recipients.length == amounts.length, "Array length mismatch");
+        for (uint256 i = 0; i < recipients.length; i++) {
+            userStats[recipients[i]].creationCredits += amounts[i];
+        }
+    }
+
+    function createStory(
+        string memory storyId,
+        string memory title,
+        string memory template,
+        StoryType storyType,
+        StoryCategory category,
+        string[] memory wordTypes
+    ) external payable {
+        revert OwnableUnauthorizedAccount(msg.sender);
+    }
+
+    function createStoryApproved(
+        string memory storyId,
+        string memory title,
+        string memory template,
+        StoryType storyType,
+        StoryCategory category,
+        string[] memory wordTypes,
+        uint256 expiresAt,
+        bytes memory signature
+    ) external payable nonReentrant {
+        require(expiresAt >= block.timestamp, "Expired");
+        bytes32 structHash = keccak256(abi.encode(
+            keccak256("CreateStory(address creator,string storyId,string title,string template,uint8 storyType,uint8 category,bytes32 wordTypesHash,uint256 expiresAt)"),
+            msg.sender,
+            keccak256(bytes(storyId)),
+            keccak256(bytes(title)),
+            keccak256(bytes(template)),
+            uint8(storyType),
+            uint8(category),
+            _hashWordTypes(wordTypes),
+            expiresAt
+        ));
+        bytes32 hash = _hashTypedDataV4(structHash);
+        address signer = ECDSA.recover(hash, signature);
+        require(signer == storyTemplateSigner, "Invalid signature");
+
+        require(getActiveStoriesCount() < maxActiveStories);
+
+        activeStories++;
+        storyExists[storyId] = true;
+        stories[storyId] = Story({
+            storyId: storyId,
+            title: title,
+            template: template,
+            storyType: storyType,
+            category: category,
+            totalSlots: wordTypes.length,
+            filledSlots: 0,
+            creator: msg.sender,
+            createdAt: block.timestamp,
+            completedAt: 0,
+            status: StoryStatus.ACTIVE,
+            shareCount: 0
+        });
+        userStats[msg.sender].storiesCreated++;
+        for (uint256 i = 0; i < wordTypes.length; i++) {
+            storySlots[storyId][i+1].wordType = wordTypes[i];
+        }
+    }
+
+    function _hashWordTypes(string[] memory wordTypes) internal pure returns (bytes32) {
+        bytes32 acc = bytes32(0);
+        for (uint256 i = 0; i < wordTypes.length; i++) {
+            acc = keccak256(abi.encodePacked(acc, keccak256(bytes(wordTypes[i]))));
+        }
+        return acc;
+    }
+
+    uint256 public activeStories;
+    function getActiveStoriesCount() public view returns (uint256) {
+        return activeStories;
+    }
+
+    function contributeWord(
+        string memory storyId,
+        uint256 position,
+        string memory word
+    ) external payable nonReentrant {
+        require(storyExists[storyId], "Story does not exist");
+        Story storage story = stories[storyId];
+        require(story.status == StoryStatus.ACTIVE, "Not active");
+        require(!storySlots[storyId][position].filled, "Already filled");
+
+        storySlots[storyId][position].filled = true;
+        storySlots[storyId][position].word = word;
+        storySlots[storyId][position].contributor = msg.sender;
+        story.filledSlots++;
+
+        nftContract.mintHiddenNFT(msg.sender, storyId, story.title, position, story.totalSlots, storySlots[storyId][position].wordType, word);
+
+        if (story.filledSlots == story.totalSlots) {
+            story.status = StoryStatus.COMPLETE;
+            story.completedAt = block.timestamp;
+            nftContract.revealStoryNFTs(storyId);
+        }
+    }
+
+    function forceCompleteStory(string memory storyId) external {
+        if (msg.sender != owner()) {
+            revert OwnableUnauthorizedAccount(msg.sender);
+        }
+        stories[storyId].status = StoryStatus.COMPLETE;
+    }
+
+    function getStory(string memory storyId) external view returns (Story memory) {
+        return stories[storyId];
+    }
+
+    function getUserStats(address user) external view returns (UserStats memory) {
+        return userStats[user];
     }
 }

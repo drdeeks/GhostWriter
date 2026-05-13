@@ -1,9 +1,9 @@
-# 👻 GhostWriter: The Agnostic Storytelling Protocol
+# 👻 Ghost Writer: Community Storytelling Game
 
-GhostWriter is an innovative, collaborative storytelling NFT game designed to be immersive, elegant, and chain-agnostic. Players contribute words to community-driven stories, minting unique artifacts that evolve from hidden placeholders to revealed syntactic nodes upon story completion.
+Ghost Writer is an innovative, collaborative storytelling game where players contribute words to community-driven stories, minting unique NFT artifacts that evolve from hidden placeholders to revealed syntactic nodes upon story completion.
 
 ## 🚀 Vision
-Built for the new ether, GhostWriter transcends chain loyalty. It is a high-performance protocol engineered for cross-EVM compatibility, currently live on **Monad** and **Base**.
+Ghost Writer is built for the next generation of onchain social interaction. It is a high-performance community engine designed for elegant, collaborative creativity.
 
 ## 🏗️ Protocol Infrastructure
 
@@ -14,7 +14,7 @@ Built for the new ether, GhostWriter transcends chain loyalty. It is a high-perf
 - **System Terminal**: A tactical admin dashboard for governance and monitoring.
 
 ### Active Deployments
-| Component | Monad (Chain 143) | Base (Chain 8453) |
+| Component | Chain A | Chain B |
 |-----------|-------------------|-------------------|
 | **StoryManager** | `0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9` | `0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9` |
 | **NFT Core** | `0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9` | `0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9` |
@@ -50,5 +50,5 @@ GhostWriter includes a rigorous and humorous testing suite. Run it to ensure you
 npm run taste
 ```
 
-## 📜 Legal & Agnostic Note
-GhostWriter does not express a preference for any specific L1 or L2. The protocol is designed to thrive wherever high-performance, community-driven narratives are built.
+## 📜 Community Note
+Ghost Writer is designed to thrive wherever high-performance, community-driven narratives are built.

@@ -225,3 +225,14 @@ export function useUserRank(address: `0x${string}` | undefined) {
   });
   return { rank: data ? Number(data) : 0, isLoading, error };
 }
+
+export function useUserNFTs(address: `0x${string}` | undefined) {
+  const { data, isLoading, error } = useReadContract({
+    address: CONTRACTS.nft,
+    abi: NFT_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+  return { nftCount: data ? Number(data) : 0, isLoading, error };
+}
