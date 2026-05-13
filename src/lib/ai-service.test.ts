@@ -126,8 +126,7 @@ describe('AIService', () => {
 
   describe('Story Generation', () => {
     it('should generate story with AI when API key present', async () => {
-      const suggestions = await service.generateStorySuggestions('adventure', 'mini', 1);
-      const story = suggestions[0];
+      const story = await service.generateStory('adventure');
 
       expect(story).toBeDefined();
       expect(story.title).toBeDefined();
@@ -149,12 +148,10 @@ describe('AIService', () => {
       (AIService as any).instance = undefined;
       service = AIService.getInstance();
 
-      const suggestions = await service.generateStorySuggestions('adventure', 'mini', 1);
-      const story = suggestions[0];
+      const story = await service.generateStory('adventure');
 
       expect(story).toBeDefined();
-      // In current implementation, it returns hardcoded AI results
-      // expect(story.generatedBy).toBe('Template');
+      expect(story.generatedBy).toBe('Template');
     });
 
     it('should use template fallback when no API key', async () => {
@@ -162,20 +159,19 @@ describe('AIService', () => {
       (AIService as any).instance = undefined;
       service = AIService.getInstance();
 
-      const suggestions = await service.generateStorySuggestions('fantasy', 'mini', 1);
-      const story = suggestions[0];
+      const story = await service.generateStory('fantasy');
 
       expect(story).toBeDefined();
-      // expect(story.generatedBy).toBe('Template');
+      expect(story.generatedBy).toBe('Template');
     });
 
     it('should cache generated stories', async () => {
-      const suggestions1 = await service.generateStorySuggestions('adventure', 'mini', 1);
-      const suggestions2 = await service.generateStorySuggestions('adventure', 'mini', 1);
+      const story1 = await service.generateStory('adventure');
+      const story2 = await service.generateStory('adventure');
 
       // Second call might be from cache
-      expect(suggestions1[0].title).toBeDefined();
-      expect(suggestions2[0].title).toBeDefined();
+      expect(story1.title).toBeDefined();
+      expect(story2.title).toBeDefined();
     });
   });
 
@@ -274,9 +270,9 @@ describe('AI Service Error Handling', () => {
     const service = AIService.getInstance();
 
     // Should fallback to template, not throw
-    const suggestions = await service.generateStorySuggestions('adventure', 'mini', 1);
-    expect(suggestions[0]).toBeDefined();
-    // expect(suggestions[0].generatedBy).toBe('Template');
+    const story = await service.generateStory('adventure');
+    expect(story).toBeDefined();
+    expect(story.generatedBy).toBe('Template');
   });
 
   it('should handle rate limiting', async () => {
@@ -295,8 +291,8 @@ describe('AI Service Error Handling', () => {
     process.env.OPENAI_API_KEY = 'test-key';
     const service = AIService.getInstance();
 
-    const suggestions = await service.generateStorySuggestions('fantasy', 'mini', 1);
-    expect(suggestions[0]).toBeDefined();
-    // expect(suggestions[0].generatedBy).toBe('Template');
+    const story = await service.generateStory('fantasy');
+    expect(story).toBeDefined();
+    expect(story.generatedBy).toBe('Template');
   });
 });

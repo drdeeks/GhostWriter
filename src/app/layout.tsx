@@ -4,35 +4,50 @@ import { ClientProviders } from './client-providers';
 
 export const dynamic = 'force-dynamic';
 
+const frame = {
+  version: "1",
+  imageUrl: "https://ghost-writer-three.vercel.app/hero.png",
+  button: {
+    title: "Start Writing",
+    action: {
+      type: "launch_frame",
+      name: "Ghost Writer",
+      url: "https://ghost-writer-three.vercel.app",
+      splashImageUrl: "https://ghost-writer-three.vercel.app/splash.png",
+      splashBackgroundColor: "#0f172a"
+    }
+  }
+};
+
 export const metadata: Metadata = {
   title: "Ghost Writer",
-  description: "Community Storytelling Game - Collaborative storytelling where contributions mint hidden NFTs that reveal when stories complete. Each word earns creation credits onchain.",
+  description: "Storytelling NFT Game - Collaborative storytelling where contributions mint hidden NFTs that reveal when stories complete. Each word earns creation credits on Base Chain.",
+  manifest: '/.well-known/farcaster.json',
   icons: {
     icon: '/icon.png',
   },
-  // Open Graph / general social sharing
   openGraph: {
     title: "Ghost Writer - NFT Game",
-    description: "Collaborative stories with hidden NFTs that reveal on completion. Earn rewards onchain.",
+    description: "Collaborative stories with hidden NFTs that reveal on completion. Earn rewards on Base Chain.",
     images: [
       {
-        url: "https://ghost-writer-three.vercel.app/splash.png",
+        url: "https://ghost-writer-three.vercel.app/hero.png",
         width: 1200,
-        height: 630,
-        alt: "Ghost Writer Splash",
+        height: 800,
+        alt: "Ghost Writer Hero",
       },
     ],
     type: "website",
   },
-  // Farcaster Mini App frame metadata
   other: {
     "fc:frame": "vNext",
-    "fc:frame:image": "https://ghost-writer-three.vercel.app/splash.png",
+    "fc:frame:image": "https://ghost-writer-three.vercel.app/hero.png",
+    "fc:frame:image:aspect_ratio": "3:2",
     "fc:frame:button:1": "Start Writing",
     "fc:frame:button:1:action": "launch_frame",
     "fc:frame:button:1:target": "https://ghost-writer-three.vercel.app",
-    "fc:frame:splashImageUrl": "https://ghost-writer-three.vercel.app/splash.png",
-    "fc:frame:splashBackgroundColor": "#000000",
+    "fc:miniapp": JSON.stringify(frame),
+    "base:app_id": "6a005e6aef4989446dc30c24",
   },
 };
 
@@ -44,7 +59,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="base:app_id" content="6a005e6aef4989446dc30c24" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
       </head>
       <body>
