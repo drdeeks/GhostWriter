@@ -7,12 +7,12 @@ import { AlertCircle, DollarSign, Loader2, PlusCircle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useAccount } from 'wagmi';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Card, CardContent } from './ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
-import { Label } from './ui/label';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Label } from '../ui/label';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 type StorySuggestion = {
   storyId: string;
@@ -58,7 +58,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
   const [selectedType, setSelectedType] = useState<StoryType>('normal');
   const [selectedCategory, setSelectedCategory] = useState<string>(STORY_CATEGORIES[0]!.value);
   const { createStoryApproved, isPending } = useStoryManager();
-  const { activeStories, maxActiveStories, isLoading: isActiveStoriesLoading } = useActiveStoriesCount();
+  const { activeStories, isLoading: isActiveStoriesLoading } = useActiveStoriesCount();
   const { address } = useAccount();
   const { isOwner } = useIsOwner(address);
 
@@ -123,16 +123,17 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
       return;
     }
 
-    if (creationCredits < 1) {
+    const canCreate = isOwner || creationCredits >= 1;
+    if (!canCreate) {
       toast.error('Insufficient creation credits', {
         description: 'Contribute to stories to earn creation credits',
       });
       return;
     }
 
-    if (!isActiveStoriesLoading && activeStories >= maxActiveStories) {
+    if (!isActiveStoriesLoading && activeStories >= 15) {
       toast.error('Story limit reached', {
-        description: `There are already ${maxActiveStories} active stories. Please complete or wait for a story to finish before creating a new one.`,
+        description: 'There are already 15 active stories. Please complete or wait for a story to finish before creating a new one.',
       });
       return;
     }
@@ -150,10 +151,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
       });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        toast.error('Failed to generate story suggestions', {
-          description: err?.details || err?.error || `HTTP ${response.status}`,
-        });
+        toast.error('Failed to generate story suggestions');
         return;
       }
 
@@ -217,7 +215,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
             <Label className="text-base font-semibold mb-4 block">Choose Story Category:</Label>
             <RadioGroup
               value={selectedCategory}
-              onValueChange={(value) => {
+              onValueChange={(value: string) => {
                 setSelectedCategory(value);
                 resetSuggestions();
               }}
@@ -230,7 +228,11 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
                 <Label
                   key={cat.value}
                   htmlFor={cat.value}
-                  className={`px-3 py-1 rounded cursor-pointer border ${selectedCategory === cat.value ? 'bg-blue-200 border-blue-500' : 'bg-gray-100 border-gray-300'}`}
+                  className={`px-3 py-1 rounded cursor-pointer border transition-colors ${
+                    selectedCategory === cat.value
+                      ? 'bg-blue-200 border-blue-500 dark:bg-blue-900/40 dark:border-blue-400 text-gray-900 dark:text-gray-100'
+                      : 'bg-gray-100 border-gray-300 dark:bg-gray-800 dark:border-gray-600 text-gray-900 dark:text-gray-100'
+                  }`}
                 >
                   {cat.label}
                 </Label>
@@ -246,13 +248,17 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
                       key={s.storyId}
                       type="button"
                       onClick={() => setSelectedSuggestionIndex(idx)}
-                      className={`text-left p-3 rounded border ${idx === selectedSuggestionIndex ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white'} hover:border-blue-400 transition`}
+                      className={`text-left p-3 rounded border transition hover:border-blue-400 ${
+                        idx === selectedSuggestionIndex
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                          : 'border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600'
+                      }`}
                     >
-                      <div className="font-semibold">{s.title}</div>
-                      <div className="text-xs text-gray-600 mt-1">
+                      <div className="font-semibold text-gray-900 dark:text-gray-100">{s.title}</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                         {s.generatedBy ? `Source: ${s.generatedBy}` : ''} • Slots: {s.wordTypes?.length ?? 0}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+                      <div className="text-xs text-gray-500 dark:text-gray-500 mt-1 line-clamp-2">
                         {s.template.slice(0, 160)}...
                       </div>
                     </button>
@@ -361,7 +367,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isPending || creationCredits < 1 || (!isActiveStoriesLoading && activeStories >= maxActiveStories)}
+            disabled={isPending || (!isOwner && creationCredits < 1) || (!isActiveStoriesLoading && activeStories >= 15)}
             className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold"
           >
             {isPending ? (
@@ -372,7 +378,7 @@ export function StoryCreationModal({ open, onClose, creationCredits, onSubmit }:
             ) : (
               <>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                {(!isActiveStoriesLoading && activeStories >= maxActiveStories)
+                {(!isActiveStoriesLoading && activeStories >= 15)
                   ? 'Limit Reached'
                   : suggestions
                     ? 'Create Story'

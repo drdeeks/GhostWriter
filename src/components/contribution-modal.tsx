@@ -56,10 +56,7 @@ function ContributionModalInner({ open, onClose, story, onSubmit }: Contribution
     });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      toast.error('Failed to moderate word', {
-        description: err?.details || err?.error || `HTTP ${response.status}`,
-      });
+      toast.error('Failed to moderate word');
       return;
     }
 
