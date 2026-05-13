@@ -1,7 +1,16 @@
 'use client';
 
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
-import { sdk } from '@farcaster/miniapp-sdk';
+
+// Use a conditional require to avoid top-level import issues in non-ESM environments (like some Jest configs)
+const getSdk = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+        return require('@farcaster/miniapp-sdk').sdk;
+    } catch (e) {
+        return null;
+    }
+};
 
 interface FarcasterContextType {
     isMiniApp: boolean;
@@ -46,6 +55,12 @@ export default function FarcasterWrapper({ children }: FarcasterWrapperProps) {
 
                 // If in miniapp context, initialize SDK
                 if (isInMiniApp) {
+                    const sdk = getSdk();
+                    if (!sdk) {
+                        setIsReady(true);
+                        return;
+                    }
+
                     try {
                         // Get user context
                         const context = await sdk.context;
@@ -69,11 +84,14 @@ export default function FarcasterWrapper({ children }: FarcasterWrapperProps) {
                     }
                 } else {
                     // Not in miniapp, still try to call ready as a fallback
-                    try {
-                        await sdk.actions.ready();
-                    } catch (e) {
-                        // Ignore error if not in Farcaster context
-                        console.log('Not in Farcaster miniapp context');
+                    const sdk = getSdk();
+                    if (sdk) {
+                        try {
+                            await sdk.actions.ready();
+                        } catch (e) {
+                            // Ignore error if not in Farcaster context
+                            console.log('Not in Farcaster miniapp context');
+                        }
                     }
                 }
                 
