@@ -1,16 +1,11 @@
-'use client';
+import React, { Suspense } from 'react';
 
-import dynamic from 'next/dynamic';
-
-const AdminDashboard = dynamic(() => import('@/components/admin-dashboard').then(mod => mod.AdminDashboard), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center min-h-screen bg-slate-950">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
-    </div>
-  ),
-});
+const AdminDashboard = React.lazy(() => import('@/components/admin/admin-dashboard').then((mod) => ({ default: mod.AdminDashboard })));
 
 export default function AdminPage() {
-  return <AdminDashboard />;
+  return (
+    <Suspense fallback={<div>Loading Admin Dashboard...</div>}>
+      <AdminDashboard />
+    </Suspense>
+  );
 }
