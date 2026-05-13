@@ -200,10 +200,16 @@ $RECYCLE.BIN/
 # =============================================================================
 # DOCUMENTATION & ASSETS (selective)
 # =============================================================================
+# Exclude scratchpads and unnecessary summaries
+IMPLEMENTATION_SUMMARY.txt
+"customization validation"
+QUICK_DEPLOY.md
+QUICK_REFERENCE.md
+CHANGELOG.md
+
 # Keep only essential docs
-docs/*.md
-!docs/NFT_README.md
-!docs/API_REFERENCE.md
+docs/archive/
+docs/IMPLEMENTATION_REFINEMENT.md
 Neynar_Expansion.md
 
 # Generated documentation
@@ -284,6 +290,9 @@ temp/
 # =============================================================================
 # PROJECT SPECIFIC
 # =============================================================================
+# Agent journals and task data
+.jules/
+
 # Contract deployment artifacts
 deployments/localhost/
 deployments/hardhat/

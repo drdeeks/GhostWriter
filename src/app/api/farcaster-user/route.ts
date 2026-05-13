@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isAddress } from 'viem';
 
 /**
- * Get Farcaster user information (FID and username) from wallet address
- * This is a placeholder - in production, you'd query Farcaster's API or use a service like Neynar
+ * Get Farcaster user information (FID and username) from wallet address using Neynar
  */
 export async function GET(request: NextRequest) {
   try {
@@ -17,47 +16,52 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate address format
     if (!isAddress(address)) {
       return NextResponse.json({ error: 'Invalid address format' }, { status: 400 });
     }
 
-    // TODO: In production, integrate with Farcaster API or Neynar
-    // For now, return a placeholder structure
-    // You would typically:
-    // 1. Query Farcaster's API to get FID from address
-    // 2. Query username from FID
-    // 3. Cache results for performance
+    const neynarApiKey = process.env.NEYNAR_API_KEY;
 
-    // Example integration (commented out):
-    /*
+    if (!neynarApiKey) {
+      // Fallback for development if no API key
+      return NextResponse.json({
+        address,
+        fid: null,
+        username: null,
+        displayName: null,
+        note: 'Neynar API key missing - skipping Farcaster lookup',
+      });
+    }
+
     const farcasterResponse = await fetch(
-      `https://api.farcaster.xyz/v2/user-by-verification?address=${address}`,
+      `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${address}`,
       {
         headers: {
-          'Authorization': `Bearer ${process.env.FARCASTER_API_KEY}`,
+          'accept': 'application/json',
+          'api_key': neynarApiKey,
         },
       }
     );
     
-    const data = await farcasterResponse.json();
-    const fid = data?.result?.user?.fid;
-    const username = data?.result?.user?.username;
-    */
+    if (!farcasterResponse.ok) {
+        throw new Error(`Neynar API error: ${farcasterResponse.statusText}`);
+    }
 
-    // Placeholder response - replace with actual Farcaster API call
-    // For development, you can use a mock service or hardcode test values
+    const data = await farcasterResponse.json();
+    const user = data[address.toLowerCase()]?.[0];
+
     return NextResponse.json(
       {
         address,
-        fid: null, // Will be populated when Farcaster API is integrated
-        username: null, // Will be populated when Farcaster API is integrated
-        displayName: null,
-        note: 'Farcaster integration pending - using placeholder data',
+        fid: user?.fid || null,
+        username: user?.username || null,
+        displayName: user?.display_name || null,
+        pfp: user?.pfp_url || null,
+        verified: !!user,
       },
       {
         headers: {
-          'Cache-Control': 'no-store',
+          'Cache-Control': 'public, s-maxage=3600', // Cache for 1 hour
         },
       }
     );

@@ -19,7 +19,7 @@ export const CONTRACTS = {
 
 // Chain configuration
 export const CHAIN_CONFIG = {
-  chainId: parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "8453"), // Default to Base mainnet
+  chainId: parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "84532"), // Default to Base Sepolia
   baseSepolia: 84532,
   base: 8453,
   modeSepolia: 919,
@@ -97,6 +97,20 @@ export const STORY_MANAGER_ABI = [
     name: "getActiveStoriesCount",
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "maxActiveStories",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "newMax", type: "uint256" }],
+    name: "setMaxActiveStories",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -332,6 +346,13 @@ export const STORY_MANAGER_ABI = [
     type: "function",
   },
   {
+    inputs: [{ name: "storyId", type: "string" }],
+    name: "forceCompleteStory",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [{ name: "user", type: "address" }],
     name: "finalWordCount",
     outputs: [{ name: "", type: "uint256" }],
@@ -351,6 +372,61 @@ export const STORY_MANAGER_ABI = [
 
 // NFT Contract ABI (essential functions only)
 export const NFT_ABI = [
+  {
+    inputs: [
+      { name: "storyManager", type: "address" },
+    ],
+    name: "setStoryManager",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "hiddenURI", type: "string" },
+      { name: "revealedURI", type: "string" },
+    ],
+    name: "updateBaseURIs",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "tokenId", type: "uint256" },
+    ],
+    name: "forceRevealToken",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "storyId", type: "string" },
+    ],
+    name: "forceRevealStory",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "tokenId", type: "uint256" },
+    ],
+    name: "refreshTokenMetadata",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "storyId", type: "string" },
+    ],
+    name: "refreshStoryMetadata",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
   {
     inputs: [
       { name: "creator", type: "address" },
@@ -456,6 +532,77 @@ export const TOKEN_ABI = [
     name: 'name',
     outputs: [{ name: '', type: 'string' }],
     stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'MAX_SUPPLY',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'BUCKET_COUNT',
+    outputs: [{ name: '', type: 'uint8' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'bucket', type: 'uint8' }],
+    name: 'bucketCaps',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'bucket', type: 'uint8' }],
+    name: 'bucketMinted',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'bucket', type: 'uint8' }],
+    name: 'getBucketInfo',
+    outputs: [
+      { name: 'cap', type: 'uint256' },
+      { name: 'minted', type: 'uint256' },
+      { name: 'remaining', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { name: 'bucket', type: 'uint8' },
+      { name: 'cap', type: 'uint256' },
+    ],
+    name: 'setBucketCap',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { name: 'bucket', type: 'uint8' },
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    name: 'mintFromBucket',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { name: 'bucket', type: 'uint8' },
+      { name: 'recipients', type: 'address[]' },
+      { name: 'amounts', type: 'uint256[]' },
+    ],
+    name: 'airdropFromBucket',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
   {

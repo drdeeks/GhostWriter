@@ -1,3 +1,0 @@
-## 2026-05-13 - [wagmi useReadContracts Reference Stability]
-**Learning:** The `useReadContracts` hook from wagmi is highly sensitive to the stability of the `contracts` array reference. Passing a new array on every render (e.g., from an unmemoized `.map()`) can trigger redundant internal effects and re-evaluations even if the data hasn't changed. Furthermore, returning unmemoized results from custom hooks causes re-render cascades in components using `React.memo` or `useMemo` downstream.
-**Action:** Always wrap `contracts` array generation in `useMemo` and memoize the final transformed result before returning from a custom hook. Use single-pass loops (`for...of` or `reduce`) for transformations to keep the `useMemo` block clean and efficient.

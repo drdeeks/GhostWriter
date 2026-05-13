@@ -8,9 +8,16 @@ export function useActiveStoriesCount() {
     functionName: 'getActiveStoriesCount',
   });
 
-  return { 
-    activeStories: Number(activeStories) || 0, 
-    isLoading, 
-    isError 
+  const { data: maxActiveStories } = useReadContract({
+    address: CONTRACTS.storyManager,
+    abi: STORY_MANAGER_ABI,
+    functionName: 'maxActiveStories',
+  });
+
+  return {
+    activeStories: Number(activeStories) || 0,
+    maxActiveStories: Number(maxActiveStories) || 15,
+    isLoading,
+    isError,
   };
 }
