@@ -38,6 +38,10 @@
     "react-dom": "^19.2.3",
     "sonner": "^2.0.7",
     "tailwindcss": "^4.0.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.0.0",
     "viem": "2.43.5",
     "wagmi": "2.16.0"
   },
@@ -56,9 +60,6 @@
     "@types/chai": "^4.3.20",
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^20.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
     "chai": "^4.5.0",
     "hardhat-gas-reporter": "^1.0.10",
     "jest": "^30.4.2",
@@ -66,7 +67,6 @@
     "solidity-coverage": "^0.8.17",
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
-    "typechain": "^8.3.2",
-    "typescript": "^5.0.0"
+    "typechain": "^8.3.2"
   }
 }
