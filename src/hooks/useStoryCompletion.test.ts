@@ -3,11 +3,21 @@
  * Tests batch processing for story completion
  */
 
+import { renderHook, act } from '@testing-library/react';
+import { useStoryCompletion } from './useStoryCompletion';
+
+// Mock calculateBatchCount locally
+const calculateBatchCount = (totalSlots: number, batchSize: number) => {
+  return Math.ceil(totalSlots / batchSize);
+};
+
 // Mock wagmi
+const mockWriteContractAsync = jest.fn().mockResolvedValue({ hash: '0xabc' });
+
 jest.mock('wagmi', () => ({
   useAccount: () => ({ address: '0x1234567890123456789012345678901234567890' }),
   useWriteContract: () => ({
-    writeContractAsync: jest.fn().mockResolvedValue({ hash: '0xabc' }),
+    writeContractAsync: mockWriteContractAsync,
     isPending: false,
   }),
   useWaitForTransactionReceipt: () => ({
@@ -24,13 +34,26 @@ jest.mock('../lib/contracts', () => ({
 }));
 
 describe('useStoryCompletion Hook', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+  describe('Error Handling', () => {
+  it('should handle writeContractAsync failures', async () => {
+    mockWriteContractAsync.mockRejectedValueOnce(new Error('Tx failed'));
+
+    const { result } = renderHook(() => useStoryCompletion());
+    await expect(result.current.completeStoryFull('1', 10))
+      .rejects.toThrow('Tx failed');
+  });
+  });
+
   describe('Batch Processing', () => {
     it('should calculate correct batch count for small stories', () => {
       const totalSlots = 10;
       const batchSize = 50;
-      const batchCount = Math.ceil(totalSlots / batchSize);
-
-      expect(batchCount).toBe(1);
+      const expectedBatches = 1;
+      const result = calculateBatchCount(totalSlots, batchSize);
+      expect(result).toBe(expectedBatches);
     });
 
     it('should calculate correct batch count for medium stories', () => {
