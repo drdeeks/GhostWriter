@@ -73,14 +73,14 @@ jest.mock('./aiStoryTemplates', () => ({
 import { AIService } from './ai-service';
 
 describe('AIService', () => {
-  let service: AIService;
+  let aiService: AIService;
 
   beforeEach(() => {
     // Reset singleton and environment
     (AIService as any).instance = undefined;
     process.env.OPENAI_API_KEY = 'test-api-key';
 
-    service = AIService.getInstance();
+    aiService = AIService.getInstance();
   });
 
   afterEach(() => {
@@ -126,7 +126,7 @@ describe('AIService', () => {
 
   describe('Story Generation', () => {
     it('should generate story with AI when API key present', async () => {
-      const story = await service.generateStory('adventure');
+      const story = await aiService.generateStory('adventure');
 
       expect(story).toBeDefined();
       expect(story.title).toBeDefined();
@@ -146,9 +146,9 @@ describe('AIService', () => {
       }));
 
       (AIService as any).instance = undefined;
-      service = AIService.getInstance();
+      aiService = AIService.getInstance();
 
-      const story = await service.generateStory('adventure');
+      const story = await aiService.generateStory('adventure');
 
       expect(story).toBeDefined();
       expect(story.generatedBy).toBe('Template');
@@ -157,17 +157,17 @@ describe('AIService', () => {
     it('should use template fallback when no API key', async () => {
       delete process.env.OPENAI_API_KEY;
       (AIService as any).instance = undefined;
-      service = AIService.getInstance();
+      aiService = AIService.getInstance();
 
-      const story = await service.generateStory('fantasy');
+      const story = await aiService.generateStory('fantasy');
 
       expect(story).toBeDefined();
       expect(story.generatedBy).toBe('Template');
     });
 
     it('should cache generated stories', async () => {
-      const story1 = await service.generateStory('adventure');
-      const story2 = await service.generateStory('adventure');
+      const story1 = await aiService.generateStory('adventure');
+      const story2 = await aiService.generateStory('adventure');
 
       // Second call might be from cache
       expect(story1.title).toBeDefined();
@@ -177,15 +177,15 @@ describe('AIService', () => {
 
   describe('Word Moderation', () => {
     it('should approve appropriate words', async () => {
-      const result = await service.moderateWord('happy');
+      const result = await aiService.moderateWord('happy');
 
       expect(result.isAppropriate).toBe(true);
       expect(result.confidence).toBeGreaterThan(0);
     });
 
     it('should cache moderation results', async () => {
-      const result1 = await service.moderateWord('good');
-      const result2 = await service.moderateWord('good');
+      const result1 = await aiService.moderateWord('good');
+      const result2 = await aiService.moderateWord('good');
 
       expect(result1.isAppropriate).toBe(result2.isAppropriate);
     });
@@ -208,9 +208,9 @@ describe('AIService', () => {
 
       (AIService as any).instance = undefined;
       process.env.OPENAI_API_KEY = 'test-key';
-      service = AIService.getInstance();
+      aiService = AIService.getInstance();
 
-      const result = await service.moderateWord('badword');
+      const result = await aiService.moderateWord('badword');
 
       expect(result.isAppropriate).toBe(false);
     });
@@ -225,10 +225,10 @@ describe('AIService', () => {
 
       (AIService as any).instance = undefined;
       process.env.OPENAI_API_KEY = 'test-key';
-      service = AIService.getInstance();
+      aiService = AIService.getInstance();
 
       // Should not throw, should use basic validation
-      const result = await service.moderateWord('normalword');
+      const result = await aiService.moderateWord('normalword');
       expect(result).toBeDefined();
     });
   });
@@ -267,10 +267,10 @@ describe('AI Service Error Handling', () => {
     }));
 
     process.env.OPENAI_API_KEY = 'test-key';
-    const service = AIService.getInstance();
+    const aiService = AIService.getInstance();
 
     // Should fallback to template, not throw
-    const story = await service.generateStory('adventure');
+    const story = await aiService.generateStory('adventure');
     expect(story).toBeDefined();
     expect(story.generatedBy).toBe('Template');
   });
@@ -289,7 +289,7 @@ describe('AI Service Error Handling', () => {
     }));
 
     process.env.OPENAI_API_KEY = 'test-key';
-    const service = AIService.getInstance();
+    const aiService = AIService.getInstance();
 
     const story = await service.generateStory('fantasy');
     expect(story).toBeDefined();

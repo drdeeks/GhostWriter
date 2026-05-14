@@ -16,6 +16,9 @@ jest.mock('@/lib/contracts', () => ({
 }));
 
 describe('useStories Hook', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
   const mockStoryIds = ['1', '2'];
   const mockData = [
     {
@@ -59,6 +62,47 @@ describe('useStories Hook', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('should handle contract read errors gracefully', async () => {
+    (useReadContracts as jest.Mock).mockReturnValue({
+      data: undefined,
+      error: new Error('Contract read failed'),
+      isLoading: false,
+    });
+
+    const { result } = renderHook(() => useStories([]));
+    expect(result.current.stories).toEqual([]);
+    expect(result.current.error).toBeInstanceOf(Error);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('should filter out failed contract reads', () => {
+    (useReadContracts as jest.Mock).mockReturnValue({
+      data: [
+        { status: 'failure', error: new Error('Read failed') },
+        {
+          status: 'success',
+          result: {
+            storyId: '1',
+            title: 'Valid Story',
+            storyType: 0,
+            category: 0,
+            totalSlots: 10,
+            filledSlots: 5,
+            creator: '0xCreator',
+            createdAt: BigInt(1625097600),
+            status: 0,
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    const { result } = renderHook(() => useStories(['1']));
+    expect(result.current.stories).toHaveLength(1);
+    expect(result.current.stories[0].title).toBe('Valid Story');
   });
 
   it('should return mapped stories', () => {

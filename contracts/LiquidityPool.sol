@@ -104,8 +104,9 @@ contract LiquidityPool is Ownable, ReentrancyGuard {
     /**
      * @dev Receive function to accept ETH
      */
-    receive() external payable {
-        require(msg.sender == storyManager, "Only StoryManager can send");
-        emit Deposited(msg.sender, msg.value);
+receive() external payable nonReentrant {
+        if (msg.value > 0) {
+            emit Deposit(msg.sender, msg.value);
+        }
     }
 }
