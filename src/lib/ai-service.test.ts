@@ -291,7 +291,7 @@ describe('AI Service Error Handling', () => {
     process.env.OPENAI_API_KEY = 'test-key';
     const aiService = AIService.getInstance();
 
-    const story = await service.generateStory('fantasy');
+    const story = await aiService.generateStory('fantasy');
     expect(story).toBeDefined();
     expect(story.generatedBy).toBe('Template');
   });

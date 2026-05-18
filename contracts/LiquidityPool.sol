@@ -106,7 +106,7 @@ contract LiquidityPool is Ownable, ReentrancyGuard {
      */
 receive() external payable nonReentrant {
         if (msg.value > 0) {
-            emit Deposit(msg.sender, msg.value);
+            emit Deposited(msg.sender, msg.value);
         }
     }
 }
