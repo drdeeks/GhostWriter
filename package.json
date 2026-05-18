@@ -5,7 +5,7 @@
   "scripts": {
     "postinstall": "node scripts/postinstall.js",
     "dev": "next dev",
-    "build": "next build",
+    "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "eslint .",
     "ts-check": "tsc --noEmit",
