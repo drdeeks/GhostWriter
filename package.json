@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "ts-check": "tsc --noEmit",
     "test": "hardhat test",
     "test:gas": "REPORT_GAS=true hardhat test",
@@ -36,9 +36,8 @@
   },
   "dependencies": {
     "@coinbase/onchainkit": "1.1.2",
-    "@farcaster/miniapp-sdk": "0.2.1",
+    "@farcaster/miniapp-sdk": "^0.2.3",
     "@farcaster/miniapp-wagmi-connector": "^1.1.0",
-    "@nomicfoundation/hardhat-ethers": "^3.1.0",
     "@openzeppelin/contracts": "^5.0.2",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.0",
@@ -68,13 +67,13 @@
     "@radix-ui/react-tooltip": "^1.1.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@tanstack/react-query": "^5.51.0",
-    "@types/node": "25.0.3",
-    "@types/react": "19.2.3",
-    "@types/react-dom": "19.2.3",
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.23",
     "bad-words": "^4.0.0",
     "dotenv": "^16.4.5",
-    "ethers": "^5.8.0",
+    "ethers": "^6.16.0",
     "lucide-react": "^0.453.0",
     "next": "^16.1.4",
     "nft.storage": "^7.1.1",
@@ -85,7 +84,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.16",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "5.9.3",
+    "typescript": "^5.0.0",
     "viem": "2.43.5",
     "wagmi": "2.16.0"
   },
@@ -95,21 +94,20 @@
     "@babel/preset-typescript": "^7.24.7",
     "@eslint/eslintrc": "^3.3.3",
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
+    "@nomicfoundation/hardhat-ethers": "^3.1.0",
     "@nomicfoundation/hardhat-ignition": "^0.15.16",
     "@nomicfoundation/hardhat-ignition-ethers": "^0.15.17",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.11",
-    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@nomicfoundation/hardhat-verify": "^2.0.8",
     "@nomicfoundation/ignition-core": "^0.15.15",
-    "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "@nomiclabs/hardhat-etherscan": "^3.1.7",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.1",
     "@testing-library/user-event": "^14.6.1",
     "@typechain/ethers-v6": "^0.5.1",
-    "@typechain/hardhat": "^5.0.0",
-    "@types/chai": "^5.2.3",
+    "@typechain/hardhat": "^9.0.0",
+    "@types/chai": "^4.3.20",
     "@types/jest": "^29.5.12",
     "@types/mocha": "^10.0.8",
     "babel-jest": "^29.7.0",
@@ -127,13 +125,7 @@
     "typechain": "^8.3.2"
   },
   "overrides": {
-    "@types/react": "19.2.3",
-    "@types/react-dom": "19.2.3",
-    "jest-environment-jsdom": {
-      "canvas": "$canvas"
-    },
-    "use-sync-external-store": {
-      "react": "$react"
-    }
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
   }
 }

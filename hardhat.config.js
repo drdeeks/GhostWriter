@@ -27,8 +27,9 @@ const accounts = getDeployerAccounts();
 
 module.exports = {
   solidity: {
-    version: "0.8.20",
+    version: "0.8.28",
     settings: {
+      evmVersion: "cancun",
       optimizer: {
         enabled: true,
         // Lower runs reduces bytecode size (important for EIP-170 contract size limit)
