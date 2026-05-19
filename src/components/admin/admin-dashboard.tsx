@@ -17,6 +17,7 @@ import { parseEther, parseUnits } from 'viem';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useAccount, useChainId, useReadContract, useWriteContract } from 'wagmi';
+import { useRouter } from 'next/navigation';
 
 function getCategoryEnum(category: string): number {
   const categories = [
@@ -67,6 +68,7 @@ function AdminDashboardComponent() {
   const chainId = useChainId();
   const { writeContractAsync } = useWriteContract();
   const { isOwner, isLoading: ownerLoading } = useIsOwner(address);
+  const router = useRouter();
   const { creationFee } = useFees();
   const { stats: ownerStats, refetch: refetchOwnerStats } = useUserStats(address);
 
@@ -195,6 +197,20 @@ function AdminDashboardComponent() {
   }, [storyTitle, storyTemplate, invalidWordTypes.length, parsedWordTypes.length, slotConfig]);
 
   const isAdmin = !!address && !ownerLoading && isOwner;
+
+  useEffect(() => {
+    if (!ownerLoading && !isAdmin) {
+      router.push('/');
+    }
+  }, [isAdmin, ownerLoading, router]);
+
+  if (!address || ownerLoading || !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   const handleCreateStory = async () => {
     try {
@@ -484,18 +500,6 @@ function AdminDashboardComponent() {
       toast.error('Story creation failed', { description: e?.shortMessage || e?.message || 'Unknown error' });
     }
   };
-
-  if (!isAdmin) {
-    return (
-      <Card className="border-2 border-red-300 dark:border-red-700">
-        <CardContent className="flex flex-col items-center justify-center py-16">
-          <Shield className="h-16 w-16 text-red-500 mb-4" />
-          <p className="text-xl font-semibold text-red-600">Access Denied</p>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">Only contract owner can access admin dashboard</p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 relative overflow-hidden py-8">
