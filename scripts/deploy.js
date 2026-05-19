@@ -1,5 +1,8 @@
 const { ethers } = require("hardhat");
 const fs = require("fs");
+const path = require("path");
+const { Wallet } = require("ethers");
+const crypto = require("crypto");
 
 // Parse command line flags
 const args = process.argv.slice(2);
@@ -46,6 +49,28 @@ async function sendTxWithGas(tx) {
   await sleep(3000);
 
   return result;
+}
+
+// Generate a new random wallet for story template signing
+function generateTemplateSigner() {
+  const wallet = Wallet.createRandom();
+  return {
+    address: wallet.address,
+    privateKey: wallet.privateKey,
+  };
+}
+
+// Create an encrypted keystore file
+async function createKeystore(wallet, password) {
+  const encryptedJson = await wallet.encrypt(password);
+  const keystoreDir = path.join(process.cwd(), 'keystores');
+  if (!fs.existsSync(keystoreDir)) {
+    fs.mkdirSync(keystoreDir, { recursive: true });
+  }
+  const filename = `template-signer-${Date.now()}.json`;
+  const filepath = path.join(keystoreDir, filename);
+  fs.writeFileSync(filepath, encryptedJson);
+  return { filepath, filename };
 }
 
 async function main() {
@@ -154,14 +179,36 @@ async function main() {
   console.log("✅ StoryManager set as LiquidityPool depositor");
 
   // Configure server-authorized signer for story template approvals (EIP-712)
-  const signerAddress = process.env.STORY_TEMPLATE_SIGNER_ADDRESS || deployer.address;
-  console.log("   Setting story template signer...");
+  // Auto-generate a new signer if not provided
+  let signerAddress;
+  let signerPrivateKey;
+  
+  if (process.env.STORY_TEMPLATE_SIGNER_PRIVATE_KEY) {
+    // Use existing signer from env
+    const signerWallet = new Wallet(process.env.STORY_TEMPLATE_SIGNER_PRIVATE_KEY);
+    signerAddress = signerWallet.address;
+    console.log("   Using existing story template signer...");
+  } else {
+    // Generate new signer and keystore automatically
+    console.log("   🔄 Auto-generating story template signer...");
+    const newSigner = generateTemplateSigner();
+    signerAddress = newSigner.address;
+    signerPrivateKey = newSigner.privateKey;
+    
+    // Create encrypted keystore
+    const keystorePassword = crypto.randomBytes(32).toString('hex');
+    const { filepath, filename } = await createKeystore(newSigner, keystorePassword);
+    
+    console.log(`   ✅ New signer generated: ${signerAddress}`);
+    console.log(`   🔐 Keystore saved: ${filepath}`);
+    console.log(`   ⚠️  SAVE THIS PASSWORD: ${keystorePassword}`);
+    console.log(`   ⚠️  SAVE THIS PRIVATE KEY: ${signerPrivateKey}`);
+  }
+  
+  console.log("   Setting story template signer on-chain...");
   const tx3 = await sendTxWithGas((opts) => storyManager.setStoryTemplateSigner(signerAddress, opts));
   await tx3.wait();
   console.log("✅ Story template signer set to:", signerAddress);
-  if (!process.env.STORY_TEMPLATE_SIGNER_ADDRESS) {
-    console.log("⚠️  STORY_TEMPLATE_SIGNER_ADDRESS not set; defaulting to deployer for development");
-  }
 
   // Set GHOST token address on contracts if token was deployed
   if (DEPLOY_TOKEN && tokenAddress) {
@@ -180,7 +227,12 @@ async function main() {
 
   // Update .env
   console.log("\n📝 Updating .env file...");
-  let envContent = fs.readFileSync('.env', 'utf8');
+  let envContent = '';
+  try {
+    envContent = fs.readFileSync('.env', 'utf8');
+  } catch {
+    console.log("⚠️  .env file not found, creating new one");
+  }
   
   const updateEnvVar = (content, key, value) => {
     const regex = new RegExp(`${key}=.*`);
@@ -198,6 +250,12 @@ async function main() {
 
   if (DEPLOY_TOKEN && tokenAddress) {
     envContent = updateEnvVar(envContent, 'NEXT_PUBLIC_TOKEN_ADDRESS', tokenAddress);
+  }
+  
+  // Save signer info if auto-generated
+  if (signerPrivateKey) {
+    envContent = updateEnvVar(envContent, 'STORY_TEMPLATE_SIGNER_PRIVATE_KEY', signerPrivateKey);
+    envContent = updateEnvVar(envContent, 'STORY_TEMPLATE_SIGNER_ADDRESS', signerAddress);
   }
   
   fs.writeFileSync('.env', envContent);
@@ -221,7 +279,8 @@ async function main() {
       StoryManager: storyManagerAddress,
       PriceOracle: priceOracleAddress,
       LiquidityPool: liquidityPoolAddress
-    }
+    },
+    storyTemplateSigner: signerAddress,
   };
 
   if (!DEPLOY_TOKEN) {
@@ -242,10 +301,18 @@ async function main() {
   console.log("   StoryManager:", storyManagerAddress);
   console.log("   PriceOracle:", priceOracleAddress);
   console.log("   LiquidityPool:", liquidityPoolAddress);
+  console.log("   Story Template Signer:", signerAddress);
   
   if (!DEPLOY_TOKEN) {
     console.log("\n📝 GHOST Token:");
     console.log("   To deploy with token, add --with-token or -t flag");
+  }
+
+  if (signerPrivateKey) {
+    console.log("\n⚠️  IMPORTANT: Save these credentials securely:");
+    console.log("   Story Template Signer Address:", signerAddress);
+    console.log("   Story Template Signer Private Key:", signerPrivateKey);
+    console.log("   Keystore password was printed above — save it now!");
   }
 
   console.log("\n🔍 To verify contracts, run:");
