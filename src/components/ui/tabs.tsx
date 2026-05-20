@@ -32,7 +32,7 @@ interface TabsListProps {
 
 export function TabsList({ children, className = '' }: TabsListProps) {
     return (
-        <div className={`inline-flex h-12 items-center justify-center rounded-xl bg-gray-800/80 backdrop-blur-sm p-1.5 border-2 border-gray-700/50 ${className}`}>
+        <div className={`inline-flex h-12 items-center justify-center rounded-xl bg-muted backdrop-blur-sm p-1.5 border-2 border-border ${className}`}>
             {children}
         </div>
     );
@@ -53,8 +53,8 @@ export function TabsTrigger({ value, children, className = '' }: TabsTriggerProp
     return (
         <button
             className={`inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 disabled:pointer-events-none disabled:opacity-50 ${isActive
-                    ? 'bg-gray-700/80 text-gray-100 shadow-lg'
-                    : 'text-gray-400 hover:bg-gray-700/40 hover:text-gray-200'
+                    ? 'bg-accent text-foreground shadow-lg'
+                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                 } ${className}`}
             onClick={() => context.onValueChange(value)}
         >

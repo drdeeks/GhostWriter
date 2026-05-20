@@ -43,7 +43,7 @@ export function SelectTrigger({ children, className = '' }: SelectTriggerProps) 
     return (
         <button
             type="button"
-            className={`flex h-12 w-full items-center justify-between rounded-xl border-2 border-gray-600/50 bg-gray-800/80 backdrop-blur-sm px-4 py-3 text-sm text-gray-100 ring-offset-background placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 ${className}`}
+            className={`flex h-12 w-full items-center justify-between rounded-xl border-2 border-input bg-background backdrop-blur-sm px-4 py-3 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-cyan-500/50 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 ${className}`}
             onClick={() => context.setOpen(!context.open)}
         >
             {children}
@@ -68,7 +68,7 @@ export function SelectValue({ placeholder = 'Select...' }: SelectValueProps) {
     const context = useContext(SelectContext);
     if (!context) throw new Error('SelectValue must be used within Select');
 
-    return <span className="text-gray-100">{context.value || placeholder}</span>;
+    return <span className="text-foreground">{context.value || placeholder}</span>;
 }
 
 interface SelectContentProps {
@@ -104,7 +104,7 @@ export function SelectContent({ children, className = '' }: SelectContentProps) 
     return (
         <div
             ref={ref}
-            className={`absolute z-50 mt-2 min-w-full overflow-hidden rounded-xl border-2 border-gray-700/50 bg-gray-800/95 backdrop-blur-md p-2 text-gray-100 shadow-2xl animate-in fade-in-80 ${className}`}
+            className={`absolute z-50 mt-2 min-w-full overflow-hidden rounded-xl border-2 border-border bg-card backdrop-blur-md p-2 text-card-foreground shadow-2xl animate-in fade-in-80 ${className}`}
         >
             {children}
         </div>
@@ -123,7 +123,7 @@ export function SelectItem({ value, children, className = '' }: SelectItemProps)
 
     return (
         <div
-            className={`relative flex w-full cursor-pointer select-none items-center rounded-lg py-2.5 pl-10 pr-3 text-sm outline-none transition-colors hover:bg-gray-700/50 focus:bg-gray-700/50 text-gray-100 ${context.value === value ? 'bg-cyan-500/20 text-cyan-300' : ''} ${className}`}
+            className={`relative flex w-full cursor-pointer select-none items-center rounded-lg py-2.5 pl-10 pr-3 text-sm outline-none transition-colors hover:bg-accent/50 focus:bg-accent/50 text-foreground ${context.value === value ? 'bg-cyan-500/20 text-cyan-300' : ''} ${className}`}
             onClick={() => {
                 context.onValueChange(value);
                 context.setOpen(false);
