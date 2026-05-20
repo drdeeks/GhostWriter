@@ -101,7 +101,6 @@ export function ClientProviders({ children }: { children: ReactNode }) {
                 name: 'Ghost Writer',
                 logo: '/icon.png',
                 mode: 'dark',
-                theme: 'cyberpunk',
               },
               wallet: {
                 display: 'modal',
