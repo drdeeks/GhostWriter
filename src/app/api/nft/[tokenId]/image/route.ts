@@ -75,6 +75,42 @@ interface StoryData {
   shareCount: number;
 }
 
+interface SlotData {
+  position: number;
+  wordType: string;
+  filled: boolean;
+  word: string;
+  contributor: string;
+  nftId: number;
+  timestamp: number;
+}
+
+/**
+ * Build full story text with all slots filled in
+ */
+function buildStoryText(template: string, slots: SlotData[]): string {
+  const ordered = [...slots].sort((a, b) => a.position - b.position);
+  let i = 0;
+  return template.replace(/\[[A-Za-z_]+\]/g, () => {
+    const slot = ordered[i++];
+    if (!slot || !slot.filled) return '___';
+    return slot.word;
+  });
+}
+
+/**
+ * Extract the sentence containing the user's contributed word
+ */
+function extractSentenceWithWord(fullText: string, userWord: string): string {
+  const sentences = fullText.split(/(?<=[.!?])\s+/);
+  for (const sentence of sentences) {
+    if (sentence.toLowerCase().includes(userWord.toLowerCase())) {
+      return sentence;
+    }
+  }
+  return fullText;
+}
+
 function getBackgroundImageUrl(storyCategory: string, requestUrl: string): string | null {
   const categoryKey = storyCategory.toLowerCase();
   const filename = NFT_BACKGROUND_CATEGORY_MAP[categoryKey];
@@ -327,7 +363,47 @@ export async function GET(
 </svg>
         `;
       } else {
-        // Revealed state - show word contribution
+        // Revealed state - show the specific sentence with user's word, plus metadata
+        const slotCalls = Array.from({ length: storyData.totalSlots }, (_, idx) => {
+          const pos = BigInt(idx + 1);
+          return {
+            address: CONTRACTS.storyManager,
+            abi: STORY_MANAGER_ABI,
+            functionName: 'getSlot' as const,
+            args: [nftData.storyId, pos] as const,
+          };
+        });
+
+        const slotResults = await publicClient.multicall({ contracts: slotCalls as any });
+
+        const slots: SlotData[] = slotResults
+          .map((r: any) => (r.status === 'success' ? (r.result as any) : null))
+          .filter(Boolean)
+          .map((raw: any) => ({
+            position: Number(raw.position ?? raw[0]),
+            wordType: raw.wordType ?? raw[1],
+            filled: Boolean(raw.filled ?? raw[2]),
+            word: raw.word ?? raw[3],
+            contributor: (raw.contributor ?? raw[4]) as string,
+            nftId: Number(raw.nftId ?? raw[5]),
+            timestamp: Number(raw.timestamp ?? raw[6]),
+          }));
+
+        const fullStoryText = buildStoryText(storyData.template, slots);
+        const userSentence = extractSentenceWithWord(fullStoryText, nftData.contributedWord);
+        const safeSentence = escapeXml(truncate(userSentence, 200));
+
+        const contributionDate = new Date(nftData.contributionTimestamp * 1000).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        const revealDate = new Date(storyData.completedAt * 1000).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+
         svg = `
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
@@ -335,25 +411,58 @@ export async function GET(
       <stop offset="0%" style="stop-color:#2D1B69;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#1A1A2A;stop-opacity:1" />
     </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4AF37;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F59E0B;stop-opacity:1" />
+    </linearGradient>
   </defs>
   ${backgroundElement}
-  <text x="512" y="100" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="48" font-weight="bold">
+
+  <!-- Header -->
+  <text x="512" y="80" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="42" font-weight="bold">
     GHOST WRITER
   </text>
-  <text x="512" y="200" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="32">
-    "${escapeXml(truncate(nftData.storyTitle, 60))}"
+
+  <!-- Story Title -->
+  <text x="512" y="140" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="32" font-weight="bold">
+    "${safeTitle}"
   </text>
-  <text x="512" y="350" text-anchor="middle" fill="#10B981" font-family="Arial, sans-serif" font-size="36" font-weight="bold">
-    Your Contribution:
+
+  <!-- Category & Type -->
+  <text x="512" y="180" text-anchor="middle" fill="#D4AF37" font-family="Arial, sans-serif" font-size="22">
+    ${escapeXml(category)} • ${escapeXml(storyTypeName)}
   </text>
-  <text x="512" y="420" text-anchor="middle" fill="#3B82F6" font-family="Arial, sans-serif" font-size="48" font-weight="bold">
-    "${escapeXml(truncate(nftData.contributedWord, 24))}"
+
+  <!-- Word Position & Type -->
+  <text x="512" y="220" text-anchor="middle" fill="#F3F4F6" font-family="Arial, sans-serif" font-size="22">
+    Word ${nftData.wordPosition}/${nftData.totalWords} • ${escapeXml(truncate(nftData.wordType, 24))}
   </text>
-  <text x="512" y="500" text-anchor="middle" fill="#F3F4F6" font-family="Arial, sans-serif" font-size="24">
-    Position ${nftData.wordPosition}/${nftData.totalWords} • ${escapeXml(truncate(nftData.wordType, 24))}
+
+  <!-- User's Sentence with highlighted word -->
+  <rect x="60" y="280" width="904" height="340" rx="16" fill="#000000" opacity="0.3"/>
+  <text x="512" y="340" text-anchor="middle" fill="#F3F4F6" font-family="Arial, sans-serif" font-size="28" font-style="italic">
+    "${safeSentence}"
   </text>
-  <text x="512" y="600" text-anchor="middle" fill="#D4AF37" font-family="Arial, sans-serif" font-size="28">
-    ✨ Story Complete ✨
+
+  <!-- Contribution Date -->
+  <text x="512" y="680" text-anchor="middle" fill="#D4AF37" font-family="Arial, sans-serif" font-size="20">
+    Contributed: ${contributionDate}
+  </text>
+
+  <!-- Reveal Date -->
+  <text x="512" y="710" text-anchor="middle" fill="#D4AF37" font-family="Arial, sans-serif" font-size="20">
+    Revealed: ${revealDate}
+  </text>
+
+  <!-- Decorative Element -->
+  <circle cx="512" cy="830" r="60" fill="url(#accent)" opacity="0.2"/>
+  <text x="512" y="840" text-anchor="middle" fill="#D4AF37" font-family="Arial, sans-serif" font-size="36">
+    ✨
+  </text>
+
+  <!-- Footer -->
+  <text x="512" y="950" text-anchor="middle" fill="#6B7280" font-family="Arial, sans-serif" font-size="18">
+    Token ID: #${tokenId}
   </text>
 </svg>
         `;
