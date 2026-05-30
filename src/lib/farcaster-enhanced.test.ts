@@ -1,35 +1,30 @@
-/**
- * Farcaster Enhanced Integration Tests
- * Tests the FarcasterManager class and useFarcasterEnhanced hook
- */
+import { FarcasterManager, useFarcasterEnhanced } from './farcaster-enhanced';
 
-// Mock the Farcaster SDK
 jest.mock('@farcaster/miniapp-sdk', () => ({
   sdk: {
     actions: {
       ready: jest.fn().mockResolvedValue(undefined),
       openUrl: jest.fn().mockResolvedValue(undefined),
     },
-    context: Promise.resolve({
+    context: {
       user: {
         fid: 12345,
         username: 'testuser',
         displayName: 'Test User',
-        pfpUrl: 'https://example.com/avatar.png',
+        pfpUrl: 'https://example.com/pfp.png',
       },
-    }),
+    },
   },
 }));
-
-jest.mock('./constants', () => ({
-  FARCASTER_CONFIG: {
-    frameUrl: 'https://ghostwriter.meme',
-  },
-}));
-
-import { FarcasterManager, useFarcasterEnhanced } from './farcaster-enhanced';
 
 describe('FarcasterManager', () => {
+  let manager: FarcasterManager;
+
+  beforeEach(() => {
+    (FarcasterManager as any).instance = undefined;
+    manager = FarcasterManager.getInstance();
+  });
+
   describe('Singleton Pattern', () => {
     it('should return the same instance', () => {
       const instance1 = FarcasterManager.getInstance();
@@ -38,91 +33,72 @@ describe('FarcasterManager', () => {
     });
   });
 
-  describe('Environment Detection Logic', () => {
-    it('should detect miniapp via query parameter', () => {
-      const search = '?miniapp=true';
-      const isInMiniApp = search.includes('miniapp=true');
-      expect(isInMiniApp).toBe(true);
-    });
-
-    it('should detect miniapp via iframe', () => {
-      const windowRef = { id: 1 };
-      const parentRef = { id: 2 };
-      const isInIframe = windowRef !== parentRef;
-      expect(isInIframe).toBe(true);
-    });
-
-    it('should detect via user agent', () => {
-      const userAgent = 'Mozilla/5.0 Farcaster/1.0';
-      const isFarcaster = userAgent.includes('Farcaster');
-      expect(isFarcaster).toBe(true);
-    });
-
-    it('should detect via warpcast hostname', () => {
-      const hostname = 'app.warpcast.com';
-      const isWarpcast = hostname.includes('warpcast');
-      expect(isWarpcast).toBe(true);
+  describe('detectMiniAppEnvironment', () => {
+    it('should return false in SSR', () => {
+      const originalWindow = global.window;
+      delete (global as any).window;
+      (FarcasterManager as any).instance = undefined;
+      manager = FarcasterManager.getInstance();
+      expect(manager.isInMiniAppEnvironment()).toBe(false);
+      (global as any).window = originalWindow;
     });
   });
 
-  describe('Interface Types', () => {
-    it('should define FarcasterUser interface correctly', () => {
-      const user = {
-        fid: 12345,
-        username: 'testuser',
-        displayName: 'Test User',
-        pfpUrl: 'https://example.com/avatar.png',
-      };
-
-      expect(user.fid).toBe(12345);
-      expect(user.username).toBe('testuser');
-    });
-
-    it('should define FarcasterContext interface correctly', () => {
-      const context = {
-        user: { fid: 123, username: 'test' },
-        location: undefined,
-      };
-
-      expect(context.user).toBeDefined();
-      expect(context.location).toBeUndefined();
+  describe('getContext', () => {
+    it('should return null before initialization', () => {
+      expect(manager.getContext()).toBeNull();
     });
   });
 
-  describe('SDK Integration', () => {
-    it('should call sdk.actions.ready on initialization in miniapp', () => {
-      const { sdk } = require('@farcaster/miniapp-sdk');
-      expect(typeof sdk.actions.ready).toBe('function');
+  describe('shareStory', () => {
+    it('should use web share API when not in mini app', async () => {
+      const mockShare = jest.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'share', {
+        value: mockShare,
+        writable: true,
+        configurable: true,
+      });
+      await manager.shareStory('story-123', 'Test Story');
+      expect(mockShare).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Ghost Writer: Test Story',
+        })
+      );
     });
 
-    it('should call sdk.actions.openUrl for sharing', () => {
-      const { sdk } = require('@farcaster/miniapp-sdk');
-      expect(typeof sdk.actions.openUrl).toBe('function');
+    it('should not throw when share API is unavailable', async () => {
+      delete (navigator as any).share;
+      await expect(
+        manager.shareStory('story-123', 'Test Story')
+      ).resolves.not.toThrow();
+    });
+  });
+
+  describe('requestNotificationPermission', () => {
+    it('should return false when not in mini app', async () => {
+      const result = await manager.requestNotificationPermission();
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('sendNotification', () => {
+    it('should not send when not in mini app', async () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      await manager.sendNotification('Test', 'Body');
+      expect(consoleSpy).not.toHaveBeenCalled();
+      consoleSpy.mockRestore();
     });
   });
 });
 
-describe('useFarcasterEnhanced', () => {
-  beforeEach(() => {
-    (FarcasterManager as any).instance = undefined;
-  });
-
-  it('should return hook methods', () => {
+describe('useFarcasterEnhanced hook', () => {
+  it('should return all expected methods', () => {
     const hook = useFarcasterEnhanced();
-
     expect(typeof hook.initialize).toBe('function');
     expect(typeof hook.getContext).toBe('function');
     expect(typeof hook.isInMiniApp).toBe('function');
     expect(typeof hook.shareStory).toBe('function');
     expect(typeof hook.requestNotificationPermission).toBe('function');
     expect(typeof hook.sendNotification).toBe('function');
-  });
-
-  it('should use the same manager instance', () => {
-    const hook1 = useFarcasterEnhanced();
-    const hook2 = useFarcasterEnhanced();
-
-    // Both hooks should operate on the same singleton
-    expect(hook1.isInMiniApp()).toBe(hook2.isInMiniApp());
   });
 });

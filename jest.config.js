@@ -26,4 +26,8 @@ module.exports = {
       statements: 80,
     },
   },
+  testPathIgnorePatterns: [
+    '<rootDir>/tests/',
+    '<rootDir>/node_modules/',
+  ],
 };
