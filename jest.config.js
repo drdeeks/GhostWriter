@@ -1,33 +1,46 @@
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.cjs'],
+const { TextEncoder, TextDecoder } = require('util');
+
+const jestConfig = {
+  testEnvironment: 'jest-environment-jsdom',
+  setupFilesAfterEnv: ['<rootDir>/src/test-utils/setup-tests.ts'],
+  testPathIgnorePatterns: ['/node_modules/', '/test-contracts/', '/tests/e2e/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
-    '^(\.{1,2}/.*)\\.js$': '$1',
-  },
-  transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: 'tsconfig.json' }],
+    '^wagmi$': '<rootDir>/src/test-utils/mocks/wagmi.ts',
+    '^@wagmi/core$': '<rootDir>/src/test-utils/mocks/wagmi.ts',
+    '^viem$': '<rootDir>/src/test-utils/mocks/viem.ts',
+    '^@coinbase/onchainkit$': '<rootDir>/src/test-utils/mocks/onchainkit.ts',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(@farcaster|@coinbase|wagmi|viem)/)',
+    '/node_modules/(?!wagmi|@wagmi|viem|@coinbase|@farcaster)'
   ],
+  transform: {
+    '^.+\.(ts|tsx)$': ['babel-jest', {
+      presets: ['next/babel'],
+      plugins: [['@babel/plugin-transform-modules-commonjs', { loose: true }]]
+    }],
+  },
   collectCoverageFrom: [
-    'src/**/*.{js,jsx,ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/index.{js,ts}',
-    '!src/**/*.stories.{js,ts,jsx,tsx}',
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.test.{ts,tsx}',
+    '!src/test-utils/**',
+    '!src/types/**',
   ],
   coverageThreshold: {
     global: {
+      statements: 80,
       branches: 80,
       functions: 80,
       lines: 80,
-      statements: 80,
     },
   },
-  testPathIgnorePatterns: [
-    '<rootDir>/tests/',
-    '<rootDir>/node_modules/',
-  ],
+  globals: {
+    TextEncoder: TextEncoder,
+    TextDecoder: TextDecoder,
+    Request: class {},
+    Response: class {},
+    fetch: global.fetch,
+  },
 };
+
+module.exports = jestConfig;

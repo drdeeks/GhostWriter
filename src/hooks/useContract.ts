@@ -101,6 +101,13 @@ export function useStoryManager() {
   };
 }
 
+/**
+ * Main contract hook that provides write operations
+ */
+export function useContract() {
+  return useStoryManager();
+}
+
 // Helper function to convert category string to enum
 function getCategoryEnum(category: string): number {
   const categories = [
