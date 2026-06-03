@@ -1,61 +1,73 @@
-require('@testing-library/jest-dom');
-const { TextEncoder, TextDecoder } = require('util');
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
-
-// Polyfill Request/Response for Next.js API routes in Jest
-if (typeof globalThis.Request === 'undefined') {
-  globalThis.Request = class Request {
-    constructor(urlOrInit, init = {}) {
-      this.url = typeof urlOrInit === 'string' ? urlOrInit : '';
-      this.method = init.method || (typeof urlOrInit === 'object' && urlOrInit.method) || 'GET';
-      this.headers = init.headers || (typeof urlOrInit === 'object' && urlOrInit.headers) || {};
-      this._body = init.body || (typeof urlOrInit === 'object' && urlOrInit.body) || null;
+// Mock global Request object
+class MockRequest {
+  constructor(body) {
+    this.bodyUsed = false;
+    this._body = body;
+  }
+  
+  async json() {
+    this.bodyUsed = true;
+    if (typeof this._body === 'string') {
+      try {
+        return JSON.parse(this._body);
+      } catch {
+        throw new Error(`Failed to parse JSON: ${this._body}`);
+      }
     }
-    async json() { return typeof this._body === 'string' ? JSON.parse(this._body) : this._body; }
-    async text() { return this._body || ''; }
-  };
-}
-if (typeof globalThis.Response === 'undefined') {
-  const _Response = class Response {
-    constructor(body, init = {}) {
-      this._body = body;
-      this.status = init.status || 200;
-      this.statusText = init.statusText || 'OK';
-      this.headers = init.headers || {};
-    }
-    async json() { return typeof this._body === 'string' ? JSON.parse(this._body) : this._body; }
-    async text() { return typeof this._body === 'string' ? this._body : JSON.stringify(this._body); }
-    static json(data, init = {}) {
-      const body = JSON.stringify(data);
-      const res = new _Response(body, { ...init, headers: { 'Content-Type': 'application/json', ...init.headers } });
-      return res;
-    }
-  };
-  globalThis.Response = _Response;
+    return this._body;
+  }
+  
+  async text() {
+    this.bodyUsed = true;
+    return typeof this._body === 'string' ? this._body : JSON.stringify(this._body);
+  }
 }
 
-// Mock next/navigation
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
-  }),
-  usePathname: () => '/',
-}));
-
-// Mock viem/wagmi
-jest.mock('wagmi', () => ({
-  useAccount: () => ({ address: '0x123' }),
-  useReadContract: () => ({ data: [], isLoading: false, error: null }),
-  useWriteContract: () => ({ writeContract: jest.fn(), isLoading: false }),
-  useWaitForTransactionReceipt: () => ({ isLoading: false }),
-}));
-
-// Mock window.ethereum
-window.ethereum = {
-  request: jest.fn(),
-  on: jest.fn(),
-  removeListener: jest.fn(),
+// Mock NextRequest object
+global.NextRequest = class NextRequest {
+  constructor(url, options = {}) {
+    this.url = url;
+    this.nextUrl = new URL(url);
+    this.method = options.method || 'GET';
+    this.headers = new Map(Object.entries(options.headers || {}));
+    this._body = options.body;
+  }
+  
+  get searchParams() {
+    return this.nextUrl.searchParams;
+  }
+  
+  async json() {
+    if (typeof this._body === 'string') {
+      try {
+        return JSON.parse(this._body);
+      } catch {
+        throw new Error(`Failed to parse JSON: ${this._body}`);
+      }
+    }
+    return this._body;
+  }
 };
+
+// Mock Response object
+global.Response = class Response {
+  constructor(body, init = {}) {
+    this.body = body;
+    this.status = init.status || 200;
+    this.headers = new Map(Object.entries(init.headers || {}));
+  }
+  
+  async json() {
+    if (typeof this.body === 'string') {
+      return JSON.parse(this.body);
+    }
+    return this.body;
+  }
+  
+  async text() {
+    return typeof this.body === 'string' ? this.body : JSON.stringify(this.body);
+  }
+};
+
+// Mock fetch
+global.fetch = jest.fn();

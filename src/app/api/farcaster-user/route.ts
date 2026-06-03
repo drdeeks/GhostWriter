@@ -22,28 +22,45 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid address format' }, { status: 400 });
     }
 
-    // TODO: In production, integrate with Farcaster API or Neynar
-    // For now, return a placeholder structure
-    // You would typically:
-    // 1. Query Farcaster's API to get FID from address
-    // 2. Query username from FID
-    // 3. Cache results for performance
-
-    // Example integration (commented out):
-    /*
-    const farcasterResponse = await fetch(
-      `https://api.farcaster.xyz/v2/user-by-verification?address=${address}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.FARCASTER_API_KEY}`,
-        },
+    // Try to fetch Farcaster user data if API key is configured
+    if (process.env.FARCASTER_API_KEY) {
+      try {
+        const farcasterResponse = await fetch(
+          `https://api.farcaster.xyz/v2/user-by-verification?address=${address}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${process.env.FARCASTER_API_KEY}`,
+            },
+          }
+        );
+        
+        if (farcasterResponse.ok) {
+          const data = await farcasterResponse.json();
+          const fid = data?.result?.user?.fid;
+          const username = data?.result?.user?.username;
+          const displayName = data?.result?.user?.displayName;
+          
+          if (fid || username) {
+            return NextResponse.json(
+              {
+                address,
+                fid: fid || null,
+                username: username || null,
+                displayName: displayName || null,
+                note: 'Farcaster user data retrieved successfully',
+              },
+              {
+                headers: {
+                  'Cache-Control': 'no-store',
+                },
+              }
+            );
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to fetch Farcaster user info:', error);
       }
-    );
-    
-    const data = await farcasterResponse.json();
-    const fid = data?.result?.user?.fid;
-    const username = data?.result?.user?.username;
-    */
+    }
 
     // Placeholder response - replace with actual Farcaster API call
     // For development, you can use a mock service or hardcode test values

@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Load polyfills for Node.js environment
+import './src/test-utils/polyfills';
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,

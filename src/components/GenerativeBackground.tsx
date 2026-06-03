@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { Particle } from '../lib/Particle';
 
 export const GenerativeBackground: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -41,24 +42,11 @@ export const GenerativeBackground: React.FC = () => {
         };
 
         p.windowResized = () => { p.resizeCanvas(p.windowWidth, p.windowHeight); };
-
-        class Particle {
-          pos: any; vel: any; size: number; col: any; p: any;
-          constructor(p: any) {
-            this.p = p;
-            this.pos = p.createVector(p.random(p.width), p.random(p.height));
-            this.vel = p.createVector(p.random(-0.4, 0.4), p.random(-0.4, 0.4));
-            this.size = p.random(1, 3);
-            this.col = p.random() > 0.5 ? [0, 255, 255] : [106, 13, 173];
-          }
-          update() { this.pos.add(this.vel); if (this.pos.x < 0 || this.pos.x > this.p.width) this.vel.x *= -1; if (this.pos.y < 0 || this.pos.y > this.p.height) this.vel.y *= -1; }
-          display() { this.p.noStroke(); this.p.fill(this.col[0], this.col[1], this.col[2], 60); this.p.circle(this.pos.x, this.pos.y, this.size); }
-        }
       });
     };
     initP5();
     return () => { if (p5Instance) p5Instance.remove(); };
   }, []);
 
-  return <div ref={containerRef} className="fixed inset-0 -z-10 pointer-events-none opacity-60" />;
+  return <div ref={containerRef} className="fixed inset-0 -z-10 pointer-events-none opacity-60" data-testid="generative-background" />;
 };

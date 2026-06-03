@@ -8,14 +8,20 @@ import { aiService } from '@/lib/ai-service'; // Import aiService
 export async function POST(request: Request) {
   try {
     const { word } = await request.json();
-
+    
     if (!word || typeof word !== 'string') {
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
+    
+    const trimmedWord = word.trim();
+    if (!trimmedWord) {
+      return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
+    }
 
-    const moderationResult = await aiService.moderateWord(word);
+    const isProfane = await aiService.moderateWord(word);
 
-    if (!moderationResult.isAppropriate) {
+    if (isProfane) {
+      const moderationResult = await aiService.moderateWordInternal(word);
       return NextResponse.json({
         isProfane: true,
         reason: moderationResult.suggestion || 'Word flagged by moderation',
