@@ -22,7 +22,21 @@ interface GeneratedStory {
   processingTime?: number;
 }
 
+// Exports for external use
 export type StoryTypeName = 'mini' | 'normal' | 'epic';
+export const aiService = {
+  getInstance: () => aiServiceInstance,
+  clearCache: () => aiServiceInstance.clearCache(),
+  generateStory: (category: string) => aiServiceInstance.generateStory(category),
+  generateStorySuggestions: (category: string, storyType: StoryTypeName, count: number) => 
+    aiServiceInstance.generateStorySuggestions(category, storyType, count),
+  moderateWord: (word: string) => aiServiceInstance.moderateWord(word),
+  moderateWordInternal: (word: string) => aiServiceInstance.moderateWordInternal(word),
+};
+
+export const moderateWord = async (word: string): Promise<boolean> => {
+  return aiServiceInstance.moderateWord(word);
+};
 
 interface ModerationResult {
   isAppropriate: boolean;
@@ -31,8 +45,9 @@ interface ModerationResult {
   suggestion?: string;
 }
 
-export class AIService {
-  private static instance: AIService;
+// Internal implementation
+class AIServiceInstance {
+  private static instance: AIServiceInstance;
   private openai: OpenAI | null = null;
   private config: AIConfig;
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
@@ -50,15 +65,15 @@ export class AIService {
       systemPromptAppend: process.env.AI_STORY_SYSTEM_PROMPT_APPEND || '',
       ...config,
     };
-    
+
     this.initializeOpenAI();
   }
 
-  static getInstance(config?: Partial<AIConfig>): AIService {
-    if (!AIService.instance) {
-      AIService.instance = new AIService(config);
+  static getInstance(config?: Partial<AIConfig>): AIServiceInstance {
+    if (!AIServiceInstance.instance) {
+      AIServiceInstance.instance = new AIServiceInstance(config);
     }
-    return AIService.instance;
+    return AIServiceInstance.instance;
   }
 
   private initializeOpenAI(): void {
@@ -297,7 +312,7 @@ ${this.config.systemPromptAppend}`,
 
   private parseGeneratedStory(text: string): Omit<GeneratedStory, 'generatedBy' | 'processingTime'> {
     const lines = text.split('\n').filter(line => line.trim());
-    const title = lines[0]?.trim().replace(/^["']|["']$/g, '') || 'Generated Story';
+    const title = lines[0]?.trim().replace(/^["]|["]$/g, '') || 'Generated Story';
     const template = lines.slice(1).join(' ').trim();
 
     const WORD_TYPE_REGEX = /\[([A-Z_]+)\]/g;
@@ -361,7 +376,12 @@ ${this.config.systemPromptAppend}`,
     };
   }
 
-  async moderateWord(word: string): Promise<ModerationResult> {
+  async moderateWord(word: string): Promise<boolean> {
+    const result = await this.moderateWordInternal(word);
+    return !result.isAppropriate;
+  }
+
+  async moderateWordInternal(word: string): Promise<ModerationResult> {
     const cacheKey = this.getCacheKey('moderation', word);
 
     // Check cache first
@@ -436,4 +456,4 @@ ${this.config.systemPromptAppend}`,
 }
 
 // Singleton instance
-export const aiService = AIService.getInstance();
+const aiServiceInstance = AIServiceInstance.getInstance();
