@@ -1,8 +1,5 @@
 # 👻 Ghost Writer
 
-[![DrDeeks Project](https://img.shields.io/badge/DrDeeks%20Project-171718?style=flat-square&labelColor=b84d32)](https://github.com/drdeeks)
-
-
 AI-powered collaborative storytelling NFT game on Base. Players contribute words to community stories, minting unique NFTs for each contribution.
 
 ---
