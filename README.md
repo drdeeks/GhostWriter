@@ -1,5 +1,7 @@
 # 👻 Ghost Writer
 
+[![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?logo=node.js&logoColor=white)](package.json) [![Next.js](https://img.shields.io/badge/Next.js-App-000000?logo=next.js&logoColor=white)](package.json) [![Hardhat](https://img.shields.io/badge/Hardhat-contracts-f5c518?logo=ethereum&logoColor=111111)](hardhat.config.js) [![Base](https://img.shields.io/badge/Base-network-0052ff)](https://base.org)
+
 AI-powered collaborative storytelling NFT game on Base. Players contribute words to community stories, minting unique NFTs for each contribution.
 
 ---
