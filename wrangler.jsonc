@@ -19,6 +19,9 @@
 	"images": {
 		"binding": "IMAGES"
 	},
+	"ai": {
+		"binding": "AI"
+	},
 	"routes": [
 		{
 			"pattern": "ghostwriter.drdeeks.xyz",

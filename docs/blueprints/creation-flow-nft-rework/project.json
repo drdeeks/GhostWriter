@@ -1,0 +1,20 @@
+{
+  "project": "Creation Flow, Roast Mode & NFT Rework",
+  "slug": "creation-flow-roast-mode-nft-rework",
+  "scope": "project",
+  "phases": [
+    "Phase 0: Pre-Build",
+    "Phase 1: Foundation",
+    "Phase 2: Authentication & Identity",
+    "Phase 3: Core Feature Build",
+    "Phase 4: Integration Layer",
+    "Phase 5: Testing & Hardening",
+    "Phase 6: Launch & Live Ops"
+  ],
+  "version": "1.0",
+  "created_at": "2026-08-05T07:47:29.314747+00:00",
+  "blueprint": "docs/blueprints/creation-flow-nft-rework/blueprint.md",
+  "checklist": "docs/blueprints/creation-flow-nft-rework/checklist.md",
+  "changelog": "docs/blueprints/creation-flow-nft-rework/CHANGELOG.md",
+  "assignments": "docs/blueprints/creation-flow-nft-rework/assignments.json"
+}

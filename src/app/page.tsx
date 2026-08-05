@@ -2,23 +2,29 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAccount } from 'wagmi';
+import { useAccount, useSwitchChain } from 'wagmi';
 import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownLink, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
 import { Avatar, Name, Identity, Address, EthBalance } from '@coinbase/onchainkit/identity';
 import { Ghost } from 'lucide-react';
 import { GenerativeBackground } from '@/components/GenerativeBackground';
 import { OnboardingReward } from '@/components/onboarding-reward';
+import { SUPPORTED_CHAIN_IDS } from '@/lib/contracts';
 
 const CHAINS = [
   { id: 8453, name: 'Base', color: 'text-blue-400' },
-  { id: 10143, name: 'Monad', color: 'text-purple-400' },
+  { id: 143, name: 'Monad', color: 'text-purple-400' },
   { id: 42161, name: 'Arbitrum', color: 'text-cyan-400' },
   { id: 1, name: 'Ethereum', color: 'text-indigo-400' },
 ] as const;
 
+function isActiveChain(id: number): boolean {
+  return (SUPPORTED_CHAIN_IDS as readonly number[]).includes(id);
+}
+
 export default function Home() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
+  const { switchChain } = useSwitchChain();
   const [selectedChain, setSelectedChain] = useState(8453);
   const [isFarcaster, setIsFarcaster] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -41,10 +47,13 @@ export default function Home() {
 
   useEffect(() => {
     if (mounted && isConnected && address) {
+      if (isActiveChain(selectedChain)) {
+        switchChain({ chainId: selectedChain });
+      }
       const timer = setTimeout(() => router.push('/app'), 500);
       return () => clearTimeout(timer);
     }
-  }, [isConnected, address, router, mounted]);
+  }, [isConnected, address, router, mounted, selectedChain, switchChain]);
 
   if (!mounted) {
     return (
@@ -80,19 +89,33 @@ export default function Home() {
           </p>
 
           <div className="flex flex-wrap justify-center gap-2 mb-8">
-            {CHAINS.map((chain) => (
-              <button
-                key={chain.id}
-                onClick={() => setSelectedChain(chain.id)}
-                className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
-                  selectedChain === chain.id
-                    ? 'bg-white/10 border-white/20 text-white'
-                    : 'bg-white/5 border-white/10 text-slate-500 hover:border-white/20 hover:text-slate-300'
-                }`}
-              >
-                <span className={chain.id === selectedChain ? chain.color : ''}>{chain.name}</span>
-              </button>
-            ))}
+            {CHAINS.map((chain) => {
+              const active = isActiveChain(chain.id);
+              return (
+                <button
+                  key={chain.id}
+                  disabled={!active}
+                  onClick={() => {
+                    if (!active) return;
+                    setSelectedChain(chain.id);
+                    if (isConnected) switchChain({ chainId: chain.id });
+                  }}
+                  title={active ? undefined : 'Coming soon'}
+                  className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
+                    !active
+                      ? 'bg-white/5 border-white/5 text-slate-600 opacity-50 cursor-not-allowed'
+                      : selectedChain === chain.id
+                        ? 'bg-white/10 border-white/20 text-white'
+                        : 'bg-white/5 border-white/10 text-slate-500 hover:border-white/20 hover:text-slate-300'
+                  }`}
+                >
+                  <span className={active && chain.id === selectedChain ? chain.color : ''}>
+                    {chain.name}
+                    {!active && <span className="ml-1 opacity-70">(soon)</span>}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex items-center justify-center">

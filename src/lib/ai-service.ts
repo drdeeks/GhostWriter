@@ -7,11 +7,23 @@ interface AIConfig {
   timeout: number;
   fallbackEnabled: boolean;
   cacheEnabled: boolean;
-  model: string;
   temperature: number;
   maxTokens: number;
   systemPromptAppend: string;
 }
+
+// A provider that speaks the OpenAI Chat Completions API shape - true for
+// OpenAI itself, OpenRouter, and Mistral (all via the same SDK, just a
+// different baseURL/key/model). Tried in order; if one throws, the next
+// is tried before falling back to the deterministic template generator.
+interface ChatProvider {
+  name: string;
+  client: OpenAI;
+  model: string;
+}
+
+const DEFAULT_PROVIDER_ORDER = ['openai', 'openrouter', 'mistral', 'cloudflare'] as const;
+type ProviderName = (typeof DEFAULT_PROVIDER_ORDER)[number];
 
 interface GeneratedStory {
   title: string;
@@ -48,25 +60,27 @@ interface ModerationResult {
 // Internal implementation
 class AIServiceInstance {
   private static instance: AIServiceInstance;
-  private openai: OpenAI | null = null;
+  private providers: ChatProvider[] = [];
+  // Kept separately: OpenAI's /moderations endpoint is OpenAI-specific,
+  // not something OpenRouter/Mistral/Workers AI replicate.
+  private openaiForModeration: OpenAI | null = null;
   private config: AIConfig;
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   private readonly CACHE_TTL = 1000 * 60 * 60; // 1 hour
 
   constructor(config: Partial<AIConfig> = {}) {
     this.config = {
-      maxRetries: 3,
-      timeout: parseInt(process.env.OPENAI_TIMEOUT_MS || '10000', 10),
+      maxRetries: parseInt(process.env.AI_MAX_RETRIES || '3', 10),
+      timeout: parseInt(process.env.AI_TIMEOUT_MS || process.env.OPENAI_TIMEOUT_MS || '10000', 10),
       fallbackEnabled: true,
       cacheEnabled: true,
-      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-      temperature: parseFloat(process.env.OPENAI_TEMPERATURE || '0.9'),
-      maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS || '700', 10),
+      temperature: parseFloat(process.env.AI_TEMPERATURE || process.env.OPENAI_TEMPERATURE || '0.9'),
+      maxTokens: parseInt(process.env.AI_MAX_TOKENS || process.env.OPENAI_MAX_TOKENS || '700', 10),
       systemPromptAppend: process.env.AI_STORY_SYSTEM_PROMPT_APPEND || '',
       ...config,
     };
 
-    this.initializeOpenAI();
+    this.initializeProviders();
   }
 
   static getInstance(config?: Partial<AIConfig>): AIServiceInstance {
@@ -76,12 +90,48 @@ class AIServiceInstance {
     return AIServiceInstance.instance;
   }
 
-  private initializeOpenAI(): void {
-    if (process.env.OPENAI_API_KEY) {
-      this.openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-        timeout: this.config.timeout,
-      });
+  // Builds the ordered list of configured OpenAI-API-compatible providers.
+  // Order is customizable via AI_PROVIDER_ORDER (comma-separated, e.g.
+  // "mistral,openrouter,openai"); any provider without credentials set is
+  // skipped. Cloudflare Workers AI isn't in this list - it's binding-based,
+  // not HTTP, and is tried separately in generateWithAI/moderateWordInternal.
+  private initializeProviders(): void {
+    const order = (process.env.AI_PROVIDER_ORDER
+      ?.split(',')
+      .map((p) => p.trim().toLowerCase())
+      .filter((p): p is ProviderName => (DEFAULT_PROVIDER_ORDER as readonly string[]).includes(p))
+      ?? DEFAULT_PROVIDER_ORDER);
+
+    for (const name of order) {
+      if (name === 'openai' && process.env.OPENAI_API_KEY) {
+        const client = new OpenAI({
+          apiKey: process.env.OPENAI_API_KEY,
+          timeout: this.config.timeout,
+        });
+        this.providers.push({ name: 'openai', client, model: process.env.OPENAI_MODEL || 'gpt-4o-mini' });
+        this.openaiForModeration = client;
+      } else if (name === 'openrouter' && process.env.OPENROUTER_API_KEY) {
+        this.providers.push({
+          name: 'openrouter',
+          client: new OpenAI({
+            apiKey: process.env.OPENROUTER_API_KEY,
+            baseURL: 'https://openrouter.ai/api/v1',
+            timeout: this.config.timeout,
+          }),
+          model: process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini',
+        });
+      } else if (name === 'mistral' && process.env.MISTRAL_API_KEY) {
+        this.providers.push({
+          name: 'mistral',
+          client: new OpenAI({
+            apiKey: process.env.MISTRAL_API_KEY,
+            baseURL: 'https://api.mistral.ai/v1',
+            timeout: this.config.timeout,
+          }),
+          model: process.env.MISTRAL_MODEL || 'mistral-small-latest',
+        });
+      }
+      // 'cloudflare' is handled separately via the Workers AI binding.
     }
   }
 
@@ -141,65 +191,60 @@ class AIServiceInstance {
     }
 
     const expectedSlots = this.expectedSlots(storyType);
+    const results: GeneratedStory[] = [];
 
-    // Try AI generation with retries
-    if (this.openai) {
-      const results: GeneratedStory[] = [];
+    for (let i = 0; i < count; i++) {
+      const generated = await this.generateWithFailover(categoryObj, expectedSlots);
+      const processingTime = performance.now() - startTime;
 
-      for (let i = 0; i < count; i++) {
-        let generated: Omit<GeneratedStory, 'generatedBy' | 'processingTime'> | null = null;
-
-        for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
-          try {
-            const raw = await this.generateWithAI(categoryObj, expectedSlots);
-            if (raw.wordTypes.length !== expectedSlots) {
-              throw new Error(`AI returned ${raw.wordTypes.length} slots; expected ${expectedSlots}`);
-            }
-            generated = raw;
-            break;
-          } catch (error) {
-            console.warn(`AI generation attempt ${attempt} failed:`, error);
-            if (attempt !== this.config.maxRetries) {
-              await new Promise((resolve) =>
-                setTimeout(resolve, Math.pow(2, attempt) * 500)
-              );
-            }
-          }
-        }
-
-        if (generated) {
-          const processingTime = performance.now() - startTime;
-          results.push({
-            ...generated,
-            generatedBy: 'AI',
-            processingTime,
-          });
-        } else {
-          // Fallback if AI fails for this suggestion
-          const fallback = this.generateDeterministicMadLib(categoryObj, expectedSlots);
-          const processingTime = performance.now() - startTime;
-          results.push({
-            ...fallback,
-            generatedBy: 'Template',
-            processingTime,
-          });
-        }
+      if (generated) {
+        results.push({ ...generated, generatedBy: 'AI', processingTime });
+      } else {
+        // Every configured provider failed (or none are configured) - last resort.
+        const fallback = this.generateDeterministicMadLib(categoryObj, expectedSlots);
+        results.push({ ...fallback, generatedBy: 'Template', processingTime });
       }
-
-      this.setCache(cacheKey, results);
-      return results;
     }
-
-    // Fallback to deterministic Mad Lib generation
-    const processingTime = performance.now() - startTime;
-    const results = Array.from({ length: count }).map(() => ({
-      ...this.generateDeterministicMadLib(categoryObj, expectedSlots),
-      generatedBy: 'Template' as const,
-      processingTime,
-    }));
 
     this.setCache(cacheKey, results);
     return results;
+  }
+
+  // Tries each configured chat provider in order (each gets maxRetries
+  // attempts before moving to the next), then Cloudflare Workers AI as a
+  // final AI attempt. Returns null only if every provider failed/is
+  // unconfigured, so the caller can fall back to the template generator.
+  private async generateWithFailover(
+    categoryObj: typeof STORY_CATEGORIES[0],
+    expectedSlots: number
+  ): Promise<Omit<GeneratedStory, 'generatedBy' | 'processingTime'> | null> {
+    for (const provider of this.providers) {
+      for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
+        try {
+          const raw = await this.generateWithProvider(provider, categoryObj, expectedSlots);
+          if (raw.wordTypes.length !== expectedSlots) {
+            throw new Error(`${provider.name} returned ${raw.wordTypes.length} slots; expected ${expectedSlots}`);
+          }
+          return raw;
+        } catch (error) {
+          console.warn(`${provider.name} attempt ${attempt} failed:`, error);
+          if (attempt !== this.config.maxRetries) {
+            await new Promise((resolve) => setTimeout(resolve, 2 ** attempt * 500));
+          }
+        }
+      }
+    }
+
+    try {
+      const raw = await this.generateWithWorkersAI(categoryObj, expectedSlots);
+      if (raw && raw.wordTypes.length === expectedSlots) {
+        return raw;
+      }
+    } catch (error) {
+      console.warn('Cloudflare Workers AI attempt failed:', error);
+    }
+
+    return null;
   }
 
   private expectedSlots(storyType: StoryTypeName): number {
@@ -215,18 +260,11 @@ class AIServiceInstance {
     return Math.floor(Math.random() * (25 - 15 + 1) + 15);
   }
 
-  private async generateWithAI(
-    categoryObj: typeof STORY_CATEGORIES[0],
-    expectedSlots: number
-  ): Promise<Omit<GeneratedStory, 'generatedBy' | 'processingTime'>> {
-    if (!this.openai) throw new Error('OpenAI not initialized');
-
-    const completion = await this.openai.chat.completions.create({
-      model: this.config.model,
-      messages: [
-        {
-          role: 'system',
-          content: `You are a creative story generator for a Mad Libs-style game.
+  private buildStoryMessages(categoryObj: typeof STORY_CATEGORIES[0], expectedSlots: number) {
+    return [
+      {
+        role: 'system' as const,
+        content: `You are a creative story generator for a Mad Libs-style game.
 
 Category: ${categoryObj.name}
 Description: ${categoryObj.description}
@@ -238,17 +276,52 @@ Requirements:
 - Provide a catchy title
 - Format: Title on first line, story on subsequent lines
 ${this.config.systemPromptAppend}`,
-        },
-        {
-          role: 'user',
-          content: `Generate a ${categoryObj.name.toLowerCase()} story with exactly ${expectedSlots} placeholders.`,
-        },
-      ],
+      },
+      {
+        role: 'user' as const,
+        content: `Generate a ${categoryObj.name.toLowerCase()} story with exactly ${expectedSlots} placeholders.`,
+      },
+    ];
+  }
+
+  private async generateWithProvider(
+    provider: ChatProvider,
+    categoryObj: typeof STORY_CATEGORIES[0],
+    expectedSlots: number
+  ): Promise<Omit<GeneratedStory, 'generatedBy' | 'processingTime'>> {
+    const completion = await provider.client.chat.completions.create({
+      model: provider.model,
+      messages: this.buildStoryMessages(categoryObj, expectedSlots),
       temperature: this.config.temperature,
       max_tokens: this.config.maxTokens,
     });
 
     const generatedText = completion.choices[0]?.message?.content || '';
+    return this.parseGeneratedStory(generatedText);
+  }
+
+  // Cloudflare Workers AI runs open models directly on Cloudflare's own
+  // infrastructure via a Worker binding (not an HTTP call), so it's only
+  // reachable when this code is actually running inside the deployed
+  // Worker - getCloudflareContext throws outside that environment, which
+  // is expected and just means this provider is skipped.
+  private async generateWithWorkersAI(
+    categoryObj: typeof STORY_CATEGORIES[0],
+    expectedSlots: number
+  ): Promise<Omit<GeneratedStory, 'generatedBy' | 'processingTime'> | null> {
+    const { getCloudflareContext } = await import('@opennextjs/cloudflare');
+    const { env } = await getCloudflareContext({ async: true });
+    const ai = (env as any).AI;
+    if (!ai) return null;
+
+    const model = process.env.CLOUDFLARE_AI_MODEL || '@cf/meta/llama-3.1-8b-instruct';
+    const response = await ai.run(model, {
+      messages: this.buildStoryMessages(categoryObj, expectedSlots),
+      temperature: this.config.temperature,
+      max_tokens: this.config.maxTokens,
+    });
+
+    const generatedText = response?.response || '';
     return this.parseGeneratedStory(generatedText);
   }
 
@@ -397,10 +470,10 @@ ${this.config.systemPromptAppend}`,
       };
     }
 
-    // Try AI moderation
-    if (this.openai) {
+    // Try AI moderation (OpenAI-specific endpoint; other providers don't have an equivalent)
+    if (this.openaiForModeration) {
       try {
-        const moderation = await this.openai.moderations.create({
+        const moderation = await this.openaiForModeration.moderations.create({
           input: word,
         });
 
