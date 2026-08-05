@@ -49,7 +49,9 @@ npm run dev
 - **Contracts**: Hardhat 2 + ethers v6
 - **Wallet**: wagmi/viem + @coinbase/onchainkit
 - **Farcaster**: @farcaster/miniapp-sdk + @farcaster/miniapp-wagmi-connector
-- **Networks**: Base (8453) or Base Sepolia (84532) via `NEXT_PUBLIC_CHAIN_ID`
+- **Multi-chain**: Base (8453, live) + Monad (143, config ready, not deployed yet) via `src/lib/contracts.ts`'s `CONTRACTS_BY_CHAIN`/`getContractsForChain(chainId)` + `SUPPORTED_CHAIN_IDS`. `ChainSwitcher.tsx` (in `/app`) and the landing page's chain chips both call real `useSwitchChain()` now — non-active chains (Arbitrum, Ethereum) show greyed-out "(soon)" in the UI rather than being hidden. Server API routes (metrics, generate-story, NFT routes) are still hardcoded to `CONTRACTS` (= Base) — not yet chain-parameterized, deliberately deferred until Monad actually has contracts.
+- **AI**: `src/lib/ai-service.ts` has multi-provider failover — OpenAI → OpenRouter → Mistral (all via one OpenAI-SDK-compatible client, just different `baseURL`) → Cloudflare Workers AI (binding-based, only reachable when deployed) → deterministic template (final fallback). Order configurable via `AI_PROVIDER_ORDER`.
+- **Hosting**: Cloudflare Workers via `@opennextjs/cloudflare` (`wrangler.jsonc`, `open-next.config.ts`, `npm run cf:build`/`cf:preview`/`cf:deploy`), routed at `ghostwriter.drdeeks.xyz`. Vercel is being retired (project deletion pending user action in the Vercel dashboard/CLI login).
 - **Entry points**: 
   - Contracts: `contracts/` (StoryManager.sol core)
   - Frontend: `src/app/` (App Router), `src/components/`, `src/hooks/`, `src/lib/`
@@ -79,3 +81,34 @@ A merge commit (`86f16ec`, "Pre-build state with approved scripts and security f
 - **~39 jest test failures remain**, confirmed as pre-existing application/test-content mismatches, not infrastructure issues (test infra itself is now solid — 278/317 passing). Example: a route test asserts an error message the route no longer returns, meaning the API contract changed since the test was last updated. Needs per-test triage to decide whether the test or the implementation is stale.
 - **71 `npm audit` vulnerabilities remain** (19 low, 45 moderate, 7 high, 0 critical — down from 113 at session start; critical hit zero once the dependency versions were made coherent). Not yet triaged individually.
 - Socket.dev CLI is set up (`socket login`, org `drdeeks-unique-antiques`) for supply-chain scanning going forward; the org's default security policy currently `ignore`s nearly everything, so it isn't gating anything yet.
+- **Landing page decorative chain chips are now real** (`src/app/page.tsx`) — Base/Monad active, Arbitrum/Ethereum greyed-out placeholders for chains with no contracts deployed and no near-term plan.
+
+## Next Planned Work — see `docs/blueprints/creation-flow-nft-rework/`
+Full spec'd out and phase-gated via the `enterprise-blueprint` skill (now
+installed globally at `~/.claude/skills/`, along with `skill-creator`,
+`skill-installer`, `loop-enforcer` — pulled from `~/projects/hemlock/skills/`,
+which is the canonical source; skills load from that one global directory
+for every project, not per-project). Read `blueprint.md` there before
+starting any of this — 7 phases, in order:
+0. Pre-build (blueprint approval, Neynar API key)
+1. Contract changes: admin-only unlimited-length "genesis story", optional
+   atomic first-word-on-creation, creator NFT mint moves from completion to
+   creation time
+2. Neynar integration (new `src/lib/neynar-service.ts` + proxy route)
+3. Creation-flow UX rework: category → 5 AI title+teaser suggestions (not
+   full templates) + an always-visible "??" wildcard that roasts the
+   selecting user via real Neynar data when in Farcaster, or generates a
+   random same-category story otherwise
+4. NFT hidden/revealed rendering rewrite (precise layout specs in the
+   blueprint; revealed state shows only the one sentence with the
+   contributor's word bolded, not the whole story — deliberate, for a
+   separate future NFT-combination project)
+5. Testing & hardening
+6. Redeploy (Base + Monad) and go live
+
+Reference docs supplied for this work: Neynar (`docs.neynar.com/llms-full.txt`),
+Farcaster (`docs.farcaster.xyz`), Farcaster miniapps
+(`miniapps.farcaster.xyz/llms-full.txt`), Monad (`docs.monad.xyz`), and
+HyperSnap/Quilibrium (`hypersnap-docs.qstorage.quilibrium.com/llms.txt` —
+purpose not yet confirmed, flagged in the blueprint to ask drdeeks during
+Phase 4 whether it's the intended NFT metadata/image storage layer).
