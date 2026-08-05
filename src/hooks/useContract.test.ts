@@ -5,6 +5,7 @@ import { CONTRACTS, FEES } from '@/lib/contracts';
 
 // Mock wagmi hooks
 jest.mock('wagmi', () => ({
+  useChainId: jest.fn(() => 8453),
   useReadContract: jest.fn(),
   useWriteContract: jest.fn(),
   useWaitForTransactionReceipt: jest.fn(),

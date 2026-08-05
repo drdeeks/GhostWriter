@@ -1,25 +1,28 @@
-import { CONTRACTS, STORY_MANAGER_ABI } from '@/lib/contracts';
+import { STORY_MANAGER_ABI, getContractsForChain } from '@/lib/contracts';
 import type { Story, StoryType } from '@/types/ghostwriter';
 import { useMemo } from 'react';
-import { useReadContracts } from 'wagmi';
+import { useChainId, useReadContracts } from 'wagmi';
 
 /**
  * Performance-optimized hook for fetching multiple stories by ID.
  * Uses useMemo to maintain stable references and minimize re-renders.
  */
 export function useStories(storyIds: string[] | undefined) {
+  const chainId = useChainId();
+  const contractAddresses = getContractsForChain(chainId);
+
   // Memoize IDs to prevent unnecessary downstream computations
   const ids = useMemo(() => (storyIds || []).filter(Boolean), [storyIds]);
 
   // Stable contracts array for useReadContracts to prevent unnecessary effect triggers
   const contracts = useMemo(() =>
     ids.map((id) => ({
-      address: CONTRACTS.storyManager,
+      address: contractAddresses.storyManager,
       abi: STORY_MANAGER_ABI,
       functionName: 'getStory' as const,
       args: [id] as const,
     })),
-    [ids]
+    [ids, contractAddresses.storyManager]
   );
 
   const { data, isLoading, error, refetch } = useReadContracts({

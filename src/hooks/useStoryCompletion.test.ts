@@ -15,6 +15,7 @@ const calculateBatchCount = (totalSlots: number, batchSize: number) => {
 const mockWriteContractAsync = jest.fn().mockResolvedValue({ hash: '0xabc' });
 
 jest.mock('wagmi', () => ({
+  useChainId: () => 8453,
   useAccount: () => ({ address: '0x1234567890123456789012345678901234567890' }),
   useWriteContract: () => ({
     writeContractAsync: mockWriteContractAsync,
@@ -27,9 +28,9 @@ jest.mock('wagmi', () => ({
 }));
 
 jest.mock('../lib/contracts', () => ({
-  CONTRACTS: {
+  getContractsForChain: () => ({
     storyManager: '0xStoryManager',
-  },
+  }),
   STORY_MANAGER_ABI: [],
 }));
 

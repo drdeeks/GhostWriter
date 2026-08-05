@@ -4,14 +4,15 @@ import { useReadContracts } from 'wagmi';
 
 // Mock wagmi
 jest.mock('wagmi', () => ({
+  useChainId: jest.fn(() => 8453),
   useReadContracts: jest.fn(),
 }));
 
 // Mock contracts lib
 jest.mock('@/lib/contracts', () => ({
-  CONTRACTS: {
+  getContractsForChain: jest.fn(() => ({
     storyManager: '0xStoryManager' as `0x${string}`,
-  },
+  })),
   STORY_MANAGER_ABI: [],
 }));
 

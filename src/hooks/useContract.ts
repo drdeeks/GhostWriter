@@ -1,7 +1,7 @@
-import { CONTRACTS, FEES, NFT_ABI, STORY_MANAGER_ABI } from '@/lib/contracts';
+import { FEES, NFT_ABI, STORY_MANAGER_ABI, getContractsForChain } from '@/lib/contracts';
 import type { StoryType, UserStats as UserStatsType } from '@/types/ghostwriter';
 import { useState } from 'react';
-import { useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useChainId, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { useFees } from './useFees';
 
 /**
@@ -11,6 +11,8 @@ export function useStoryManager() {
   const [isPending, setIsPending] = useState<boolean>(false);
   const { writeContractAsync } = useWriteContract();
   const { contributionFee, creationFee, isLoading: isLoadingFees } = useFees();
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
 
   const createStoryApproved = async (
     storyId: string,
@@ -32,7 +34,7 @@ export function useStoryManager() {
       const categoryEnum = getCategoryEnum(category);
 
       const hash = await writeContractAsync({
-        address: CONTRACTS.storyManager,
+        address: contracts.storyManager,
         abi: STORY_MANAGER_ABI,
         functionName: 'createStoryApproved',
         args: [
@@ -71,7 +73,7 @@ export function useStoryManager() {
     setIsPending(true);
     try {
       const hash = await writeContractAsync({
-        address: CONTRACTS.storyManager,
+        address: contracts.storyManager,
         abi: STORY_MANAGER_ABI,
         functionName: 'contributeWord',
         args: [storyId, BigInt(position), word],
@@ -139,8 +141,10 @@ function getCategoryEnum(category: string): number {
  * Hook for reading story data
  */
 export function useStory(storyId: string | undefined) {
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { data, isLoading, error, refetch } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getStory',
     args: storyId ? [storyId] : undefined,
@@ -165,8 +169,10 @@ export function useStory(storyId: string | undefined) {
  * Hook for reading all story IDs
  */
 export function useAllStories() {
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { data, isLoading, error, refetch } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getAllStoryIds',
     query: {
@@ -189,8 +195,10 @@ export function useAllStories() {
  * Hook for reading user stats
  */
 export function useUserStats(address: `0x${string}` | undefined) {
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { data, isLoading, error, refetch } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getUserStats',
     args: address ? [address] : undefined,
@@ -237,8 +245,10 @@ function asNumber(value: number | bigint | undefined): number {
  * Hook for reading slot details
  */
 export function useSlot(storyId: string | undefined, position: number) {
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { data, isLoading, error } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getSlot',
     args: storyId ? [storyId, BigInt(position)] : undefined,
@@ -258,8 +268,10 @@ export function useSlot(storyId: string | undefined, position: number) {
  * Hook for reading NFT data
  */
 export function useNFT(tokenId: bigint | undefined) {
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { data, isLoading, error } = useReadContract({
-    address: CONTRACTS.nft,
+    address: contracts.nft,
     abi: NFT_ABI,
     functionName: 'getNFTData',
     args: tokenId !== undefined ? [tokenId] : undefined,
@@ -279,8 +291,10 @@ export function useNFT(tokenId: bigint | undefined) {
  * Hook for reading user's NFT balance
  */
 export function useUserNFTs(address: `0x${string}` | undefined) {
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { data: balance } = useReadContract({
-    address: CONTRACTS.nft,
+    address: contracts.nft,
     abi: NFT_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
@@ -298,8 +312,10 @@ export function useUserNFTs(address: `0x${string}` | undefined) {
  * Hook for reading user achievements
  */
 export function useUserAchievements(address: `0x${string}` | undefined) {
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { data, isLoading, error, refetch } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getUserAchievements',
     args: address ? [address] : undefined,
@@ -320,8 +336,10 @@ export function useUserAchievements(address: `0x${string}` | undefined) {
  * Hook for reading leaderboard data
  */
 export function useLeaderboard(offset: number = 0, limit: number = 50) {
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { data, isLoading, error, refetch } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getLeaderboard',
     args: [BigInt(offset), BigInt(limit)],
@@ -339,8 +357,10 @@ export function useLeaderboard(offset: number = 0, limit: number = 50) {
  * Hook for reading user rank
  */
 export function useUserRank(address: `0x${string}` | undefined) {
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { data, isLoading, error, refetch } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getUserRank',
     args: address ? [address] : undefined,
@@ -361,8 +381,10 @@ export function useUserRank(address: `0x${string}` | undefined) {
  * Hook for checking if address is contract owner
  */
 export function useIsOwner(address: `0x${string}` | undefined) {
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { data, isLoading, error } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'owner',
     query: {
@@ -382,8 +404,10 @@ export function useIsOwner(address: `0x${string}` | undefined) {
  * Hook for getting total stories count
  */
 export function useTotalStories() {
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { data, isLoading, error } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getTotalStories',
   });
@@ -399,8 +423,10 @@ export function useTotalStories() {
  * Hook for getting total NFT supply
  */
 export function useTotalNFTs() {
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { data, isLoading, error } = useReadContract({
-    address: CONTRACTS.nft,
+    address: contracts.nft,
     abi: NFT_ABI,
     functionName: 'totalSupply',
   });

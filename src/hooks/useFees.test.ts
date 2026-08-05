@@ -3,6 +3,7 @@ import { useFees } from '@/hooks/useFees';
 import { FEES } from '@/lib/contracts';
 
 jest.mock('wagmi', () => ({
+  useChainId: jest.fn(() => 8453),
   useReadContract: jest.fn(() => ({
     data: undefined,
     isLoading: false,

@@ -24,8 +24,11 @@ export const useAccount = jest.fn();
 export const useConnect = jest.fn();
 export const useDisconnect = jest.fn();
 export const useConfig = jest.fn();
-export const useChainId = jest.fn();
-export const useSwitchChain = jest.fn();
+export const useChainId = jest.fn().mockReturnValue(8453);
+export const useSwitchChain = jest.fn().mockReturnValue({
+  switchChain: jest.fn(),
+  isPending: false,
+});
 export const useBlockNumber = jest.fn();
 export const useEstimateGas = jest.fn();
 export const useSendTransaction = jest.fn();

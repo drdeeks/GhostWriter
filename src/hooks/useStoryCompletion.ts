@@ -1,7 +1,7 @@
 'use client';
 
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { CONTRACTS, STORY_MANAGER_ABI } from '@/lib/contracts';
+import { useChainId, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { STORY_MANAGER_ABI, getContractsForChain } from '@/lib/contracts';
 import { useState, useCallback } from 'react';
 
 export function useStoryCompletion() {
@@ -9,6 +9,8 @@ export function useStoryCompletion() {
   const [error, setError] = useState<string | null>(null);
   const { writeContractAsync, data: hash, isPending } = useWriteContract();
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
 
   const resetProgress = useCallback(() => {
     setProgress(0);
@@ -26,25 +28,25 @@ export function useStoryCompletion() {
     }
 
     const hash = await writeContractAsync({
-      address: CONTRACTS.storyManager,
+      address: contracts.storyManager,
       abi: STORY_MANAGER_ABI,
       functionName: 'processCompletionBatch',
       args: [storyId, BigInt(startPosition), BigInt(endPosition)],
     });
 
     return hash;
-  }, [writeContractAsync]);
+  }, [writeContractAsync, contracts.storyManager]);
 
   const finalizeStory = useCallback(async (storyId: string) => {
     const hash = await writeContractAsync({
-      address: CONTRACTS.storyManager,
+      address: contracts.storyManager,
       abi: STORY_MANAGER_ABI,
       functionName: 'finalizeStory',
       args: [storyId],
     });
 
     return hash;
-  }, [writeContractAsync]);
+  }, [writeContractAsync, contracts.storyManager]);
 
   const completeStoryFull = useCallback(async (storyId: string, totalSlots: number) => {
     try {

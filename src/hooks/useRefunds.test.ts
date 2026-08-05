@@ -5,6 +5,7 @@ const mockRefetch = jest.fn();
 const mockWriteContractAsync = jest.fn();
 
 jest.mock('wagmi', () => ({
+  useChainId: jest.fn(() => 8453),
   useAccount: jest.fn(() => ({ address: '0x1234567890123456789012345678901234567890' })),
   useReadContract: jest.fn(() => ({
     data: undefined,

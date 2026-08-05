@@ -29,6 +29,8 @@ dist/
 next-env.d.ts
 .vercel/
 .vercel
+.open-next/
+.wrangler/
 
 # TypeScript incremental build info
 *.tsbuildinfo

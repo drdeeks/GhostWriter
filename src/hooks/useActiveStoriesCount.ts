@@ -1,9 +1,11 @@
-import { useReadContract } from 'wagmi';
-import { CONTRACTS, STORY_MANAGER_ABI } from '@/lib/contracts';
+import { useChainId, useReadContract } from 'wagmi';
+import { STORY_MANAGER_ABI, getContractsForChain } from '@/lib/contracts';
 
 export function useActiveStoriesCount() {
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { data: activeStories, isLoading, isError } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getActiveStoriesCount',
   });

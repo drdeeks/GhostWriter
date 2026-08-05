@@ -64,6 +64,7 @@ import {
 } from 'lucide-react';
 
 import { areContractsDeployed } from '@/lib/contracts';
+import { ChainSwitcher } from '@/components/ChainSwitcher';
 import type { Story, StoryType } from '@/types/ghostwriter';
 
 export default function Home() {
@@ -302,6 +303,7 @@ export default function Home() {
 
           {/* Wallet display with proper styling */}
           <div className="flex items-center justify-center gap-3 mt-2">
+            <ChainSwitcher />
             <Wallet>
               <ConnectWallet className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white font-semibold px-4 py-2 rounded-xl transition-all duration-200">
                 <Avatar className="h-6 w-6" />

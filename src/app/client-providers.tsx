@@ -6,7 +6,7 @@ import { OnchainKitProvider } from '@coinbase/onchainkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { WagmiProvider, createConfig, http } from 'wagmi';
-import { base, baseSepolia } from 'wagmi/chains';
+import { base, baseSepolia, monad } from 'wagmi/chains';
 import { injected, coinbaseWallet, walletConnect } from 'wagmi/connectors';
 import { Toaster } from 'sonner';
 import FarcasterWrapper from '@/components/FarcasterWrapper';
@@ -53,10 +53,11 @@ export function ClientProviders({ children }: { children: ReactNode }) {
     );
 
     return createConfig({
-      chains: [base, baseSepolia],
+      chains: [base, monad, baseSepolia],
       connectors,
       transports: {
         [base.id]: http(),
+        [monad.id]: http(),
         [baseSepolia.id]: http(),
       },
       ssr: false,

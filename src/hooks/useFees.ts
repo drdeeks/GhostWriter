@@ -1,5 +1,5 @@
-import { useReadContract } from 'wagmi';
-import { CONTRACTS, STORY_MANAGER_ABI, FEES } from '@/lib/contracts';
+import { useChainId, useReadContract } from 'wagmi';
+import { STORY_MANAGER_ABI, FEES, getContractsForChain } from '@/lib/contracts';
 import { useEffect, useState } from 'react';
 
 /**
@@ -8,15 +8,17 @@ import { useEffect, useState } from 'react';
  */
 export function useFees() {
   const [retryCount, setRetryCount] = useState(0);
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
 
   const { data: contributionFee, isLoading: isLoadingContribution, isError: isErrorContribution } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getContributionFee',
   });
 
   const { data: creationFee, isLoading: isLoadingCreation, isError: isErrorCreation } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'getCreationFee',
   });

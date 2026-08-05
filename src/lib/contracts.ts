@@ -3,28 +3,58 @@
  * Update these after deployment
  */
 
-// Contract addresses (update after deployment)
-export const CONTRACTS = {
-  nft: (process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS ||
-    "0x0000000000000000000000000000000000000000") as `0x${string}`,
-  storyManager: (process.env.NEXT_PUBLIC_STORY_MANAGER_ADDRESS ||
-    "0x0000000000000000000000000000000000000000") as `0x${string}`,
-  liquidityPool: (process.env.NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS ||
-    "0x0000000000000000000000000000000000000000") as `0x${string}`,
-  priceOracle: (process.env.NEXT_PUBLIC_PRICE_ORACLE_ADDRESS ||
-    "0x0000000000000000000000000000000000000000") as `0x${string}`,
-  token: (process.env.NEXT_PUBLIC_TOKEN_ADDRESS ||
-    "0x0000000000000000000000000000000000000000") as `0x${string}`,
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
+
+export type ContractAddresses = {
+  nft: `0x${string}`;
+  storyManager: `0x${string}`;
+  liquidityPool: `0x${string}`;
+  priceOracle: `0x${string}`;
+  token: `0x${string}`;
 };
 
-// Chain configuration
+// Chain IDs (from viem/chains)
 export const CHAIN_CONFIG = {
   chainId: parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "8453"), // Default to Base mainnet
   baseSepolia: 84532,
   base: 8453,
+  monad: 143,
+  monadTestnet: 10143,
   modeSepolia: 919,
   mode: 34443,
 };
+
+// Chains the app actively supports for wallet connection + contract
+// interaction (mainnets only - no testnets in this list).
+export const SUPPORTED_CHAIN_IDS = [CHAIN_CONFIG.base, CHAIN_CONFIG.monad] as const;
+
+// Contract addresses (update after deployment), keyed by chain ID.
+// Base uses the original unsuffixed env vars for backwards compatibility
+// with the existing live deployment; new chains get a _<CHAIN> suffix.
+export const CONTRACTS_BY_CHAIN: Record<number, ContractAddresses> = {
+  [CHAIN_CONFIG.base]: {
+    nft: (process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS || ZERO_ADDRESS) as `0x${string}`,
+    storyManager: (process.env.NEXT_PUBLIC_STORY_MANAGER_ADDRESS || ZERO_ADDRESS) as `0x${string}`,
+    liquidityPool: (process.env.NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS || ZERO_ADDRESS) as `0x${string}`,
+    priceOracle: (process.env.NEXT_PUBLIC_PRICE_ORACLE_ADDRESS || ZERO_ADDRESS) as `0x${string}`,
+    token: (process.env.NEXT_PUBLIC_TOKEN_ADDRESS || ZERO_ADDRESS) as `0x${string}`,
+  },
+  [CHAIN_CONFIG.monad]: {
+    nft: (process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS_MONAD || ZERO_ADDRESS) as `0x${string}`,
+    storyManager: (process.env.NEXT_PUBLIC_STORY_MANAGER_ADDRESS_MONAD || ZERO_ADDRESS) as `0x${string}`,
+    liquidityPool: (process.env.NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS_MONAD || ZERO_ADDRESS) as `0x${string}`,
+    priceOracle: (process.env.NEXT_PUBLIC_PRICE_ORACLE_ADDRESS_MONAD || ZERO_ADDRESS) as `0x${string}`,
+    token: (process.env.NEXT_PUBLIC_TOKEN_ADDRESS_MONAD || ZERO_ADDRESS) as `0x${string}`,
+  },
+};
+
+export function getContractsForChain(chainId: number): ContractAddresses {
+  return CONTRACTS_BY_CHAIN[chainId] ?? CONTRACTS_BY_CHAIN[CHAIN_CONFIG.base];
+}
+
+// Default/primary chain contracts - existing server routes and any code
+// that hasn't been made chain-aware yet reads from here, unchanged.
+export const CONTRACTS: ContractAddresses = CONTRACTS_BY_CHAIN[CHAIN_CONFIG.base];
 
 // Fee amounts (dynamic - fetched from contract)
 export const FEES = {
@@ -511,10 +541,12 @@ export const TOKEN_ABI = [
   },
 ] as const;
 
-// Helper to check if contracts are deployed
-export function areContractsDeployed(): boolean {
+// Helper to check if contracts are deployed on a given chain (defaults to
+// the primary/Base chain to preserve existing no-argument call sites).
+export function areContractsDeployed(chainId: number = CHAIN_CONFIG.base): boolean {
+  const addresses = getContractsForChain(chainId);
   return (
-    CONTRACTS.nft !== "0x0000000000000000000000000000000000000000" &&
-    CONTRACTS.storyManager !== "0x0000000000000000000000000000000000000000"
+    addresses.nft !== ZERO_ADDRESS &&
+    addresses.storyManager !== ZERO_ADDRESS
   );
 }

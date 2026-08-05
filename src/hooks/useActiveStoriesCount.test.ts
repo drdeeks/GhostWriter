@@ -2,6 +2,7 @@ import { renderHook } from '@testing-library/react';
 import { useActiveStoriesCount } from '@/hooks/useActiveStoriesCount';
 
 jest.mock('wagmi', () => ({
+  useChainId: jest.fn(() => 8453),
   useReadContract: jest.fn(() => ({
     data: undefined,
     isLoading: false,

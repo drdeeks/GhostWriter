@@ -1,16 +1,18 @@
 'use client';
 
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { CONTRACTS, STORY_MANAGER_ABI } from '@/lib/contracts';
+import { useAccount, useChainId, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { STORY_MANAGER_ABI, getContractsForChain } from '@/lib/contracts';
 import { formatEther } from 'viem';
 import { useState } from 'react';
 
 export function useRefunds() {
   const { address } = useAccount();
   const [error, setError] = useState<string | null>(null);
-  
+  const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
+
   const { data: pendingRefund, refetch } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'pendingRefunds',
     args: address ? [address] : undefined,
@@ -31,7 +33,7 @@ export function useRefunds() {
     try {
       setError(null);
       await writeContractAsync({
-        address: CONTRACTS.storyManager,
+        address: contracts.storyManager,
         abi: STORY_MANAGER_ABI,
         functionName: 'withdrawRefund',
       });

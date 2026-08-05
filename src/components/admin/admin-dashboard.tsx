@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CONTRACTS, LIQUIDITY_POOL_ABI, STORY_MANAGER_ABI, TOKEN_ABI } from '@/lib/contracts';
+import { LIQUIDITY_POOL_ABI, STORY_MANAGER_ABI, TOKEN_ABI, SUPPORTED_CHAIN_IDS, getContractsForChain } from '@/lib/contracts';
 import { useFees } from '@/hooks/useFees';
 import { useIsOwner, useUserStats } from '@/hooks/useContract';
 import { CATEGORY_INFO, WORD_TYPE_DEFINITIONS } from '@/types/ghostwriter';
@@ -66,6 +66,7 @@ function extractWordTypes(template: string): string[] {
 function AdminDashboardComponent() {
   const { address } = useAccount();
   const chainId = useChainId();
+  const contracts = getContractsForChain(chainId);
   const { writeContractAsync } = useWriteContract();
   const { isOwner, isLoading: ownerLoading } = useIsOwner(address);
   const router = useRouter();
@@ -99,7 +100,7 @@ function AdminDashboardComponent() {
   const [storyCreationMode, setStoryCreationMode] = useState<'manual' | 'ai'>('ai');
 
   const { data: storyTemplateSigner } = useReadContract({
-    address: CONTRACTS.storyManager,
+    address: contracts.storyManager,
     abi: STORY_MANAGER_ABI,
     functionName: 'storyTemplateSigner',
   });
@@ -226,7 +227,7 @@ function AdminDashboardComponent() {
       const storyId = `admin_story_${Date.now()}`;
 
       const hash = await writeContractAsync({
-        address: CONTRACTS.storyManager,
+        address: contracts.storyManager,
         abi: STORY_MANAGER_ABI,
         functionName: 'createStory',
         args: [
@@ -268,7 +269,7 @@ function AdminDashboardComponent() {
       const amounts = users.map(() => BigInt(perUser));
 
       const hash = await writeContractAsync({
-        address: CONTRACTS.storyManager,
+        address: contracts.storyManager,
         abi: STORY_MANAGER_ABI,
         functionName: 'airdropCredits',
         args: [users, amounts],
@@ -285,7 +286,7 @@ function AdminDashboardComponent() {
     if (!address) return;
     try {
       const hash = await writeContractAsync({
-        address: CONTRACTS.storyManager,
+        address: contracts.storyManager,
         abi: STORY_MANAGER_ABI,
         functionName: 'airdropCredits',
         args: [[address], [1n]],
@@ -321,7 +322,7 @@ function AdminDashboardComponent() {
       const amounts = amountsLines.map((a) => parseUnits(a, 18));
 
       const hash = await writeContractAsync({
-        address: CONTRACTS.token,
+        address: contracts.token,
         abi: TOKEN_ABI,
         functionName: 'airdrop',
         args: [recipients, amounts],
@@ -343,7 +344,7 @@ function AdminDashboardComponent() {
       }
 
       const hash = await writeContractAsync({
-        address: CONTRACTS.storyManager,
+        address: contracts.storyManager,
         abi: STORY_MANAGER_ABI,
         functionName: 'finalizeStory',
         args: [finalizeStoryId.trim()],
@@ -375,7 +376,7 @@ function AdminDashboardComponent() {
       }
 
       const hash = await writeContractAsync({
-        address: CONTRACTS.storyManager,
+        address: contracts.storyManager,
         abi: STORY_MANAGER_ABI,
         functionName: 'processCompletionBatch',
         args: [batchStoryId.trim(), BigInt(start), BigInt(end)],
@@ -397,7 +398,7 @@ function AdminDashboardComponent() {
       }
 
       const hash = await writeContractAsync({
-        address: CONTRACTS.liquidityPool,
+        address: contracts.liquidityPool,
         abi: LIQUIDITY_POOL_ABI,
         functionName: 'withdraw',
         args: [amountWei],
@@ -418,7 +419,7 @@ function AdminDashboardComponent() {
       }
 
       const hash = await writeContractAsync({
-        address: CONTRACTS.storyManager,
+        address: contracts.storyManager,
         abi: STORY_MANAGER_ABI,
         functionName: 'setStoryTemplateSigner',
         args: [templateSigner.trim()],
@@ -476,7 +477,7 @@ function AdminDashboardComponent() {
 
     try {
       const hash = await writeContractAsync({
-        address: CONTRACTS.storyManager,
+        address: contracts.storyManager,
         abi: STORY_MANAGER_ABI,
         functionName: 'createStoryApproved',
         args: [
@@ -995,7 +996,7 @@ function AdminDashboardComponent() {
                     </div>
                   </div>
                   <div className="text-xs text-gray-400">
-                    Contract addresses: StoryManager {CONTRACTS.storyManager}, NFT {CONTRACTS.nft}, Token {CONTRACTS.token}, Pool {CONTRACTS.liquidityPool}
+                    Contract addresses: StoryManager {contracts.storyManager}, NFT {contracts.nft}, Token {contracts.token}, Pool {contracts.liquidityPool}
                   </div>
                 </CardContent>
               </Card>
@@ -1014,7 +1015,7 @@ function AdminDashboardComponent() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-yellow-400">Wallet Chain ID</Label>
-                      <p className="text-gray-300">{chainId} {chainId === 8453 ? '(Base)' : chainId === 84532 ? '(Base Sepolia)' : ''}</p>
+                      <p className="text-gray-300">{chainId} {chainId === 8453 ? '(Base)' : chainId === 143 ? '(Monad)' : chainId === 84532 ? '(Base Sepolia)' : ''}</p>
                     </div>
                     <div>
                       <Label className="text-yellow-400">Expected Chain ID</Label>
@@ -1026,7 +1027,7 @@ function AdminDashboardComponent() {
                     </div>
                     <div>
                       <Label className="text-yellow-400">StoryManager</Label>
-                      <p className="text-gray-300 break-all">{CONTRACTS.storyManager}</p>
+                      <p className="text-gray-300 break-all">{contracts.storyManager}</p>
                     </div>
                   </div>
                   <div className="border-t border-gray-700 pt-4">
@@ -1058,9 +1059,9 @@ function AdminDashboardComponent() {
                       </div>
                     </div>
                   </div>
-                  {chainId !== 8453 && chainId !== 84532 && (
+                  {!SUPPORTED_CHAIN_IDS.includes(chainId as any) && chainId !== 84532 && (
                     <div className="bg-red-900/30 border border-red-500 rounded-lg p-3 text-red-300">
-                      ⚠️ Connected to unsupported chain. Switch to Base (8453) or Base Sepolia (84532).
+                      ⚠️ Connected to unsupported chain. Switch to Base (8453) or Monad (143).
                     </div>
                   )}
                   {chainId === 84532 && (
