@@ -9,14 +9,19 @@ const jestConfig = {
     '^wagmi$': '<rootDir>/src/test-utils/mocks/wagmi.ts',
     '^@wagmi/core$': '<rootDir>/src/test-utils/mocks/wagmi.ts',
     '^viem$': '<rootDir>/src/test-utils/mocks/viem.ts',
+    '^viem/chains$': '<rootDir>/src/test-utils/mocks/viem-chains.ts',
     '^@coinbase/onchainkit$': '<rootDir>/src/test-utils/mocks/onchainkit.ts',
   },
   transformIgnorePatterns: [
     '/node_modules/(?!wagmi|@wagmi|viem|@coinbase|@farcaster)'
   ],
   transform: {
-    '^.+\.(ts|tsx)$': ['babel-jest', {
-      presets: ['next/babel'],
+    '^.+\\.(ts|tsx)$': ['babel-jest', {
+      presets: [
+        ['@babel/preset-env', { targets: { node: 'current' } }],
+        '@babel/preset-typescript',
+        ['@babel/preset-react', { runtime: 'automatic' }],
+      ],
       plugins: [['@babel/plugin-transform-modules-commonjs', { loose: true }]]
     }],
   },

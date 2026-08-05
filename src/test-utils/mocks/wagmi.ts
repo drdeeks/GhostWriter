@@ -1,6 +1,25 @@
-export const useReadContract = jest.fn();
-export const useWriteContract = jest.fn();
-export const useWaitForTransactionReceipt = jest.fn();
+export const useReadContract = jest.fn().mockReturnValue({
+  data: undefined,
+  isLoading: false,
+  isError: false,
+  error: null,
+  refetch: jest.fn(),
+});
+export const useWriteContract = jest.fn().mockReturnValue({
+  writeContractAsync: jest.fn(),
+  writeContract: jest.fn(),
+  isPending: false,
+  isError: false,
+  error: null,
+  data: undefined,
+});
+export const useWaitForTransactionReceipt = jest.fn().mockReturnValue({
+  data: undefined,
+  isLoading: false,
+  isSuccess: false,
+  isError: false,
+  error: null,
+});
 export const useAccount = jest.fn();
 export const useConnect = jest.fn();
 export const useDisconnect = jest.fn();

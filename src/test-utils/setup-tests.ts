@@ -1,5 +1,6 @@
 // Add global test setup
 import '@testing-library/jest-dom';
+import './polyfills';
 
 // Polyfill for fetch
 declare global {

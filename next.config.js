@@ -17,9 +17,7 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    turbo: false, // Force Webpack to bypass Turbopack instability
-  },
+  // Webpack (not Turbopack) is selected via the --webpack build/dev flag.
   // Sentry is configured via src/lib/sentry.ts
 };
 

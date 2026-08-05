@@ -1,8 +1,13 @@
-// Web API Polyfills for Node.js environment
-import { TextEncoder, TextDecoder } from 'util';
-import nodeFetch, { Headers, Request, Response } from 'node-fetch';
+// Web API Polyfills for the jsdom test environment.
+// jsdom doesn't implement the Fetch API, so bridge in Node's own
+// spec-compliant implementation (undici) rather than a partial shim -
+// Next.js's NextRequest/NextResponse extend the real Request/Response
+// and need modern additions like Response.json() and Headers.getSetCookie().
+//
+// TextEncoder/TextDecoder must be set as globals BEFORE undici is
+// required, since undici's own internals reference them at import time.
+const { TextEncoder, TextDecoder } = require('util');
 
-// Polyfill global objects
 if (!global.TextEncoder) {
   global.TextEncoder = TextEncoder;
 }
@@ -11,11 +16,30 @@ if (!global.TextDecoder) {
   global.TextDecoder = TextDecoder;
 }
 
+// undici also needs the web streams globals at import time.
+const {
+  ReadableStream: NodeReadableStream,
+  WritableStream: NodeWritableStream,
+  TransformStream: NodeTransformStream,
+} = require('node:stream/web');
+
+if (!global.ReadableStream) {
+  global.ReadableStream = NodeReadableStream;
+}
+if (!global.WritableStream) {
+  global.WritableStream = NodeWritableStream;
+}
+if (!global.TransformStream) {
+  global.TransformStream = NodeTransformStream;
+}
+
+const { fetch, Headers, Request, Response } = require('undici');
+
 if (!global.fetch) {
-  global.fetch = nodeFetch;
-  global.Headers = Headers;
-  global.Request = Request;
-  global.Response = Response;
+  global.fetch = fetch as any;
+  global.Headers = Headers as any;
+  global.Request = Request as any;
+  global.Response = Response as any;
 }
 
 // Stream APIs

@@ -42,6 +42,9 @@
     "scripts",
     "test",
     "contracts",
-    "hardhat.config.ts"
+    "hardhat.config.ts",
+    "src/test-utils/**",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx"
   ]
 }

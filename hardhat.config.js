@@ -68,7 +68,7 @@ module.exports = {
     target: "ethers-v6",
   },
   paths: {
-    tests: "./test",
+    tests: "./test-contracts",
     sources: "./contracts",
     cache: "./cache",
     artifacts: "./artifacts",
