@@ -153,7 +153,7 @@
     "typechain": "^8.3.2",
     "undici": "^6.28.0",
     "util": "^0.12.5",
-    "wrangler": "^4.118.0"
+    "wrangler": "^4.131.0"
   },
   "description": "AI-powered collaborative storytelling NFT game on Base. Players contribute words to community stories, minting unique NFTs for each contribution.",
   "main": "babel.config.js",
